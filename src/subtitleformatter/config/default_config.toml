@@ -1,0 +1,18 @@
+# 文本处理配置
+max_width = 78
+
+# 语言设置: auto | en | zh
+language = "en"
+
+# 语言模型大小: sm | md | lg
+model_size = "md"
+
+[paths]
+input_file = ""
+output_file = "data/output/{timestamp}-{input_file_basename}.txt"
+
+[debug]
+enabled = false
+temp_dir = "data/debug"
+
+

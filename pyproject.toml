@@ -10,8 +10,9 @@ license = { text = "GPL-3.0" }
 requires-python = ">=3.11"
 dependencies = [
     "spacy>=3.7.2",
-    "pyyaml>=6.0.1",
     "pip>=25.0.1",
+    # For Python < 3.11 environments; ignored on 3.11+
+    "tomli>=2.0.1; python_version < '3.11'",
 ]
 
 [project.urls]

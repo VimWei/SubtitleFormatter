@@ -1,5 +1,5 @@
 """
-Main entry point for SubtitleFormatter using config.yaml.
+Main entry point for SubtitleFormatter using TOML configuration.
 
 Allows running with:
   - uv run subtitleformatter
