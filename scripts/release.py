@@ -305,7 +305,8 @@ def release(bump_type: str = "patch") -> None:
     update_changelog(new_version, bump_type)
 
     print(f"\n8. Committing changes...")
-    run_command("git add pyproject.toml uv.lock docs/changelog.md")
+    # Stage version, lockfile, and changelog (support both lower/upper-case)
+    run_command("git add pyproject.toml uv.lock docs/changelog.md docs/CHANGELOG.md")
     run_command(f'git commit -m "Bump version to {new_version}"')
     print("✅ Changes committed")
 

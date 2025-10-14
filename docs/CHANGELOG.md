@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.2.1] - 2025-10-14
+
+- Automated release: Patch release
+
+## [0.2.0] - 2025-10-14
+
+- feat(tests): add initial test structure with smoke test and package setup
+- feat(release): add ci workflows and version tooling
+- chore(config): set up pytest/coverage/isort/black and update dev deps
+- refactor: restructure project to src architecture
+
 ## [0.1.0] - 2025-10-14
 
 - 改用 uv 管理环境

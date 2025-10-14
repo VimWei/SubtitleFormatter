@@ -51,7 +51,14 @@ jobs:
           VERSION="${{ steps.version.outputs.version }}"
           
           # Extract changelog section for this version
+          CHANGELOG_FILE=""
           if [ -f "docs/changelog.md" ]; then
+            CHANGELOG_FILE="docs/changelog.md"
+          elif [ -f "docs/CHANGELOG.md" ]; then
+            CHANGELOG_FILE="docs/CHANGELOG.md"
+          fi
+
+          if [ -n "$CHANGELOG_FILE" ]; then
             # Robust single-section extractor: start at "## [VERSION]" and stop before next "## ["
             CHANGELOG=$(awk -v v="$VERSION" '
               BEGIN { inside=0 }
@@ -60,7 +67,7 @@ jobs:
                 if ($0 ~ "^## \\[" v "\\]") { inside=1; print; next }
               }
               inside { print }
-            ' docs/changelog.md)
+            ' "$CHANGELOG_FILE")
             
             if [ -z "$CHANGELOG" ]; then
               echo "⚠️ No changelog found for version $VERSION"
