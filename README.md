@@ -35,20 +35,21 @@ Smart Text Formatter 是一个智能文本格式化工具，它能够进行智�
 
 ## 使用方法
 
-1. 运行程序（基于 config.yaml）：
-   ```bash
-   uv run subtitleformatter
-   ```
+```bash
+uv run subtitleformatter
+```
 
-2. 程序将根据 `config.yaml` 中的配置处理文本文件
+- 首次运行：
+  - 自动生成 `data/config/subtitleformatter.toml`
+  - 若 `paths.input_file` 为空，将提示输入文件名（相对 `data/input/`），如：`Bee hunting.txt`
+  - 也可直接输入绝对路径
 
-3. 输出文件将保存在 `data/output/` 目录下
-
-## 文档
-
-- [使用指南](docs/usage.md)
-- [配置说明](docs/configuration.md)
-- [开发指南](docs/development.md)
+- 后续运行：
+  - 直接使用已保存的配置，无需再次输入
+  - 输出保存到 `data/output/`
+  - 支持占位符：
+    - `{timestamp}`：运行时时间戳
+    - `{input_file_basename}`：输入文件名（不含扩展名）
 
 ## License
 

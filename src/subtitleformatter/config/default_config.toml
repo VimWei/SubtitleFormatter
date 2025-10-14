@@ -1,18 +1,32 @@
 # 文本处理配置
+# 每行最大字符数（建议 60-120）
 max_width = 78
 
 # 语言设置: auto | en | zh
+# auto 将自动检测英文/中文
 language = "en"
 
 # 语言模型大小: sm | md | lg
+# 建议：md（速度/准确度均衡）。
+# - sm：加载快、占用低、准确度较低
+# - md：推荐，准确度与速度平衡
+# - lg：最准确、加载慢、占用高
 model_size = "md"
 
 [paths]
+# 输入文件路径：
+# - 留空则首次运行会提示输入
+# - 相对路径基于 data/input/ 目录
 input_file = ""
+# 输出文件路径，支持占位符：
+# - {timestamp}: 运行时的时间戳
+# - {input_file_basename}: 输入文件名（不含路径与扩展名）
 output_file = "data/output/{timestamp}-{input_file_basename}.txt"
 
 [debug]
+# 是否启用调试输出（生成中间结果与日志）
 enabled = false
+# 调试文件输出目录
 temp_dir = "data/debug"
 
 
