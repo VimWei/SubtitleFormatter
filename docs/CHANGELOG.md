@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.2.3] - 2025-10-14
+
+- refactor(config): migrate to TOML-based configuration system
+
 ## [0.2.2] - 2025-10-14
 
 - fix(release,ci): handle both changelog casings
