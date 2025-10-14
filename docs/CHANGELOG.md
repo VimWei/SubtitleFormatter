@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.2.4] - 2025-10-14
+
+- docs: streamline README, remove deprecated guides, clarify config comments
+- refactor(config): update TOML handling and dependencies
+
 ## [0.2.3] - 2025-10-14
 
 - refactor(config): migrate to TOML-based configuration system
