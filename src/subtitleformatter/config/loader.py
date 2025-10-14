@@ -190,5 +190,3 @@ def create_config_from_args(args) -> Dict[str, Any]:
     cfg.setdefault("input_file", cfg["paths"].get("input_file"))
     cfg.setdefault("output_file", cfg["paths"].get("output_file"))
     return cfg
-
-
