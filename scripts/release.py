@@ -21,7 +21,6 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
-
 VALID_BUMP_TYPES = ["patch", "minor", "major", "alpha", "beta", "rc", "dev"]
 
 
@@ -44,7 +43,9 @@ def get_releases_url() -> str:
         return ""
 
 
-def run_command(cmd: str, check: bool = True, capture_output: bool = True) -> subprocess.CompletedProcess:
+def run_command(
+    cmd: str, check: bool = True, capture_output: bool = True
+) -> subprocess.CompletedProcess:
     print(f"🔧 Running: {cmd}")
     result = subprocess.run(
         cmd,
@@ -351,5 +352,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
-

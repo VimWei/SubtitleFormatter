@@ -168,5 +168,3 @@ Pre-release: {'Yes' if version_info['is_prerelease'] else 'No'}
 An intelligent subtitle processing tool that uses NLP models to clean, segment, and format text.
 """
     return text
-
-
