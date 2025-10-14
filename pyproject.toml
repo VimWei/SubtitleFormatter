@@ -24,7 +24,31 @@ dev = [
     "black>=23.0.0",
     "flake8>=5.0.0,<7.2.0",
     "mypy>=1.0.0",
+    "isort>=5.10.0",
+    "coverage>=7.6.0",
 ]
 
 [tool.uv]
 package = true
+
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+cache_dir = "tests/.pytest_cache"
+
+
+[tool.coverage.run]
+data_file = "tests/.coverage"
+
+
+[tool.coverage.html]
+directory = "tests/htmlcov"
+
+
+[tool.isort]
+profile = "black"
+
+
+[tool.black]
+line-length = 100
+target-version = ["py311"]

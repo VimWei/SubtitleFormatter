@@ -7,6 +7,4 @@ This package contains utility functionality:
 
 from .debug_output import DebugOutput
 
-__all__ = [
-    "DebugOutput"
-]
+__all__ = ["DebugOutput"]

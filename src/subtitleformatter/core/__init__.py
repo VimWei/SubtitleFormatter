@@ -8,14 +8,9 @@ This package contains the core text processing functionality:
 - LineBreaker: Smart line breaking based on grammar
 """
 
-from .text_cleaner import TextCleaner
-from .sentence_handler import SentenceHandler
 from .filler_remover import FillerRemover
 from .line_breaker import LineBreaker
+from .sentence_handler import SentenceHandler
+from .text_cleaner import TextCleaner
 
-__all__ = [
-    "TextCleaner",
-    "SentenceHandler", 
-    "FillerRemover",
-    "LineBreaker"
-]
+__all__ = ["TextCleaner", "SentenceHandler", "FillerRemover", "LineBreaker"]

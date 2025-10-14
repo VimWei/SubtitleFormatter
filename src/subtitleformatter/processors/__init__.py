@@ -7,6 +7,4 @@ This package contains text processing coordination functionality:
 
 from .text_processor import TextProcessor
 
-__all__ = [
-    "TextProcessor"
-]
+__all__ = ["TextProcessor"]

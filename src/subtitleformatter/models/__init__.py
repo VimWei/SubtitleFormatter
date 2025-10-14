@@ -7,6 +7,4 @@ This package contains model management functionality:
 
 from .model_manager import ModelManager
 
-__all__ = [
-    "ModelManager"
-]
+__all__ = ["ModelManager"]

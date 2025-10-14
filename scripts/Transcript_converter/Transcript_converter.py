@@ -10,6 +10,7 @@ import re
 import sys
 from typing import List, Tuple
 
+
 def parse_timestamp(timestamp: str) -> str:
     """
     将时间戳从 'm:ss' 格式转换为 '00:00:00,000' 格式
@@ -21,7 +22,7 @@ def parse_timestamp(timestamp: str) -> str:
         标准SRT时间格式，如 '00:00:02,000'
     """
     # 匹配 m:ss 或 mm:ss 格式
-    match = re.match(r'(\d+):(\d{2})', timestamp)
+    match = re.match(r"(\d+):(\d{2})", timestamp)
     if not match:
         raise ValueError(f"无法解析时间戳格式: {timestamp}")
 
@@ -36,6 +37,7 @@ def parse_timestamp(timestamp: str) -> str:
 
     return f"{hours:02d}:{minutes:02d}:{seconds:02d},000"
 
+
 def calculate_end_time(start_time: str, next_start_time: str) -> str:
     """
     计算字幕的结束时间
@@ -48,8 +50,8 @@ def calculate_end_time(start_time: str, next_start_time: str) -> str:
         结束时间戳
     """
     # 解析开始时间
-    start_match = re.match(r'(\d+):(\d{2})', start_time)
-    next_match = re.match(r'(\d+):(\d{2})', next_start_time)
+    start_match = re.match(r"(\d+):(\d{2})", start_time)
+    next_match = re.match(r"(\d+):(\d{2})", next_start_time)
 
     if not start_match or not next_match:
         # 如果无法解析下一个时间，则假设持续3秒
@@ -72,6 +74,7 @@ def calculate_end_time(start_time: str, next_start_time: str) -> str:
 
     return f"{hours:02d}:{minutes:02d}:{seconds:02d},000"
 
+
 def parse_subtitle_file(filename: str) -> List[Tuple[str, str, str]]:
     """
     解析非标准格式的字幕文件
@@ -82,7 +85,7 @@ def parse_subtitle_file(filename: str) -> List[Tuple[str, str, str]]:
     Returns:
         字幕列表，每个元素包含 (开始时间, 结束时间, 文本)
     """
-    with open(filename, 'r', encoding='utf-8') as f:
+    with open(filename, "r", encoding="utf-8") as f:
         lines = [line.strip() for line in f.readlines() if line.strip()]
 
     subtitles = []
@@ -90,22 +93,22 @@ def parse_subtitle_file(filename: str) -> List[Tuple[str, str, str]]:
 
     while i < len(lines):
         # 查找时间戳行
-        if re.match(r'\d+:\d{2}', lines[i]):
+        if re.match(r"\d+:\d{2}", lines[i]):
             timestamp = lines[i]
             text_lines = []
 
             # 收集后续的文本行，直到遇到下一个时间戳或文件结束
             i += 1
-            while i < len(lines) and not re.match(r'\d+:\d{2}', lines[i]):
+            while i < len(lines) and not re.match(r"\d+:\d{2}", lines[i]):
                 text_lines.append(lines[i])
                 i += 1
 
             if text_lines:
                 # 合并文本行
-                text = ' '.join(text_lines)
+                text = " ".join(text_lines)
 
                 # 计算结束时间
-                if i < len(lines) and re.match(r'\d+:\d{2}', lines[i]):
+                if i < len(lines) and re.match(r"\d+:\d{2}", lines[i]):
                     next_timestamp = lines[i]
                     end_time = calculate_end_time(timestamp, next_timestamp)
                 else:
@@ -119,6 +122,7 @@ def parse_subtitle_file(filename: str) -> List[Tuple[str, str, str]]:
 
     return subtitles
 
+
 def write_srt_file(subtitles: List[Tuple[str, str, str]], output_filename: str):
     """
     将字幕写入标准SRT格式文件
@@ -127,12 +131,13 @@ def write_srt_file(subtitles: List[Tuple[str, str, str]], output_filename: str):
         subtitles: 字幕列表
         output_filename: 输出文件名
     """
-    with open(output_filename, 'w', encoding='utf-8') as f:
+    with open(output_filename, "w", encoding="utf-8") as f:
         for i, (start_time, end_time, text) in enumerate(subtitles, 1):
             f.write(f"{i}\n")
             f.write(f"{start_time} --> {end_time}\n")
             f.write(f"{text}\n")
             f.write("\n")
+
 
 def write_txt_file(subtitles: List[Tuple[str, str, str]], output_filename: str):
     """
@@ -142,10 +147,11 @@ def write_txt_file(subtitles: List[Tuple[str, str, str]], output_filename: str):
         subtitles: 字幕列表
         output_filename: 输出文件名
     """
-    with open(output_filename, 'w', encoding='utf-8') as f:
+    with open(output_filename, "w", encoding="utf-8") as f:
         for _, _, text in subtitles:
             if text.strip():  # 只写入非空文本
                 f.write(f"{text.strip()}\n")
+
 
 def main():
     """主函数"""
@@ -157,14 +163,14 @@ def main():
     input_file = sys.argv[1]
 
     # 根据输入文件扩展名确定输出文件名
-    if input_file.endswith('.transcript'):
-        base_name = input_file.replace('.transcript', '')
-        srt_output_file = base_name + '.srt'
-        txt_output_file = base_name + '.txt'
+    if input_file.endswith(".transcript"):
+        base_name = input_file.replace(".transcript", "")
+        srt_output_file = base_name + ".srt"
+        txt_output_file = base_name + ".txt"
     else:
         # 如果没有扩展名，添加 .srt 和 .txt 扩展名
-        srt_output_file = input_file + '.srt'
-        txt_output_file = input_file + '.txt'
+        srt_output_file = input_file + ".srt"
+        txt_output_file = input_file + ".txt"
 
     try:
         print(f"正在解析文件: {input_file}")
@@ -188,6 +194,7 @@ def main():
     except Exception as e:
         print(f"错误: {e}")
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()
