@@ -16,10 +16,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict
 
-try:  # Python 3.11+
-    import tomllib  # type: ignore[attr-defined]
-except Exception:  # pragma: no cover - fallback for older Pythons if any
-    import tomli as tomllib  # type: ignore
+import tomllib
+import tomli_w  # type: ignore
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
@@ -44,37 +42,9 @@ def _load_toml(path: Path) -> Dict[str, Any]:
 
 
 def _dump_toml(data: Dict[str, Any], path: Path) -> None:
-    # Minimal TOML writer to avoid new dependency; preserves simple types used here
-    # This is not a general TOML serializer, but sufficient for our flat/default structure
-    lines: list[str] = []
-    top_keys = {k: v for k, v in data.items() if not isinstance(v, dict)}
-    table_keys = {k: v for k, v in data.items() if isinstance(v, dict)}
-
-    def _format_value(val: Any) -> str:
-        if isinstance(val, bool):
-            return "true" if val else "false"
-        if isinstance(val, (int, float)):
-            return str(val)
-        if val is None:
-            return '""'
-        s = str(val).replace("\\", "\\\\").replace("\n", "\\n").replace('"', '\\"')
-        return f'"{s}"'
-
-    for k, v in top_keys.items():
-        lines.append(f"{k} = {_format_value(v)}")
-    if top_keys and table_keys:
-        lines.append("")
-
-    for table, mapping in table_keys.items():
-        lines.append(f"[{table}]")
-        for k, v in mapping.items():
-            lines.append(f"{k} = {_format_value(v)}")
-        lines.append("")
-
-    content = "\n".join(lines).rstrip() + "\n"
     path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("w", encoding="utf-8") as f:
-        f.write(content)
+    with path.open("wb") as f:
+        f.write(tomli_w.dumps(data).encode("utf-8"))
 
 
 def _validate(cfg: Dict[str, Any]) -> None:
