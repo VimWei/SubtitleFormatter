@@ -1,0 +1,12 @@
+# System files
+.DS_Store
+Thumbs.db
+*.swp
+
+# Python
+.venv/
+__pycache__/
+
+# Data files
+legacy/
+data/

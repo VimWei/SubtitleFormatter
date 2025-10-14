@@ -1,0 +1,23 @@
+[project]
+name = "SubtitleFormatter"
+version = "0.1.0"
+description = "An intelligent subtitle processing tool that uses NLP models to clean, segment, and format text for better readability"
+readme = "README.md"
+authors = [
+  { name = "VimWei" }
+]
+license = { text = "GPL-3.0" }
+requires-python = ">=3.11"
+dependencies = [
+    "spacy>=3.7.2",
+    "pyyaml>=6.0.1",
+    "pip>=25.0.1",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=7.0.0",
+    "black>=23.0.0",
+    "flake8>=5.0.0,<7.2.0",
+    "mypy>=1.0.0",
+]
