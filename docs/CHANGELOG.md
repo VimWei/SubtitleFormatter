@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.2.2] - 2025-10-14
+
+- fix(release,ci): handle both changelog casings
+
 ## [0.2.1] - 2025-10-14
 
 - Automated release: Patch release
