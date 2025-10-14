@@ -22,10 +22,10 @@ language: en
 model_size: md
 
 # 文件路径配置
-input_file: data/input/How To Make A lot Of New Hives FAST.txt
+input_file: data/input/Agentic AI applications.txt
 output_file: data/output/{timestamp}-{input_file_basename}.txt
 
 # 调试配置
 debug:
   enabled: true
-  temp_dir: data/debug  # 临时文件目录 
+  temp_dir: data/debug  # 临时文件目录
