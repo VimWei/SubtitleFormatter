@@ -10,20 +10,14 @@ Smart Text Formatter 是一个智能文本格式化工具，它能够进行智�
 4. 智能断行：基于语法结构进行智能断行
 5. 自定义：支持自定义最大行宽、多语言支持、详细的调试输出支持
 
-## 技术栈
-
-- **Python**: 3.8.1+
-- **环境管理**: [uv](https://docs.astral.sh/uv/) - 快速的 Python 包管理器
-- **NLP 处理**: [spaCy](https://spacy.io/) - 自然语言处理库
-- **配置管理**: [PyYAML](https://pyyaml.org/) - YAML 配置文件解析
-
 ## 安装要求
 
-1. 确保已安装 [uv](https://docs.astral.sh/uv/getting-started/installation/)：
-   ```bash
+1. 确保已安装 uv：
+   ```powershell
    # Windows (PowerShell)
-   irm https://astral.sh/uv/install.ps1 | iex
-   
+   powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+   ```
+   ```bash
    # macOS/Linux
    curl -LsSf https://astral.sh/uv/install.sh | sh
    ```
