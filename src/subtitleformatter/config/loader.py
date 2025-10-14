@@ -11,14 +11,13 @@ User config overrides default via deep merge.
 from __future__ import annotations
 
 import os
+import tomllib
 from copy import deepcopy
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict
 
-import tomllib
 import tomli_w  # type: ignore
-
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 USER_CONFIG_PATH = PROJECT_ROOT / "data" / "config" / "subtitleformatter.toml"
