@@ -1,3 +1,0 @@
-spacy>=3.7.2
-deepmultilingualpunctuation>=1.1.0
-pyyaml>=6.0.1 

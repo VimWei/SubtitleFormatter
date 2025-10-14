@@ -1,94 +1,112 @@
-# 开发指南
+# 开发指南（src 架构）
 
-## 项目结构 
+本文档面向当前基于 src 目录的项目结构，描述开发环境、项目结构、运行与调试、依赖管理以及常见开发任务。
 
+## 项目结构
 ```
-SmartTextFormatter/
-├── modules/           # 核心功能模块
-│   ├── __init__.py
-│   ├── text_cleaner.py     # 文本清理
-│   ├── sentence_handler.py  # 智能断句
-│   ├── filler_remover.py   # 停顿词处理
-│   ├── line_breaker.py     # 智能断行
-│   ├── model_manager.py    # 模型管理
-│   └── debug_output.py     # 调试输出
-├── data/             # 输入输出文件
-│   ├── input.txt     # 输入文本示例
-│   └── output.txt    # 输出结果示例
-├── docs/             # 项目文档
-├── temp/             # 调试输出目录
-├── config.yaml       # 配置文件
-└── main.py          # 程序入口
-```
-
-## 核心模块说明
-
-- `text_cleaner.py`: 基础文本清理，统一空白字符、处理空行等
-- `sentence_handler.py`: 使用语言模型进行智能断句
-- `filler_remover.py`: 识别和处理文本中的停顿词
-- `line_breaker.py`: 基于语法结构进行智能断行
-- `model_manager.py`: 统一管理语言模型的加载和使用
-- `debug_output.py`: 处理调试信息的输出和保存
-
-## 处理流程
-
-### 1. 配置加载 (`main.py: load_config`)
-- 读取 YAML 配置文件
-- 处理文件路径（包括时间戳替换）
-- 创建必要目录（输出目录、调试目录）
-
-### 2. 文件处理 (`main.py: process_file`)
-
-#### 2.1 初始化处理环境
-- 创建调试输出器
-  - 配置调试模式
-  - 准备调试输出目录
-- 加载语言模型
-  - 通过 ModelManager 统一管理
-  - 根据配置选择合适的模型
-
-#### 2.2 文本处理流程
-1. 基础文本清理 (TextCleaner)
-   - 统一空白字符处理
-   - 处理多余空行
-   - 基本格式规范化
-   - 不依赖语言模型
-
-2. 智能断句 (SentenceHandler)
-   - 使用 spaCy 语言模型分析
-   - 识别自然句子边界
-   - 保持语义完整性
-   - 支持多语言处理
-
-3. 停顿词处理 (FillerRemover)
-   - 识别语言特定的停顿词
-   - 处理语气词和填充词
-   - 优化语言流畅度
-   - 使用语言模型分析上下文
-
-4. 智能断行 (LineBreaker)
-   - 基于语法结构智能分析
-   - 控制最大行宽
-   - 在合适的语法位置断行
-   - 保持文本可读性
-
-#### 2.3 结果输出
-- 保存处理后的文本
-- 生成调试信息（如果启用）
-- 清理临时文件（如果有）
-
-## 调试支持
-
-建议启用调试模式进行开发启用调试模式可以查看详细的处理过程：
-
-1. 在配置文件中启用调试：
-```yaml
-debug:
-  enabled: true
-  temp_dir: temp
+SubtitleFormatter/
+├── src/
+│   └── subtitleformatter/
+│       ├── __init__.py
+│       ├── __main__.py              # 入口：读取 config.yaml 运行
+│       ├── config.py                # 配置加载与路径处理
+│       ├── core/                    # 核心处理模块
+│       │   ├── text_cleaner.py
+│       │   ├── sentence_handler.py
+│       │   ├── filler_remover.py
+│       │   └── line_breaker.py
+│       ├── models/                  # 模型管理
+│       │   └── model_manager.py
+│       ├── utils/                   # 工具/调试
+│       │   └── debug_output.py
+│       └── processors/              # 流程协调器
+│           └── text_processor.py
+├── scripts/                         # 独立脚本（Vim/Shell/Python 等）
+├── config.yaml                      # 运行配置
+├── pyproject.toml                   # 依赖与入口点（uv）
+├── README.md
+└── docs/
+    ├── development.md               # 本文档
+    └── Archive/                     # 旧文档
 ```
 
-2. 查看调试输出：
-   - 每个处理步骤的结果都会保存在 temp 目录
-   - 可以查看详细的处理过程
-   - 便于定位问题和优化效果
+## 开发环境
+- Python 3.11+
+- 使用 uv 管理依赖与虚拟环境
+
+初始化：
+```bash
+uv sync
+```
+
+运行（基于 config.yaml）：
+```bash
+uv run subtitleformatter
+```
+
+可选：直接以模块方式运行（同样读取 config.yaml）：
+```bash
+uv run python -m subtitleformatter
+```
+
+## 配置说明（config.yaml）
+- `input_file`: 输入文件路径
+- `output_file`: 输出文件路径，支持占位符 `{timestamp}`、`{input_file_basename}`
+- `max_width`: 最大片宽
+- `language`: `auto|en|zh`
+- `model_size`: `sm|md|lg`
+- `debug.enabled`: 是否启用调试输出
+- `debug.temp_dir`: 调试输出目录
+
+## 核心模块职责
+- `core/text_cleaner.py`: 基础清理与规范化
+- `core/sentence_handler.py`: 智能断句（spaCy）
+- `core/filler_remover.py`: 停顿词与重复词处理
+- `core/line_breaker.py`: 智能断行（语法断点）
+- `models/model_manager.py`: 语言模型加载与下载
+- `utils/debug_output.py`: 步骤结果与日志记录
+- `processors/text_processor.py`: 串联完整流程
+
+## 常见开发任务
+
+### 1. 新增处理步骤
+- 在 `core/` 中添加新模块
+- 在 `processors/text_processor.py` 中插入调用
+- 更新调试输出（可选）
+
+### 2. 修改配置项
+- 在 `config.yaml` 中定义
+- 如需流程内可用：在 `config.py: load_config` 中做解析与目录准备
+
+### 3. 模型相关改动
+- 在 `models/model_manager.py` 添加/修改模型选择逻辑
+- 注意首次运行需要下载相应 spaCy 模型
+
+### 4. 调试
+- 在 `config.yaml` 中启用 `debug.enabled: true`
+- 输出位于 `debug.temp_dir`（默认 `data/debug`）
+
+## 依赖与打包
+- 依赖由 `pyproject.toml` 管理
+- 可执行入口点（基于 config.yaml）：
+```toml
+[project.scripts]
+subtitleformatter = "subtitleformatter.__main__:main"
+
+[tool.uv]
+package = true
+```
+- 安装/更新依赖：`uv sync`
+- 运行：`uv run subtitleformatter`
+
+## 测试建议
+- 为核心模块编写单元测试（建议使用 pytest）
+- 对 `processors/text_processor.py` 进行集成测试（可使用小型输入样例）
+
+## 代码风格
+- 保持命名清晰、函数短小
+- 仅为非显而易见的逻辑添加精炼注释
+- 避免过深嵌套，优先早返回
+
+---
+如需新增脚本的组织与集成策略，请参阅 `docs/scripts_management_strategy.md`（若存在）。

@@ -35,9 +35,9 @@ Smart Text Formatter 是一个智能文本格式化工具，它能够进行智�
 
 ## 使用方法
 
-1. 运行程序：
+1. 运行程序（基于 config.yaml）：
    ```bash
-   uv run python main.py
+   uv run subtitleformatter
    ```
 
 2. 程序将根据 `config.yaml` 中的配置处理文本文件

@@ -27,5 +27,5 @@ output_file: data/output/{timestamp}-{input_file_basename}.txt
 
 # 调试配置
 debug:
-  enabled: true
+  enabled: false
   temp_dir: data/debug  # 临时文件目录

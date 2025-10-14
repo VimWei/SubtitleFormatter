@@ -1,5 +1,5 @@
 [project]
-name = "SubtitleFormatter"
+name = "subtitleformatter"
 version = "0.1.0"
 description = "An intelligent subtitle processing tool that uses NLP models to clean, segment, and format text for better readability"
 readme = "README.md"
@@ -14,6 +14,10 @@ dependencies = [
     "pip>=25.0.1",
 ]
 
+[project.scripts]
+subtitleformatter = "subtitleformatter.__main__:main"
+
+
 [dependency-groups]
 dev = [
     "pytest>=7.0.0",
@@ -21,3 +25,6 @@ dev = [
     "flake8>=5.0.0,<7.2.0",
     "mypy>=1.0.0",
 ]
+
+[tool.uv]
+package = true
