@@ -39,6 +39,9 @@ class AboutPage(QWidget):
         updates_row.addWidget(self.label_updates)
         self.btn_check = QPushButton("Check for Updates", self)
         self.btn_check.clicked.connect(self.check_for_updates)
+        # Set button size to fit text content
+        self.btn_check.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        self.btn_check.setFixedWidth(self.btn_check.sizeHint().width())
         updates_row.addWidget(self.btn_check)
         layout.addRow("Updates:", updates_row)
 
