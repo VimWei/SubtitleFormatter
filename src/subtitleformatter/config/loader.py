@@ -80,13 +80,43 @@ def _materialize_paths(cfg: Dict[str, Any]) -> None:
             os.makedirs(temp_dir)
 
 
-def load_config() -> Dict[str, Any]:
-    """Load configuration with user overrides."""
+def load_config(config_path: str = None) -> Dict[str, Any]:
+    """Load configuration with user overrides.
+    
+    Args:
+        config_path: Optional path to custom config file. If None, uses default config_latest.toml
+    """
     print("正在加载配置 (TOML)...")
     default_cfg = _load_toml(DEFAULT_CONFIG_PATH)
 
     user_cfg: Dict[str, Any] = {}
-    if USER_CONFIG_PATH.exists():
+    if config_path:
+        # Load custom config file
+        custom_path = Path(config_path)
+        
+        # If relative path, try to resolve relative to data/configs/ first
+        if not custom_path.is_absolute():
+            # Try relative to data/configs/ directory
+            configs_dir = PROJECT_ROOT / "data" / "configs"
+            configs_path = configs_dir / custom_path
+            if configs_path.exists():
+                custom_path = configs_path
+            elif not custom_path.exists():
+                # If still not found, try relative to current working directory
+                if not custom_path.exists():
+                    raise FileNotFoundError(
+                        f"Config file not found: {config_path}\n"
+                        f"Tried locations:\n"
+                        f"  - {configs_dir / custom_path}\n"
+                        f"  - {custom_path.resolve()}"
+                    )
+        
+        if not custom_path.exists():
+            raise FileNotFoundError(f"Config file not found: {config_path}")
+        
+        user_cfg = _load_toml(custom_path)
+    elif USER_CONFIG_PATH.exists():
+        # Load default user config
         user_cfg = _load_toml(USER_CONFIG_PATH)
     else:
         # Create user config from default for easy editing
@@ -97,28 +127,31 @@ def load_config() -> Dict[str, Any]:
 
     cfg = _deep_merge(default_cfg, user_cfg)
     _validate(cfg)
-    # If input_file is empty, interactively prompt and persist
-    input_file = cfg.get("paths", {}).get("input_file", "")
-    if not input_file:
-        # Prompt user for input file path (relative to data/input/ by default)
-        print(
-            "未检测到输入文件路径。\n"
-            "请输入输入文件名（相对于 data/input/ 目录），例如：Bee hunting.txt\n"
-            "如需自定义路径，也可输入绝对路径。"
-        )
-        user_input = input().strip().strip('"').strip("'")
-        # If user provided a relative path/filename, resolve it under data/input/
-        user_path = Path(user_input)
-        if not user_path.is_absolute():
-            resolved_path = (BASE_INPUT_DIR / user_path).as_posix()
-        else:
-            resolved_path = str(user_path)
-        cfg["paths"]["input_file"] = resolved_path
-        # Persist to user config
-        # Merge into existing on-disk user cfg or create fresh
-        persisted = _deep_merge(default_cfg, user_cfg)
-        persisted["paths"]["input_file"] = resolved_path
-        _dump_toml(persisted, USER_CONFIG_PATH)
+    
+    # Only prompt for input file in CLI mode when no custom config is provided
+    if not config_path:
+        # If input_file is empty, interactively prompt and persist
+        input_file = cfg.get("paths", {}).get("input_file", "")
+        if not input_file:
+            # Prompt user for input file path (relative to data/input/ by default)
+            print(
+                "未检测到输入文件路径。\n"
+                "请输入输入文件名（相对于 data/input/ 目录），例如：Bee hunting.txt\n"
+                "如需自定义路径，也可输入绝对路径。"
+            )
+            user_input = input().strip().strip('"').strip("'")
+            # If user provided a relative path/filename, resolve it under data/input/
+            user_path = Path(user_input)
+            if not user_path.is_absolute():
+                resolved_path = (BASE_INPUT_DIR / user_path).as_posix()
+            else:
+                resolved_path = str(user_path)
+            cfg["paths"]["input_file"] = resolved_path
+            # Persist to user config
+            # Merge into existing on-disk user cfg or create fresh
+            persisted = _deep_merge(default_cfg, user_cfg)
+            persisted["paths"]["input_file"] = resolved_path
+            _dump_toml(persisted, USER_CONFIG_PATH)
 
     _materialize_paths(cfg)
 

@@ -22,7 +22,6 @@ Homepage = "https://github.com/VimWei/SubtitleFormatter"
 
 [project.scripts]
 subtitleformatter = "subtitleformatter.__main__:main"
-subtitleformatter-gui = "subtitleformatter.__main__:main_gui"
 
 
 [dependency-groups]
