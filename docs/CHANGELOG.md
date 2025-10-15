@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.1.1] - 2025-10-15
+
+- feat(config): remove legacy shim and import loader directly
+- feat(config): implement centralized configuration management
+- feat(windows): add SubtitleFormatter launcher VBScript using uv
+
 ## [1.1.0] - 2025-10-15
 
 - docs(README): update installation and usage instructions
