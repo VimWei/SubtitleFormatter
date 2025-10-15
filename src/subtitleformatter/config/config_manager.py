@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 import os
+import tomllib
 from pathlib import Path
 from typing import Any, Dict, Optional
 
 import tomli_w  # type: ignore
-import tomllib
 
 
 class ConfigManager:
@@ -90,9 +90,13 @@ class ConfigManager:
         # Relativize paths for portability
         paths = normalized.setdefault("paths", {})
         if isinstance(paths.get("input_file"), str):
-            paths["input_file"] = self._to_relative(paths["input_file"]) if paths["input_file"] else ""
+            paths["input_file"] = (
+                self._to_relative(paths["input_file"]) if paths["input_file"] else ""
+            )
         if isinstance(paths.get("output_file"), str):
-            paths["output_file"] = self._to_relative(paths["output_file"]) if paths["output_file"] else ""
+            paths["output_file"] = (
+                self._to_relative(paths["output_file"]) if paths["output_file"] else ""
+            )
         return normalized
 
     # ---- Internal IO ----
@@ -151,5 +155,3 @@ class ConfigManager:
         if not isinstance(cfg, dict):
             cfg = {}
         return reconcile(cfg, defaults)
-
-

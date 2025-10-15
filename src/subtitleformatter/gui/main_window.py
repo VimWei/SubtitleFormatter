@@ -15,9 +15,9 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from subtitleformatter.config.config_manager import ConfigManager
 from subtitleformatter.utils.unified_logger import logger
 from subtitleformatter.version import get_app_title
-from subtitleformatter.config.config_manager import ConfigManager
 
 from .components.command_panel import CommandPanel
 from .components.log_panel import LogPanel

@@ -45,7 +45,11 @@ class TextProcessor:
 
         # 2. 加载语言模型（仅在需要句法相关处理时加载）
         stages_cfg = self.config.get("stages", {})
-        need_nlp = stages_cfg.get("sentence_splitting", True) or stages_cfg.get("filler_handling", True) or stages_cfg.get("line_breaking", True)
+        need_nlp = (
+            stages_cfg.get("sentence_splitting", True)
+            or stages_cfg.get("filler_handling", True)
+            or stages_cfg.get("line_breaking", True)
+        )
         if need_nlp:
             log_step("正在加载语言模型")
             self.config["nlp"] = ModelManager.get_model(self.config)
@@ -89,7 +93,9 @@ class TextProcessor:
                 log_debug_info(f"共拆分出 {len(sentences)} 个句子")
                 log_debug_info(f"最长句子: {len(max(sentences, key=len))} 字符")
                 log_debug_info(f"最短句子: {len(min(sentences, key=len))} 字符")
-                log_debug_info(f"平均句长: {sum(len(s) for s in sentences) / len(sentences):.1f} 字符")
+                log_debug_info(
+                    f"平均句长: {sum(len(s) for s in sentences) / len(sentences):.1f} 字符"
+                )
 
             debug_output.show_step("智能断句", sentences)
         else:
