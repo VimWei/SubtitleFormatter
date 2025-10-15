@@ -64,7 +64,7 @@ class MainWindow(QMainWindow):
         self.splitter.addWidget(self.log_panel)
 
         # Splitter behavior: fix middle height, allow resizing top and bottom only
-        self.splitter.setSizes([300, 120, 200])
+        self.splitter.setSizes([200, 120, 200])
         self.splitter.setStretchFactor(0, 0)
         self.splitter.setStretchFactor(1, 0)
         self.splitter.setStretchFactor(2, 1)
@@ -655,6 +655,6 @@ def run_gui() -> None:
         app.setWindowIcon(QIcon(str(icon_path)))
 
     w = MainWindow(root)
-    w.resize(800, 600)
+    w.resize(800, 520)
     w.show()
     sys.exit(app.exec())
