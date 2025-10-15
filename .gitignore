@@ -16,6 +16,7 @@ build/
 # Data files
 legacy/
 data/
+models/
 
 # test
 tests/__pycache__/
