@@ -16,7 +16,9 @@ from .unified_logger import (
     log_debug, 
     log_step, 
     log_stats, 
-    log_progress
+    log_progress,
+    log_debug_info,
+    log_debug_step
 )
 
 __all__ = [
@@ -29,5 +31,7 @@ __all__ = [
     "log_debug", 
     "log_step", 
     "log_stats", 
-    "log_progress"
+    "log_progress",
+    "log_debug_info",
+    "log_debug_step"
 ]

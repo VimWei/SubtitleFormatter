@@ -9,14 +9,22 @@ from datetime import datetime
 
 class UnifiedLogger:
     """
-    统一日志管理器，支持同时输出到终端和GUI日志面板
-    使用方式类似print，但会自动同步到GUI
+    统一日志管理器，负责所有终端和GUI输出
+    
+    职责：
+    - 统一管理终端输出和GUI日志面板
+    - 支持简洁模式和详细模式
+    - 提供类似print的简单使用方式
+    - 自动添加时间戳和日志级别
+    
+    注意：DebugOutput类现在只负责文件保存，不处理终端输出
     """
     
     def __init__(self):
         self.gui_log_callback: Optional[Callable[[str], None]] = None
         self.terminal_enabled = True
         self.gui_enabled = True
+        self.debug_mode = False  # 控制详细日志输出
         
     def set_gui_callback(self, callback: Callable[[str], None]) -> None:
         """设置GUI日志回调函数"""
@@ -29,6 +37,10 @@ class UnifiedLogger:
     def enable_gui(self, enabled: bool = True) -> None:
         """启用/禁用GUI输出"""
         self.gui_enabled = enabled
+        
+    def set_debug_mode(self, enabled: bool = True) -> None:
+        """设置调试模式，控制详细日志输出"""
+        self.debug_mode = enabled
         
     def log(self, message: str, level: str = "INFO") -> None:
         """
@@ -78,8 +90,11 @@ class UnifiedLogger:
             self.info(f"{step_name}...")
             
     def stats(self, title: str, stats_dict: dict) -> None:
-        """统计信息日志"""
-        self.info(f"\n{title}:")
+        """统计信息日志 - 仅在调试模式下显示"""
+        if not self.debug_mode:
+            return
+            
+        self.info(f"{title}:")
         self.info("-" * 40)
         
         for key, value in stats_dict.items():
@@ -98,6 +113,16 @@ class UnifiedLogger:
             self.info(f"进度: {percentage}% ({current}/{total}) - {message}")
         else:
             self.info(f"进度: {percentage}% ({current}/{total})")
+            
+    def debug_info(self, message: str) -> None:
+        """调试信息 - 仅在调试模式下显示"""
+        if self.debug_mode:
+            self.info(message)
+            
+    def debug_step(self, step_name: str, message: str = "") -> None:
+        """调试步骤 - 仅在调试模式下显示"""
+        if self.debug_mode:
+            self.step(step_name, message)
 
 
 # 全局日志实例
@@ -137,3 +162,13 @@ def log_stats(title: str, stats_dict: dict) -> None:
 def log_progress(current: int, total: int, message: str = "") -> None:
     """便捷的进度日志函数"""
     logger.progress(current, total, message)
+
+
+def log_debug_info(message: str) -> None:
+    """便捷的调试信息函数"""
+    logger.debug_info(message)
+
+
+def log_debug_step(step_name: str, message: str = "") -> None:
+    """便捷的调试步骤函数"""
+    logger.debug_step(step_name, message)

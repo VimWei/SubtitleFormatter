@@ -5,7 +5,13 @@ from datetime import datetime
 
 class DebugOutput:
     def __init__(self, debug, temp_dir, max_width, add_timestamp=True):
-        """初始化调试输出器"""
+        """初始化调试输出器 - 专注于调试文件保存功能
+        
+        注意：此类的终端输出功能已被移除，现在只负责：
+        - 保存处理步骤的中间结果文件
+        - 生成处理日志文件
+        - 终端和GUI输出由统一日志系统处理
+        """
         self.debug = debug
         self.temp_dir = temp_dir
         self.max_width = max_width
@@ -109,9 +115,8 @@ class DebugOutput:
                     log_lines.append("没有需要断行的长句")
                 log_lines.append("-" * 40)
 
-        # 打印并保存日志内容
+        # 收集日志内容（不输出到终端，由统一日志系统处理）
         for line in log_lines:
-            print(line)
             self.log_content.append(line)
 
         # 保存处理结果文件（跳过"读入文件"步骤）

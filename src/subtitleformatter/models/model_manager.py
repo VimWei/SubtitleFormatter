@@ -1,4 +1,5 @@
 import spacy
+from ..utils.unified_logger import log_info
 
 
 class ModelManager:
@@ -28,9 +29,9 @@ class ModelManager:
         # 加载或下载模型
         try:
             nlp = spacy.load(model_name)
-            print(f"已加载语言模型: {model_name}")
+            log_info(f"已加载语言模型: {model_name}")
         except OSError:
-            print(f"正在下载语言模型: {model_name}")
+            log_info(f"正在下载语言模型: {model_name}")
             spacy.cli.download(model_name)
             nlp = spacy.load(model_name)
 
