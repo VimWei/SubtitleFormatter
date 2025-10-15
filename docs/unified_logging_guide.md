@@ -2,7 +2,14 @@
 
 ## 概述
 
-统一日志系统将终端输出和GUI日志面板连接起来，让您能够像使用`print`一样简单地添加日志，同时自动同步到GUI界面。
+统一日志系统是SubtitleFormatter的核心日志管理组件，负责所有终端和GUI输出。它提供了简洁模式和详细模式，让您能够像使用`print`一样简单地添加日志，同时自动同步到GUI界面。
+
+## 架构设计
+
+### 职责分离
+- **统一日志系统** (`UnifiedLogger`)：负责所有终端和GUI输出
+- **调试输出系统** (`DebugOutput`)：专注于调试文件保存功能
+- **清晰的职责分离**：避免重复输出，提高代码可维护性
 
 ## 基本用法
 
@@ -11,7 +18,8 @@
 ```python
 from subtitleformatter.utils.unified_logger import (
     log_info, log_warning, log_error, log_debug,
-    log_step, log_stats, log_progress
+    log_step, log_stats, log_progress,
+    log_debug_info, log_debug_step
 )
 ```
 
@@ -58,11 +66,47 @@ stats = {
 log_stats("处理统计", stats)
 ```
 
-### 5. 进度日志
+### 5. 调试模式日志
+
+```python
+# 调试信息 - 仅在调试模式下显示
+log_debug_info("文本长度: 32669 字符")
+
+# 调试步骤 - 仅在调试模式下显示
+log_debug_step("详细处理步骤", "开始详细分析")
+```
+
+### 6. 进度日志
 
 ```python
 # 进度日志
 log_progress(50, 100, "处理中...")
+```
+
+## 调试模式控制
+
+### 简洁模式 vs 详细模式
+
+统一日志系统支持两种模式：
+
+**简洁模式**（debug = false）：
+- 只显示基本处理步骤
+- 不显示详细统计信息
+- 适合日常使用
+
+**详细模式**（debug = true）：
+- 显示所有处理步骤
+- 显示详细统计信息（文本长度、句子数量、停顿词统计等）
+- 适合调试和分析
+
+### 模式控制
+
+```python
+from subtitleformatter.utils.unified_logger import logger
+
+# 设置调试模式
+logger.set_debug_mode(True)   # 启用详细模式
+logger.set_debug_mode(False)  # 启用简洁模式
 ```
 
 ## 高级用法
@@ -80,6 +124,9 @@ logger.enable_terminal(True)
 
 # 启用/禁用GUI输出
 logger.enable_gui(True)
+
+# 设置调试模式
+logger.set_debug_mode(True)
 ```
 
 ## 在GUI中的使用
@@ -91,16 +138,60 @@ logger.enable_gui(True)
 log_step("正在初始化处理环境")
 log_info("已加载语言模型: en_core_web_md")
 log_stats("文本清理统计", clean_stats)
+
+# 调试模式下的详细信息
+log_debug_info("文本长度: 32669 字符")
+log_debug_info("共拆分出 88 个句子")
+```
+
+### GUI集成
+
+```python
+# 在GUI主窗口中设置回调
+from subtitleformatter.utils.unified_logger import logger
+
+# 设置GUI日志回调
+logger.set_gui_callback(self.log_panel.append_log)
 ```
 
 ## 输出格式
 
 统一日志系统会输出带时间戳的格式化日志：
 
+### 简洁模式输出
 ```
-[10:33:34] INFO: 正在初始化处理环境...
-[10:33:34] WARNING: 这是一条警告
-[10:33:34] ERROR: 这是一条错误
+[11:06:25] INFO: 正在初始化处理环境...
+[11:06:25] INFO: 正在加载语言模型...
+[11:06:25] INFO: 已加载语言模型: en_core_web_md
+[11:06:25] INFO: 开始处理文件...
+[11:06:25] INFO: 已读入文件 Bee hunting.txt
+[11:06:25] INFO: 正在进行文本清理...
+[11:06:25] INFO: 正在进行智能断句...
+[11:06:27] INFO: 正在处理停顿词...
+[11:06:27] INFO: 正在进行智能断行...
+[11:06:29] INFO: 正在保存结果到文件...
+```
+
+### 详细模式输出
+```
+[11:06:07] INFO: 正在初始化处理环境...
+[11:06:07] INFO: 正在加载语言模型...
+[11:06:07] INFO: 已加载语言模型: en_core_web_md
+[11:06:07] INFO: 开始处理文件...
+[11:06:07] INFO: 已读入文件 Bee hunting.txt
+[11:06:07] INFO: 文本长度: 32669 字符
+[11:06:07] INFO: 正在进行文本清理...
+[11:06:07] INFO: 文本清理统计:
+[11:06:07] INFO: ----------------------------------------
+[11:06:07] INFO:   - special_chars: 1
+[11:06:07] INFO:   - spaces: 1
+[11:06:07] INFO: ----------------------------------------
+[11:06:07] INFO: 正在进行智能断句...
+[11:06:09] INFO: 共拆分出 88 个句子
+[11:06:09] INFO: 最长句子: 3059 字符
+[11:06:09] INFO: 最短句子: 3 字符
+[11:06:09] INFO: 平均句长: 371.2 字符
+... (更多详细统计信息)
 ```
 
 ## 优势
@@ -110,6 +201,20 @@ log_stats("文本清理统计", clean_stats)
 3. **格式化**：自动添加时间戳和日志级别
 4. **灵活配置**：可以独立控制终端和GUI输出
 5. **线程安全**：支持多线程环境
+6. **模式控制**：支持简洁模式和详细模式
+7. **职责分离**：清晰的架构设计，避免重复输出
+
+## 架构优势
+
+### 职责分离
+- **统一日志系统**：负责所有用户界面输出
+- **调试输出系统**：专注于文件保存功能
+- **避免重复**：消除了终端输出的重复问题
+
+### 模式支持
+- **简洁模式**：适合日常使用，输出简洁
+- **详细模式**：适合调试分析，输出丰富
+- **自动切换**：根据配置自动选择模式
 
 ## 注意事项
 
@@ -117,3 +222,5 @@ log_stats("文本清理统计", clean_stats)
 - 在命令行应用中，日志会输出到终端
 - 日志级别包括：INFO、WARNING、ERROR、DEBUG
 - 时间戳格式为：HH:MM:SS
+- 调试模式通过配置文件控制：`[debug] enabled = true/false`
+- 调试文件仍然正常生成，不受统一日志系统影响
