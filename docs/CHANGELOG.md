@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.0] - 2025-10-15
+
+- docs(logging): enhance unified logging guide with debug mode details
+- feat(logging): enhance logging functionality with debug support
+- feat(logging): implement unified logging system for terminal and GUI
+- feat(gui): add PySide6-based GUI for Subtitle Formatter
+
 ## [0.2.4] - 2025-10-14
 
 - docs: streamline README, remove deprecated guides, clarify config comments
