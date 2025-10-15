@@ -6,7 +6,7 @@ from datetime import datetime
 class DebugOutput:
     def __init__(self, debug, temp_dir, max_width, add_timestamp=True):
         """初始化调试输出器 - 专注于调试文件保存功能
-        
+
         注意：此类的终端输出功能已被移除，现在只负责：
         - 保存处理步骤的中间结果文件
         - 生成处理日志文件

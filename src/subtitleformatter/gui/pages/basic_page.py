@@ -3,16 +3,16 @@ from __future__ import annotations
 from pathlib import Path
 
 from PySide6.QtWidgets import (
-    QWidget,
+    QCheckBox,
+    QComboBox,
     QFormLayout,
+    QHBoxLayout,
+    QLabel,
     QLineEdit,
     QPushButton,
-    QHBoxLayout,
-    QVBoxLayout,
-    QCheckBox,
     QSpinBox,
-    QComboBox,
-    QLabel,
+    QVBoxLayout,
+    QWidget,
 )
 
 # Model size mapping constants
@@ -59,7 +59,7 @@ class BasicPage(QWidget):
         # Row 2: Language, Model size, and Max width
         row2_layout = QHBoxLayout()
         row2_layout.setSpacing(32)  # Add spacing between control groups
-        
+
         # Language setting
         language_layout = QHBoxLayout()
         language_layout.setSpacing(8)  # Spacing between label and combo
@@ -69,7 +69,7 @@ class BasicPage(QWidget):
         self.combo_language.setCurrentText("en")
         language_layout.addWidget(self.combo_language)
         row2_layout.addLayout(language_layout)
-        
+
         # Model size setting
         model_layout = QHBoxLayout()
         model_layout.setSpacing(8)  # Spacing between label and combo
@@ -82,7 +82,7 @@ class BasicPage(QWidget):
         self.combo_model_size.setCurrentText("medium")  # Default to medium
         model_layout.addWidget(self.combo_model_size)
         row2_layout.addLayout(model_layout)
-        
+
         # Max width setting
         max_width_layout = QHBoxLayout()
         max_width_layout.setSpacing(8)  # Spacing between label, spinbox, and unit
@@ -93,23 +93,28 @@ class BasicPage(QWidget):
         max_width_layout.addWidget(self.spin_max_width)
         max_width_layout.addWidget(QLabel("characters"))
         row2_layout.addLayout(max_width_layout)
-        
+
         row2_layout.addStretch()  # Push controls to the left
         layout.addRow("", row2_layout)
 
-    def set_config(self, input_file: str, output_file: str, max_width: int = 78, 
-                   language: str = "en", model_size: str = "md", 
-                   add_timestamp: bool = True, debug_enabled: bool = False) -> None:
+    def set_config(
+        self,
+        input_file: str,
+        output_file: str,
+        max_width: int = 78,
+        language: str = "en",
+        model_size: str = "md",
+        add_timestamp: bool = True,
+        debug_enabled: bool = False,
+    ) -> None:
         self.edit_input.setText(input_file)
         self.edit_output.setText(output_file)
         self.spin_max_width.setValue(max_width)
         self.combo_language.setCurrentText(language)
-        
+
         # Map internal model_size values to display text
         display_text = MODEL_SIZE_TO_DISPLAY.get(model_size, "medium")
         self.combo_model_size.setCurrentText(display_text)
-        
+
         self.check_timestamp.setChecked(add_timestamp)
         self.check_debug.setChecked(debug_enabled)
-
-

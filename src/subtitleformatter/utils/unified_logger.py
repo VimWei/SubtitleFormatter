@@ -3,61 +3,61 @@
 """
 
 import sys
-from typing import Optional, Callable, Any
 from datetime import datetime
+from typing import Any, Callable, Optional
 
 
 class UnifiedLogger:
     """
     统一日志管理器，负责所有终端和GUI输出
-    
+
     职责：
     - 统一管理终端输出和GUI日志面板
     - 支持简洁模式和详细模式
     - 提供类似print的简单使用方式
     - 自动添加时间戳和日志级别
-    
+
     注意：DebugOutput类现在只负责文件保存，不处理终端输出
     """
-    
+
     def __init__(self):
         self.gui_log_callback: Optional[Callable[[str], None]] = None
         self.terminal_enabled = True
         self.gui_enabled = True
         self.debug_mode = False  # 控制详细日志输出
-        
+
     def set_gui_callback(self, callback: Callable[[str], None]) -> None:
         """设置GUI日志回调函数"""
         self.gui_log_callback = callback
-        
+
     def enable_terminal(self, enabled: bool = True) -> None:
         """启用/禁用终端输出"""
         self.terminal_enabled = enabled
-        
+
     def enable_gui(self, enabled: bool = True) -> None:
         """启用/禁用GUI输出"""
         self.gui_enabled = enabled
-        
+
     def set_debug_mode(self, enabled: bool = True) -> None:
         """设置调试模式，控制详细日志输出"""
         self.debug_mode = enabled
-        
+
     def log(self, message: str, level: str = "INFO") -> None:
         """
         统一的日志输出方法
-        
+
         Args:
             message: 日志消息
             level: 日志级别 (INFO, WARNING, ERROR, DEBUG)
         """
         timestamp = datetime.now().strftime("%H:%M:%S")
         formatted_message = f"[{timestamp}] {level}: {message}"
-        
+
         # 输出到终端
         if self.terminal_enabled:
             print(formatted_message)
             sys.stdout.flush()
-            
+
         # 输出到GUI
         if self.gui_enabled and self.gui_log_callback:
             try:
@@ -65,38 +65,38 @@ class UnifiedLogger:
             except Exception:
                 # 如果GUI回调失败，不影响终端输出
                 pass
-                
+
     def info(self, message: str) -> None:
         """信息级别日志"""
         self.log(message, "INFO")
-        
+
     def warning(self, message: str) -> None:
         """警告级别日志"""
         self.log(message, "WARNING")
-        
+
     def error(self, message: str) -> None:
         """错误级别日志"""
         self.log(message, "ERROR")
-        
+
     def debug(self, message: str) -> None:
         """调试级别日志"""
         self.log(message, "DEBUG")
-        
+
     def step(self, step_name: str, message: str = "") -> None:
         """处理步骤日志"""
         if message:
             self.info(f"{step_name}: {message}")
         else:
             self.info(f"{step_name}...")
-            
+
     def stats(self, title: str, stats_dict: dict) -> None:
         """统计信息日志 - 仅在调试模式下显示"""
         if not self.debug_mode:
             return
-            
+
         self.info(f"{title}:")
         self.info("-" * 40)
-        
+
         for key, value in stats_dict.items():
             if isinstance(value, dict):
                 self.info(f"{key}:")
@@ -105,7 +105,7 @@ class UnifiedLogger:
             else:
                 self.info(f"  - {key}: {value}")
         self.info("-" * 40)
-        
+
     def progress(self, current: int, total: int, message: str = "") -> None:
         """进度日志"""
         percentage = int((current / total) * 100) if total > 0 else 0
@@ -113,12 +113,12 @@ class UnifiedLogger:
             self.info(f"进度: {percentage}% ({current}/{total}) - {message}")
         else:
             self.info(f"进度: {percentage}% ({current}/{total})")
-            
+
     def debug_info(self, message: str) -> None:
         """调试信息 - 仅在调试模式下显示"""
         if self.debug_mode:
             self.info(message)
-            
+
     def debug_step(self, step_name: str, message: str = "") -> None:
         """调试步骤 - 仅在调试模式下显示"""
         if self.debug_mode:

@@ -1,9 +1,18 @@
 from __future__ import annotations
 
-from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QLabel, QTextBrowser, QVBoxLayout, QWidget, QFormLayout, QPushButton, QHBoxLayout, QSizePolicy
+from PySide6.QtCore import Qt, QThread, Signal
+from PySide6.QtWidgets import (
+    QFormLayout,
+    QHBoxLayout,
+    QLabel,
+    QPushButton,
+    QSizePolicy,
+    QTextBrowser,
+    QVBoxLayout,
+    QWidget,
+)
+
 from subtitleformatter.services.version_check_service import VersionCheckService
-from PySide6.QtCore import QThread, Signal
 
 
 class AboutPage(QWidget):
@@ -70,5 +79,3 @@ class _VersionCheckThread(QThread):
     def run(self) -> None:
         is_latest, message, latest_version = self._service.check_for_updates()
         self.update_available.emit(is_latest, message, latest_version or "")
-
-

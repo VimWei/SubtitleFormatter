@@ -1,4 +1,5 @@
 import spacy
+
 from ..utils.unified_logger import log_info
 
 

@@ -46,7 +46,11 @@ class VersionCheckService:
 
         except urllib.error.URLError as e:
             self._check_error = str(e)
-            return False, "Failed to check for updates. Please check your internet connection.", None
+            return (
+                False,
+                "Failed to check for updates. Please check your internet connection.",
+                None,
+            )
         except (json.JSONDecodeError, KeyError) as e:
             self._check_error = str(e)
             return False, "Failed to parse update information.", None
@@ -59,5 +63,3 @@ class VersionCheckService:
 
     def get_last_error(self) -> Optional[str]:
         return self._check_error
-
-

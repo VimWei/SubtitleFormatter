@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QTextEdit
+from PySide6.QtWidgets import QHBoxLayout, QPushButton, QTextEdit, QVBoxLayout, QWidget
 
 
 class LogPanel(QWidget):
@@ -36,5 +36,3 @@ class LogPanel(QWidget):
         self.editor.selectAll()
         self.editor.copy()
         self.editor.moveCursor(self.editor.textCursor().End)
-
-

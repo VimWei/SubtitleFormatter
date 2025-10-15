@@ -4,13 +4,13 @@ from pathlib import Path
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
-    QWidget,
-    QVBoxLayout,
     QHBoxLayout,
+    QLabel,
     QLineEdit,
     QPushButton,
-    QLabel,
     QSizePolicy,
+    QVBoxLayout,
+    QWidget,
 )
 
 
@@ -63,5 +63,3 @@ class AdvancedPage(QWidget):
             self.edit_user_data.setText("data/ (relative to project root)")
         except Exception:
             pass
-
-

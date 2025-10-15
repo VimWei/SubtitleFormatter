@@ -2,28 +2,28 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QThread, Signal
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (
     QApplication,
-    QMainWindow,
     QFileDialog,
+    QMainWindow,
     QMessageBox,
     QSplitter,
     QTabWidget,
     QVBoxLayout,
     QWidget,
 )
-from PySide6.QtCore import QThread, Signal
 
-from subtitleformatter.version import get_app_title
 from subtitleformatter.utils.unified_logger import logger
-from .styles.theme_loader import ThemeLoader
-from .pages.about_page import AboutPage
-from .pages.basic_page import BasicPage
-from .pages.advanced_page import AdvancedPage
+from subtitleformatter.version import get_app_title
+
 from .components.command_panel import CommandPanel
 from .components.log_panel import LogPanel
+from .pages.about_page import AboutPage
+from .pages.advanced_page import AdvancedPage
+from .pages.basic_page import BasicPage
+from .styles.theme_loader import ThemeLoader
 
 
 class MainWindow(QMainWindow):
@@ -91,7 +91,7 @@ class MainWindow(QMainWindow):
         self.command_panel.importRequested.connect(self._on_import_config)
         self.command_panel.exportRequested.connect(self._on_export_config)
         self.command_panel.formatRequested.connect(self._on_format_clicked)
-        
+
         # 设置统一日志系统的GUI回调
         logger.set_gui_callback(self.log_panel.append_log)
 
@@ -105,7 +105,7 @@ class MainWindow(QMainWindow):
             lambda: self._set_output_file(self.tab_basic.edit_output.text().strip())
         )
         self.tab_basic.check_timestamp.stateChanged.connect(self._on_timestamp_toggled)
-        
+
         # Connect new configuration controls
         self.tab_basic.spin_max_width.valueChanged.connect(self._on_max_width_changed)
         self.tab_basic.combo_language.currentTextChanged.connect(self._on_language_changed)
@@ -127,6 +127,7 @@ class MainWindow(QMainWindow):
     def _normalize_path_for_display(self, path_text: str) -> str:
         try:
             import os
+
             if not path_text:
                 return ""
             return os.path.normpath(path_text)
@@ -137,6 +138,7 @@ class MainWindow(QMainWindow):
     def _to_relative(self, p: str | Path) -> str:
         try:
             import os
+
             abs_path = Path(p).resolve()
             root = self.project_root.resolve()
             rel = abs_path.relative_to(root)
@@ -173,12 +175,12 @@ class MainWindow(QMainWindow):
         def run(self) -> None:
             try:
                 from subtitleformatter.processors.text_processor import TextProcessor
-                
+
                 # 设置统一日志系统，让日志同时输出到终端和GUI
                 def gui_log_callback(message: str):
                     # 在后台线程中安全地发送信号到GUI线程
                     self.log.emit(message)
-                
+
                 logger.set_gui_callback(gui_log_callback)
                 logger.enable_gui(True)
                 logger.enable_terminal(True)
@@ -221,23 +223,27 @@ class MainWindow(QMainWindow):
         # If output exists and add_timestamp is enabled, add timestamp prefix at run-time
         if abs_output and add_ts:
             p = Path(abs_output)
-            ts_prefix = datetime.now().strftime('%Y%m%d%H%M%S')
-            abs_output = str(p.with_name(f"{ts_prefix}-{p.name}")) if not p.name.startswith(ts_prefix + "-") else str(p)
+            ts_prefix = datetime.now().strftime("%Y%m%d%H%M%S")
+            abs_output = (
+                str(p.with_name(f"{ts_prefix}-{p.name}"))
+                if not p.name.startswith(ts_prefix + "-")
+                else str(p)
+            )
 
         # Write back absolute paths for runtime
         paths["input_file"] = abs_input
         paths["output_file"] = abs_output
-        
+
         # Ensure directories exist (similar to _materialize_paths in loader.py)
         if abs_output:
             output_dir = os.path.dirname(abs_output)
             if output_dir and not os.path.exists(output_dir):
                 os.makedirs(output_dir)
-        
+
         # Flatten for compatibility with TextProcessor
         cfg["input_file"] = abs_input
         cfg["output_file"] = abs_output
-        
+
         return cfg
 
     def _on_format_clicked(self) -> None:
@@ -248,7 +254,9 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "Format", "Please select an input file first.")
             return
         if not outp:
-            QMessageBox.warning(self, "Format", "Please select an output file or set input to auto-suggest.")
+            QMessageBox.warning(
+                self, "Format", "Please select an output file or set input to auto-suggest."
+            )
             return
 
         # UI state
@@ -261,7 +269,9 @@ class MainWindow(QMainWindow):
         # Run in background
         self._format_thread = self._FormatThread(cfg)
         self._format_thread.log.connect(lambda msg: self.log_panel.append_log(msg))
-        self._format_thread.progress.connect(lambda v, m: (self.command_panel.set_progress(v), self.log_panel.append_log(m)))
+        self._format_thread.progress.connect(
+            lambda v, m: (self.command_panel.set_progress(v), self.log_panel.append_log(m))
+        )
         self._format_thread.done.connect(self._on_format_done)
         self._format_thread.start()
 
@@ -308,6 +318,7 @@ class MainWindow(QMainWindow):
             path.mkdir(parents=True, exist_ok=True)
             # Use OS to open folder
             import os
+
             os.startfile(str(path))
             # After opening, update UI with absolute path
             self.tab_advanced.edit_user_data.setText(str(path))
@@ -318,6 +329,7 @@ class MainWindow(QMainWindow):
         try:
             # Load bundled default into memory only; do not write to disk now
             import tomllib
+
             from subtitleformatter.config.loader import DEFAULT_CONFIG_PATH
 
             with open(DEFAULT_CONFIG_PATH, "rb") as f:
@@ -342,10 +354,12 @@ class MainWindow(QMainWindow):
 
     def _load_user_config(self) -> dict:
         from subtitleformatter.config.loader import load_config
+
         return load_config()
 
     def _save_user_config(self, cfg: dict) -> None:
         import tomli_w  # type: ignore
+
         from subtitleformatter.config.loader import USER_CONFIG_PATH
 
         USER_CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -362,9 +376,13 @@ class MainWindow(QMainWindow):
             normalized = copy.deepcopy(cfg)
             paths = normalized.setdefault("paths", {})
             if isinstance(paths.get("input_file"), str):
-                paths["input_file"] = self._to_relative(paths["input_file"]) if paths["input_file"] else ""
+                paths["input_file"] = (
+                    self._to_relative(paths["input_file"]) if paths["input_file"] else ""
+                )
             if isinstance(paths.get("output_file"), str):
-                paths["output_file"] = self._to_relative(paths["output_file"]) if paths["output_file"] else ""
+                paths["output_file"] = (
+                    self._to_relative(paths["output_file"]) if paths["output_file"] else ""
+                )
             return normalized
         except Exception:
             return cfg
@@ -372,6 +390,7 @@ class MainWindow(QMainWindow):
     def _relativize_paths_in_config(self, cfg: dict) -> dict:
         try:
             import copy
+
             new_cfg = copy.deepcopy(cfg)
             paths = new_cfg.setdefault("paths", {})
             if isinstance(paths.get("input_file"), str) and paths.get("input_file"):
@@ -433,7 +452,9 @@ class MainWindow(QMainWindow):
                 out_dir = (self.project_root / "data" / "output").resolve()
                 out_dir.mkdir(parents=True, exist_ok=True)
                 new_out = str(out_dir / f"{in_base}.txt")
-            self.tab_basic.edit_output.setText(self._normalize_path_for_display(self._to_relative(new_out)))
+            self.tab_basic.edit_output.setText(
+                self._normalize_path_for_display(self._to_relative(new_out))
+            )
             self._set_output_file(new_out)
         except Exception:
             pass
@@ -460,7 +481,9 @@ class MainWindow(QMainWindow):
         )
         if not file:
             return
-        self.tab_basic.edit_output.setText(self._normalize_path_for_display(self._to_relative(file)))
+        self.tab_basic.edit_output.setText(
+            self._normalize_path_for_display(self._to_relative(file))
+        )
         self._set_output_file(file)
 
     def _on_timestamp_toggled(self) -> None:
@@ -488,6 +511,7 @@ class MainWindow(QMainWindow):
         try:
             # Map display text back to internal value
             from .pages.basic_page import DISPLAY_TO_MODEL_SIZE
+
             actual_value = DISPLAY_TO_MODEL_SIZE.get(display_text, "md")
             self._config["model_size"] = actual_value
         except Exception:
@@ -511,8 +535,12 @@ class MainWindow(QMainWindow):
 
     # ---- Config management for CommandPanel ----
     def _ensure_user_config_exists(self) -> Path:
-        from subtitleformatter.config.loader import DEFAULT_CONFIG_PATH, USER_CONFIG_PATH
         import shutil
+
+        from subtitleformatter.config.loader import (
+            DEFAULT_CONFIG_PATH,
+            USER_CONFIG_PATH,
+        )
 
         if not USER_CONFIG_PATH.exists():
             USER_CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -521,6 +549,7 @@ class MainWindow(QMainWindow):
 
     def _load_user_config(self) -> dict:
         import tomllib
+
         path = self._ensure_user_config_exists()
         with open(path, "rb") as f:
             return tomllib.load(f)
@@ -534,14 +563,14 @@ class MainWindow(QMainWindow):
             output_file = ""
             cfg.setdefault("paths", {})
             cfg["paths"]["output_file"] = ""
-        
+
         # Get configuration values with defaults
         max_width = cfg.get("max_width", 78)
         language = cfg.get("language", "en")
         model_size = cfg.get("model_size", "md")
         add_timestamp = cfg.get("output", {}).get("add_timestamp", True)
         debug_enabled = cfg.get("debug", {}).get("enabled", False)
-        
+
         self.tab_basic.set_config(
             self._normalize_path_for_display(input_file),
             self._normalize_path_for_display(output_file),
@@ -605,6 +634,7 @@ class MainWindow(QMainWindow):
             return
         try:
             import tomli_w  # type: ignore
+
             to_save = self._normalized_config_for_save(self._config)
             with open(file, "wb") as f:
                 f.write(tomli_w.dumps(to_save).encode("utf-8"))
@@ -628,5 +658,3 @@ def run_gui() -> None:
     w.resize(800, 600)
     w.show()
     sys.exit(app.exec())
-
-

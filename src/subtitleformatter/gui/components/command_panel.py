@@ -4,13 +4,13 @@ from pathlib import Path
 from typing import Callable
 
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtWidgets import QSizePolicy
 from PySide6.QtWidgets import (
-    QPushButton,
     QHBoxLayout,
+    QProgressBar,
+    QPushButton,
+    QSizePolicy,
     QVBoxLayout,
     QWidget,
-    QProgressBar,
 )
 
 
@@ -72,5 +72,3 @@ class CommandPanel(QWidget):
 
     def set_progress(self, value: int) -> None:
         self.progress.setValue(max(0, min(100, value)))
-
-

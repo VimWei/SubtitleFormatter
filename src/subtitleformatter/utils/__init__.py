@@ -8,30 +8,30 @@ This package contains utility functionality:
 
 from .debug_output import DebugOutput
 from .unified_logger import (
-    UnifiedLogger, 
-    logger, 
-    log_info, 
-    log_warning, 
-    log_error, 
-    log_debug, 
-    log_step, 
-    log_stats, 
-    log_progress,
+    UnifiedLogger,
+    log_debug,
     log_debug_info,
-    log_debug_step
+    log_debug_step,
+    log_error,
+    log_info,
+    log_progress,
+    log_stats,
+    log_step,
+    log_warning,
+    logger,
 )
 
 __all__ = [
-    "DebugOutput", 
-    "UnifiedLogger", 
-    "logger", 
-    "log_info", 
-    "log_warning", 
-    "log_error", 
-    "log_debug", 
-    "log_step", 
-    "log_stats", 
+    "DebugOutput",
+    "UnifiedLogger",
+    "logger",
+    "log_info",
+    "log_warning",
+    "log_error",
+    "log_debug",
+    "log_step",
+    "log_stats",
     "log_progress",
     "log_debug_info",
-    "log_debug_step"
+    "log_debug_step",
 ]

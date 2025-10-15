@@ -38,5 +38,3 @@ class ThemeLoader:
             except Exception:
                 pass
         return "Fusion"
-
-
