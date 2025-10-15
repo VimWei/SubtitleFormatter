@@ -155,11 +155,6 @@ def load_config(config_path: str = None) -> Dict[str, Any]:
 
     _materialize_paths(cfg)
 
-    # Backward compatibility mapping for existing processors
-    # Flatten some keys expected elsewhere in the codebase
-    cfg.setdefault("input_file", cfg["paths"].get("input_file"))
-    cfg.setdefault("output_file", cfg["paths"].get("output_file"))
-
     return cfg
 
 

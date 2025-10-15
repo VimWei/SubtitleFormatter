@@ -17,6 +17,7 @@ from PySide6.QtWidgets import (
 
 from subtitleformatter.utils.unified_logger import logger
 from subtitleformatter.version import get_app_title
+from subtitleformatter.config.config_manager import ConfigManager
 
 from .components.command_panel import CommandPanel
 from .components.log_panel import LogPanel
@@ -113,6 +114,7 @@ class MainWindow(QMainWindow):
         self.tab_basic.check_debug.stateChanged.connect(self._on_debug_toggled)
 
         # ---- In-memory configuration state ----
+        self._config_manager = ConfigManager(self.project_root)
         self._config = self._load_user_config()
         self._apply_cfg_to_ui(self._config)
 
@@ -240,10 +242,6 @@ class MainWindow(QMainWindow):
             if output_dir and not os.path.exists(output_dir):
                 os.makedirs(output_dir)
 
-        # Flatten for compatibility with TextProcessor
-        cfg["input_file"] = abs_input
-        cfg["output_file"] = abs_output
-
         return cfg
 
     def _on_format_clicked(self) -> None:
@@ -353,39 +351,19 @@ class MainWindow(QMainWindow):
         return (self.project_root / "data" / "configs").resolve()
 
     def _load_user_config(self) -> dict:
-        from subtitleformatter.config.loader import load_config
-
-        return load_config()
+        # Centralized: ensure exists, then load via ConfigManager (with normalization)
+        self._config_manager.ensure_user_config_exists()
+        return self._config_manager.load()
 
     def _save_user_config(self, cfg: dict) -> None:
-        import tomli_w  # type: ignore
-
-        from subtitleformatter.config.loader import USER_CONFIG_PATH
-
-        USER_CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
-        # Normalize and convert to relative before saving to disk
-        to_save = self._normalized_config_for_save(cfg)
-        with open(USER_CONFIG_PATH, "wb") as f:
-            f.write(tomli_w.dumps(to_save).encode("utf-8"))
+        # Delegate to centralized manager for save (normalize + atomic write)
+        self._config_manager.set_config(cfg)
+        self._config_manager.save()
 
     def _normalized_config_for_save(self, cfg: dict) -> dict:
-        try:
-            import copy
-            import os
-
-            normalized = copy.deepcopy(cfg)
-            paths = normalized.setdefault("paths", {})
-            if isinstance(paths.get("input_file"), str):
-                paths["input_file"] = (
-                    self._to_relative(paths["input_file"]) if paths["input_file"] else ""
-                )
-            if isinstance(paths.get("output_file"), str):
-                paths["output_file"] = (
-                    self._to_relative(paths["output_file"]) if paths["output_file"] else ""
-                )
-            return normalized
-        except Exception:
-            return cfg
+        # For export path: use manager to produce normalized+relativized data
+        self._config_manager.set_config(cfg)
+        return self._config_manager.normalized_for_save(cfg)
 
     def _relativize_paths_in_config(self, cfg: dict) -> dict:
         try:
@@ -547,13 +525,6 @@ class MainWindow(QMainWindow):
             shutil.copyfile(DEFAULT_CONFIG_PATH, USER_CONFIG_PATH)
         return USER_CONFIG_PATH
 
-    def _load_user_config(self) -> dict:
-        import tomllib
-
-        path = self._ensure_user_config_exists()
-        with open(path, "rb") as f:
-            return tomllib.load(f)
-
     def _apply_cfg_to_ui(self, cfg: dict) -> None:
         paths = cfg.get("paths", {})
         input_file = paths.get("input_file", "")
@@ -633,11 +604,8 @@ class MainWindow(QMainWindow):
         if not file:
             return
         try:
-            import tomli_w  # type: ignore
-
-            to_save = self._normalized_config_for_save(self._config)
-            with open(file, "wb") as f:
-                f.write(tomli_w.dumps(to_save).encode("utf-8"))
+            self._config_manager.set_config(self._config)
+            self._config_manager.export(file)
             if hasattr(self, "log_panel"):
                 self.log_panel.append_log(f"✅ Exported config to: {self._path_for_log(file)}")
         except Exception as e:

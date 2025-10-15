@@ -43,15 +43,18 @@ class TextProcessor:
         )
         debug_output = self.config["debug_output"]
 
-        # 2. 加载语言模型
-        log_step("正在加载语言模型")
-        self.config["nlp"] = ModelManager.get_model(self.config)
+        # 2. 加载语言模型（仅在需要句法相关处理时加载）
+        stages_cfg = self.config.get("stages", {})
+        need_nlp = stages_cfg.get("sentence_splitting", True) or stages_cfg.get("filler_handling", True) or stages_cfg.get("line_breaking", True)
+        if need_nlp:
+            log_step("正在加载语言模型")
+            self.config["nlp"] = ModelManager.get_model(self.config)
 
         # 开始文件处理流程
         log_step("开始处理文件")
 
-        # 读取输入文件
-        input_file = self.config["input_file"]
+        # 读取输入文件（从 paths 节读取）
+        input_file = self.config.get("paths", {}).get("input_file")
         with open(input_file, "r", encoding="utf-8") as f:
             text = f.read()
 
@@ -65,52 +68,67 @@ class TextProcessor:
         # 传入文件名信息到调试输出器
         debug_output.show_step("读入文件", text, {"input_file": input_file})
 
-        # 1. 基础文本清理
-        log_step("正在进行文本清理")
-        cleaner = TextCleaner()
-        cleaned_text, clean_stats = cleaner.process(text)
+        # 1. 基础文本清理（可跳过）
+        if stages_cfg.get("text_cleaning", True):
+            log_step("正在进行文本清理")
+            cleaner = TextCleaner()
+            cleaned_text, clean_stats = cleaner.process(text)
+            log_stats("文本清理统计", clean_stats)
+            debug_output.show_step("文本清理", cleaned_text, clean_stats)
+        else:
+            cleaned_text = text
+            debug_output.show_step("跳过：文本清理", cleaned_text)
 
-        # 使用统一日志记录清理统计
-        log_stats("文本清理统计", clean_stats)
-        debug_output.show_step("文本清理", cleaned_text, clean_stats)
+        # 2. 智能断句（可跳过）
+        if stages_cfg.get("sentence_splitting", True):
+            log_step("正在进行智能断句")
+            sentence_handler = SentenceHandler(self.config)
+            sentences = sentence_handler.process(cleaned_text)
 
-        # 2. 智能断句
-        log_step("正在进行智能断句")
-        sentence_handler = SentenceHandler(self.config)
-        sentences = sentence_handler.process(cleaned_text)
+            if isinstance(sentences, list):
+                log_debug_info(f"共拆分出 {len(sentences)} 个句子")
+                log_debug_info(f"最长句子: {len(max(sentences, key=len))} 字符")
+                log_debug_info(f"最短句子: {len(min(sentences, key=len))} 字符")
+                log_debug_info(f"平均句长: {sum(len(s) for s in sentences) / len(sentences):.1f} 字符")
 
-        # 使用统一日志记录断句统计
-        if isinstance(sentences, list):
-            log_debug_info(f"共拆分出 {len(sentences)} 个句子")
-            log_debug_info(f"最长句子: {len(max(sentences, key=len))} 字符")
-            log_debug_info(f"最短句子: {len(min(sentences, key=len))} 字符")
-            log_debug_info(f"平均句长: {sum(len(s) for s in sentences) / len(sentences):.1f} 字符")
+            debug_output.show_step("智能断句", sentences)
+        else:
+            # 若跳过断句，则将文本视为一个整体句子
+            sentences = [s for s in cleaned_text.splitlines() if s.strip()] or [cleaned_text]
+            debug_output.show_step("跳过：智能断句", sentences)
 
-        debug_output.show_step("智能断句", sentences)
+        # 3. 停顿词处理（可跳过）
+        if stages_cfg.get("filler_handling", True):
+            log_step("正在处理停顿词")
+            filler_remover = FillerRemover(self.config)
+            processed_sentences, filler_stats = filler_remover.process(sentences)
 
-        # 3. 停顿词处理
-        log_step("正在处理停顿词")
-        filler_remover = FillerRemover(self.config)
-        processed_sentences, filler_stats = filler_remover.process(sentences)
+            if filler_stats:
+                total_count = sum(filler_stats.values())
+                log_debug_info(f"共处理停顿词 {total_count} 处:")
+                for word_type, details in filler_stats.items():
+                    if isinstance(details, dict):
+                        log_debug_info(f"{word_type}:")
+                        for word, count in details.items():
+                            log_debug_info(f"  - '{word}': {count} 处")
+                    else:
+                        log_debug_info(f"  - {word_type}: {details} 处")
 
-        # 使用统一日志记录停顿词统计
-        if filler_stats:
-            total_count = sum(filler_stats.values())
-            log_debug_info(f"共处理停顿词 {total_count} 处:")
-            for word_type, details in filler_stats.items():
-                if isinstance(details, dict):
-                    log_debug_info(f"{word_type}:")
-                    for word, count in details.items():
-                        log_debug_info(f"  - '{word}': {count} 处")
-                else:
-                    log_debug_info(f"  - {word_type}: {details} 处")
+            debug_output.show_step("停顿词处理", processed_sentences, filler_stats)
+        else:
+            processed_sentences = sentences
+            filler_stats = {}
+            debug_output.show_step("跳过：停顿词处理", processed_sentences)
 
-        debug_output.show_step("停顿词处理", processed_sentences, filler_stats)
-
-        # 4. 智能断行
-        log_step("正在进行智能断行")
-        line_breaker = LineBreaker(self.config)
-        final_text = line_breaker.process(processed_sentences)
+        # 4. 智能断行（可跳过）
+        if stages_cfg.get("line_breaking", True):
+            log_step("正在进行智能断行")
+            line_breaker = LineBreaker(self.config)
+            final_text = line_breaker.process(processed_sentences)
+        else:
+            # 若跳过断行，直接用句子列表拼接为单行文本
+            final_text = "\n".join(processed_sentences)
+            debug_output.show_step("跳过：智能断行", final_text)
 
         # 使用统一日志记录断行统计
         if isinstance(final_text, str):
@@ -130,12 +148,13 @@ class TextProcessor:
 
         debug_output.show_step("智能断行", final_text)
 
-        # 保存结果
-        log_step("正在保存结果到文件", self.config["output_file"])
-        with open(self.config["output_file"], "w", encoding="utf-8") as f:
+        # 保存结果（写入 paths.output_file）
+        output_file = self.config.get("paths", {}).get("output_file")
+        log_step("正在保存结果到文件", output_file)
+        with open(output_file, "w", encoding="utf-8") as f:
             f.write(final_text)
 
         # 添加这一行来保存日志
         debug_output.save_log()
 
-        log_info(f"处理完成！输出文件：{self.config['output_file']}")
+        log_info(f"处理完成！输出文件：{output_file}")

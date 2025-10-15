@@ -31,3 +31,14 @@ temp_dir = "data/debug"
 [output]
 # Whether to prefix output filename with timestamp when auto-suggesting
 add_timestamp = true
+
+[stages]
+# Enable/disable each processing stage
+# 1) text_cleaning: 基础文本清理
+# 2) sentence_splitting: 智能断句
+# 3) filler_handling: 停顿词处理
+# 4) line_breaking: 智能断行
+text_cleaning = true
+sentence_splitting = true
+filler_handling = true
+line_breaking = true
