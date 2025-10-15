@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.1.0] - 2025-10-15
+
+- docs(README): update installation and usage instructions
+- feat(models): enhance model loading and management
+- feat: refactor startup modes and configuration handling
+- feat(gui): add application icons and screenshot assets
+- fix(gui): adjust main window size for improved layout
+- feat(gui): adjust button size on About page for better UI
+
 ## [1.0.0] - 2025-10-15
 
 - docs(logging): enhance unified logging guide with debug mode details
