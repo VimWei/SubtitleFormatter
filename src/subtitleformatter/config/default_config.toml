@@ -18,10 +18,8 @@ model_size = "md"
 # - 留空则首次运行会提示输入
 # - 相对路径基于 data/input/ 目录
 input_file = ""
-# 输出文件路径，支持占位符：
-# - {timestamp}: 运行时的时间戳
-# - {input_file_basename}: 输入文件名（不含路径与扩展名）
-output_file = "data/output/{timestamp}-{input_file_basename}.txt"
+# 输出文件路径：保持为空；由 GUI 根据输入与“Add timestamp”选项生成建议
+output_file = ""
 
 [debug]
 # 是否启用调试输出（生成中间结果与日志）
@@ -30,3 +28,6 @@ enabled = false
 temp_dir = "data/debug"
 
 
+[output]
+# Whether to prefix output filename with timestamp when auto-suggesting
+add_timestamp = true

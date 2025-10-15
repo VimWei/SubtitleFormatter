@@ -1,6 +1,6 @@
-# Smart Text Formatter
+# Subtitle Formatter
 
-Smart Text Formatter 是一个智能文本格式化工具，它能够进行智能断句、清理文本、处理停顿词并进行智能断行，使文本更加易读。
+Subtitle Formatter 是一个智能文本格式化工具，它能够进行智能断句、清理文本、处理停顿词并进行智能断行，使文本更加易读。
 
 ## 主要功能
 

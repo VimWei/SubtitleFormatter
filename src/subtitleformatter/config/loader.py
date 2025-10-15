@@ -2,7 +2,7 @@
 TOML-based configuration loader for SubtitleFormatter.
 
 Search order:
-1) User config: data/config/subtitleformatter.toml (optional)
+1) User config: data/configs/config_latest.toml (optional)
 2) Built-in default: src/subtitleformatter/config/default_config.toml (required)
 
 User config overrides default via deep merge.
@@ -20,7 +20,8 @@ from typing import Any, Dict
 import tomli_w  # type: ignore
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
-USER_CONFIG_PATH = PROJECT_ROOT / "data" / "config" / "subtitleformatter.toml"
+# Single source of truth for user config path (use data/configs only)
+USER_CONFIG_PATH = PROJECT_ROOT / "data" / "configs" / "config_latest.toml"
 DEFAULT_CONFIG_PATH = Path(__file__).with_name("default_config.toml")
 BASE_INPUT_DIR = PROJECT_ROOT / "data" / "input"
 
@@ -64,21 +65,10 @@ def _validate(cfg: Dict[str, Any]) -> None:
 
 
 def _materialize_paths(cfg: Dict[str, Any]) -> None:
-    # Prepare output file path with placeholders
-    output_file = cfg["paths"]["output_file"]
-
-    if "{timestamp}" in output_file:
-        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-        output_file = output_file.replace("{timestamp}", timestamp)
-
-    if "{input_file_basename}" in output_file:
-        input_file = cfg["paths"].get("input_file", "")
-        basename = os.path.splitext(os.path.basename(input_file))[0]
-        output_file = output_file.replace("{input_file_basename}", basename)
-
-    cfg["paths"]["output_file"] = output_file
+    # Output file is suggested by GUI; no placeholder expansion here
 
     # Ensure directories exist
+    output_file = cfg["paths"]["output_file"]
     output_dir = os.path.dirname(output_file)
     if output_dir and not os.path.exists(output_dir):
         os.makedirs(output_dir)

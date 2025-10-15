@@ -18,3 +18,10 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+def main_gui() -> None:
+    # Lazy import to avoid importing PySide6 for CLI usage
+    from subtitleformatter.gui.main_window import run_gui
+
+    run_gui()
