@@ -4,12 +4,13 @@ from datetime import datetime
 
 
 class DebugOutput:
-    def __init__(self, debug, temp_dir, max_width):
+    def __init__(self, debug, temp_dir, max_width, add_timestamp=True):
         """初始化调试输出器"""
         self.debug = debug
         self.temp_dir = temp_dir
         self.max_width = max_width
-        self.timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+        self.add_timestamp = add_timestamp
+        self.timestamp = datetime.now().strftime("%Y%m%d%H%M%S") if add_timestamp else ""
 
         # 用于自动记录步骤顺序
         self.step_counter = 0
@@ -117,7 +118,10 @@ class DebugOutput:
         if step_name != "读入文件":
             # 获取步骤序号并构建文件名
             step_num = self.step_order[step_name]
-            filename = f"{self.timestamp}_{step_num}_{step_name.lower().replace(' ', '_')}.txt"
+            if self.add_timestamp:
+                filename = f"{self.timestamp}_{step_num}_{step_name.lower().replace(' ', '_')}.txt"
+            else:
+                filename = f"{step_num}_{step_name.lower().replace(' ', '_')}.txt"
             filepath = os.path.join(self.temp_dir, filename)
 
             with open(filepath, "w", encoding="utf-8") as f:
@@ -129,7 +133,10 @@ class DebugOutput:
     def save_log(self):
         """保存处理日志"""
         if self.debug and self.log_content:
-            log_filename = f"{self.timestamp}_processing_log.txt"
+            if self.add_timestamp:
+                log_filename = f"{self.timestamp}_processing_log.txt"
+            else:
+                log_filename = "processing_log.txt"
             log_filepath = os.path.join(self.temp_dir, log_filename)
 
             with open(log_filepath, "w", encoding="utf-8") as f:

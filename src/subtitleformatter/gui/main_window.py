@@ -17,6 +17,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import QThread, Signal
 
 from subtitleformatter.version import get_app_title
+from subtitleformatter.utils.unified_logger import logger
 from .styles.theme_loader import ThemeLoader
 from .pages.about_page import AboutPage
 from .pages.basic_page import BasicPage
@@ -90,6 +91,9 @@ class MainWindow(QMainWindow):
         self.command_panel.importRequested.connect(self._on_import_config)
         self.command_panel.exportRequested.connect(self._on_export_config)
         self.command_panel.formatRequested.connect(self._on_format_clicked)
+        
+        # 设置统一日志系统的GUI回调
+        logger.set_gui_callback(self.log_panel.append_log)
 
         # Wire basic page browse buttons and edits
         self.tab_basic.btn_input.clicked.connect(self._choose_input)
@@ -101,6 +105,12 @@ class MainWindow(QMainWindow):
             lambda: self._set_output_file(self.tab_basic.edit_output.text().strip())
         )
         self.tab_basic.check_timestamp.stateChanged.connect(self._on_timestamp_toggled)
+        
+        # Connect new configuration controls
+        self.tab_basic.spin_max_width.valueChanged.connect(self._on_max_width_changed)
+        self.tab_basic.combo_language.currentTextChanged.connect(self._on_language_changed)
+        self.tab_basic.combo_model_size.currentTextChanged.connect(self._on_model_size_changed)
+        self.tab_basic.check_debug.stateChanged.connect(self._on_debug_toggled)
 
         # ---- In-memory configuration state ----
         self._config = self._load_user_config()
@@ -163,6 +173,15 @@ class MainWindow(QMainWindow):
         def run(self) -> None:
             try:
                 from subtitleformatter.processors.text_processor import TextProcessor
+                
+                # 设置统一日志系统，让日志同时输出到终端和GUI
+                def gui_log_callback(message: str):
+                    # 在后台线程中安全地发送信号到GUI线程
+                    self.log.emit(message)
+                
+                logger.set_gui_callback(gui_log_callback)
+                logger.enable_gui(True)
+                logger.enable_terminal(True)
 
                 self.log.emit("Starting format...")
                 processor = TextProcessor(self.runtime_cfg)
@@ -453,6 +472,35 @@ class MainWindow(QMainWindow):
         except Exception:
             pass
 
+    def _on_max_width_changed(self, value: int) -> None:
+        try:
+            self._config["max_width"] = value
+        except Exception:
+            pass
+
+    def _on_language_changed(self, language: str) -> None:
+        try:
+            self._config["language"] = language
+        except Exception:
+            pass
+
+    def _on_model_size_changed(self, display_text: str) -> None:
+        try:
+            # Map display text back to internal value
+            from .pages.basic_page import DISPLAY_TO_MODEL_SIZE
+            actual_value = DISPLAY_TO_MODEL_SIZE.get(display_text, "md")
+            self._config["model_size"] = actual_value
+        except Exception:
+            pass
+
+    def _on_debug_toggled(self) -> None:
+        try:
+            cfg = self._config
+            cfg.setdefault("debug", {})
+            cfg["debug"]["enabled"] = bool(self.tab_basic.check_debug.isChecked())
+        except Exception:
+            pass
+
     def closeEvent(self, event):
         # Persist in-memory configuration on close
         try:
@@ -486,13 +534,23 @@ class MainWindow(QMainWindow):
             output_file = ""
             cfg.setdefault("paths", {})
             cfg["paths"]["output_file"] = ""
+        
+        # Get configuration values with defaults
+        max_width = cfg.get("max_width", 78)
+        language = cfg.get("language", "en")
+        model_size = cfg.get("model_size", "md")
+        add_timestamp = cfg.get("output", {}).get("add_timestamp", True)
+        debug_enabled = cfg.get("debug", {}).get("enabled", False)
+        
         self.tab_basic.set_config(
             self._normalize_path_for_display(input_file),
             self._normalize_path_for_display(output_file),
+            max_width,
+            language,
+            model_size,
+            add_timestamp,
+            debug_enabled,
         )
-        # Sync timestamp option checkbox from cfg
-        ts_enabled = cfg.get("output", {}).get("add_timestamp", True)
-        self.tab_basic.check_timestamp.setChecked(bool(ts_enabled))
 
     def _on_restore_last_config(self) -> None:
         try:
