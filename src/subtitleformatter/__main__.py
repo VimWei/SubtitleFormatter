@@ -14,7 +14,7 @@ import argparse
 import sys
 from pathlib import Path
 
-from .config import load_config
+from .config.loader import load_config
 from .processors.text_processor import TextProcessor
 
 
