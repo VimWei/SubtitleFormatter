@@ -82,7 +82,7 @@ def _materialize_paths(cfg: Dict[str, Any]) -> None:
 
 def load_config(config_path: str = None) -> Dict[str, Any]:
     """Load configuration with user overrides.
-    
+
     Args:
         config_path: Optional path to custom config file. If None, uses default config_latest.toml
     """
@@ -93,7 +93,7 @@ def load_config(config_path: str = None) -> Dict[str, Any]:
     if config_path:
         # Load custom config file
         custom_path = Path(config_path)
-        
+
         # If relative path, try to resolve relative to data/configs/ first
         if not custom_path.is_absolute():
             # Try relative to data/configs/ directory
@@ -110,10 +110,10 @@ def load_config(config_path: str = None) -> Dict[str, Any]:
                         f"  - {configs_dir / custom_path}\n"
                         f"  - {custom_path.resolve()}"
                     )
-        
+
         if not custom_path.exists():
             raise FileNotFoundError(f"Config file not found: {config_path}")
-        
+
         user_cfg = _load_toml(custom_path)
     elif USER_CONFIG_PATH.exists():
         # Load default user config
@@ -127,7 +127,7 @@ def load_config(config_path: str = None) -> Dict[str, Any]:
 
     cfg = _deep_merge(default_cfg, user_cfg)
     _validate(cfg)
-    
+
     # Only prompt for input file in CLI mode when no custom config is provided
     if not config_path:
         # If input_file is empty, interactively prompt and persist

@@ -1,8 +1,9 @@
 import os
-import spacy
 import subprocess
 import sys
 from pathlib import Path
+
+import spacy
 
 from ..utils.unified_logger import log_info
 
@@ -53,6 +54,7 @@ class ModelManager:
                 # 尝试从系统位置复制模型到本地
                 try:
                     import shutil
+
                     # 获取已加载模型的路径
                     model_path = nlp.meta.get('path', '')
                     if not model_path:
@@ -101,6 +103,7 @@ class ModelManager:
                 # 尝试从系统位置复制模型到本地
                 try:
                     import shutil
+
                     # 获取已加载模型的路径
                     model_path = nlp.meta.get('path', '')
                     if not model_path:
