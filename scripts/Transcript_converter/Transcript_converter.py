@@ -155,22 +155,29 @@ def write_txt_file(subtitles: List[Tuple[str, str, str]], output_filename: str):
 
 def main():
     """主函数"""
-    if len(sys.argv) != 2:
-        print("使用方法: python Transcript_converter.py <输入文件>")
+    if len(sys.argv) < 2:
+        print("使用方法: python Transcript_converter.py <输入文件> [输出目录]")
         print("示例: python Transcript_converter.py 'input.transcript'")
+        print("示例: python Transcript_converter.py 'input.transcript' 'data/output'")
         sys.exit(1)
 
     input_file = sys.argv[1]
+    output_dir = sys.argv[2] if len(sys.argv) > 2 else None
 
-    # 根据输入文件扩展名确定输出文件名
-    if input_file.endswith(".transcript"):
-        base_name = input_file.replace(".transcript", "")
-        srt_output_file = base_name + ".srt"
-        txt_output_file = base_name + ".txt"
+    # 获取输入文件的基本名称（不含路径和扩展名）
+    import os
+    base_name = os.path.splitext(os.path.basename(input_file))[0]
+    
+    # 确定输出目录
+    if output_dir:
+        # 使用指定的输出目录
+        srt_output_file = os.path.join(output_dir, base_name + ".srt")
+        txt_output_file = os.path.join(output_dir, base_name + ".txt")
     else:
-        # 如果没有扩展名，添加 .srt 和 .txt 扩展名
-        srt_output_file = input_file + ".srt"
-        txt_output_file = input_file + ".txt"
+        # 使用输入文件所在目录
+        input_dir = os.path.dirname(input_file)
+        srt_output_file = os.path.join(input_dir, base_name + ".srt")
+        txt_output_file = os.path.join(input_dir, base_name + ".txt")
 
     try:
         print(f"正在解析文件: {input_file}")

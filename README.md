@@ -98,6 +98,33 @@ Subtitle Formatter 是一个智能文本格式化工具，它能够进行智能�
    - `models/`：语言模型目录（spaCy模型存储位置）
    - 打开用户数据所在路径：在 Advanced 标签页，点击"Open"按钮打开数据目录
 
+## 脚本工具
+
+SubtitleFormatter 还提供了一系列独立的脚本工具，用于文本处理、格式转换等任务。
+
+### 快速开始
+```bash
+# 列出所有脚本
+uv run python scripts_manager.py list
+
+# 运行文本差异检测
+uv run python scripts_manager.py text-diff old.txt new.txt --json
+
+# 显示脚本帮助
+uv run python scripts_manager.py help text-diff
+```
+
+### 可用脚本
+- **text-diff**: 文本差异检测工具
+- **clean-vtt**: VTT文件清理工具
+- **transcript-converter**: 字幕格式转换工具
+- **srt-resegment**: SRT重分段工具
+- **release**: 版本发布工具
+
+### 详细说明
+- **用户使用**: 请参考 [脚本使用指南](docs/scripts_guide.md)
+- **开发者文档**: 请参考 [scripts/README.md](scripts/README.md)
+
 ## License
 
 This project is licensed under the **GNU General Public License v3.0 (GPL-3.0)**.

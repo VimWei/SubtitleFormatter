@@ -15,6 +15,10 @@ dependencies = [
     "tomli-w>=1.0.0",
     # GUI
     "PySide6>=6.7.0",
+    # Semantic analysis for intelligent sentence breaking
+    "sentence-transformers>=2.2.2",
+    "numpy>=1.24.0",
+    "scikit-learn>=1.3.0",
 ]
 
 [project.urls]
@@ -33,6 +37,19 @@ dev = [
     "isort>=5.10.0",
     "coverage>=7.6.0",
 ]
+# 脚本独立依赖组
+diff = [
+    "colorama>=0.4.4",
+    "rich>=13.0.0",
+    "click>=8.0.0",
+]
+clean-vtt = [
+    "pandas>=1.5.0",
+]
+release = [
+    "tomli-w>=1.0.0",
+]
+# 无依赖脚本不需要定义group
 
 [tool.uv]
 package = true

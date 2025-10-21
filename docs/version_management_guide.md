@@ -9,13 +9,13 @@ This guide explains how SubtitleFormatter manages versions using `uv`, the relea
 ### Daily release
 ```bash
 # Patch release (most common)
-uv run python scripts/release.py patch
+uv run python scripts_manager.py release patch
 
 # Minor release
-uv run python scripts/release.py minor
+uv run python scripts_manager.py release minor
 
 # Major release
-uv run python scripts/release.py major
+uv run python scripts_manager.py release major
 ```
 
 ### Inspect version

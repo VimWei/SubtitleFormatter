@@ -14,12 +14,12 @@
 
 ### 基本用法
 ```bash
-python Transcript_converter.py "输入文件.transcript"
+python transcript_converter.py "输入文件.transcript"
 ```
 
 ### 示例
 ```bash
-python Transcript_converter.py "input.transcript"
+python transcript_converter.py "input.transcript"
 ```
 
 ## 输入格式
