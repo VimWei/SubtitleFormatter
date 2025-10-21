@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.2] - 2025-10-21
+
+- feat(scripts): introduce scripts manager and enhance text processing tools
+- feat(docs): add unified development roadmap for SubtitleFormatter
+- docs(plan): add draft scripts_orchestration_plan.md
+- add scripts clean_vtt.py and srt-resegment-by-json.py
+
 ## [1.1.1] - 2025-10-15
 
 - feat(config): remove legacy shim and import loader directly
