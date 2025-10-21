@@ -166,8 +166,9 @@ def main():
 
     # 获取输入文件的基本名称（不含路径和扩展名）
     import os
+
     base_name = os.path.splitext(os.path.basename(input_file))[0]
-    
+
     # 确定输出目录
     if output_dir:
         # 使用指定的输出目录
