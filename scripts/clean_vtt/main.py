@@ -1,4 +1,6 @@
+import argparse
 import re
+import sys
 
 import pandas as pd
 
@@ -82,25 +84,31 @@ def save_to_vtt(df, output_file_path):
 
 
 def main():
-    # Path to your VTT file
-    # vtt_file_path = 'path/to/your/file.vtt'  # Update this path
-    vtt_file_path = "input.vtt"
+    parser = argparse.ArgumentParser(description="VTT文件清理工具 - 清理和格式化VTT字幕文件")
+    parser.add_argument("input_file", help="输入的VTT文件路径")
+    parser.add_argument("-o", "--output", default="cleaned_subtitles.vtt", help="输出文件路径")
+    
+    args = parser.parse_args()
+    
+    try:
+        # Parse the VTT file
+        vtt_lines = parse_vtt(args.input_file)
 
-    # Parse the VTT file
-    vtt_lines = parse_vtt(vtt_file_path)
+        # Clean the VTT lines and get the DataFrame
+        cleaned_df = clean_vtt(vtt_lines)
 
-    # Clean the VTT lines and get the DataFrame
-    cleaned_df = clean_vtt(vtt_lines)
+        # Print the cleaned DataFrame to console
+        print(cleaned_df)
 
-    # Print the cleaned DataFrame to console
-    print(cleaned_df)
+        # Save the cleaned DataFrame to a new VTT file
+        save_to_vtt(cleaned_df, args.output)
 
-    # Save the cleaned DataFrame to a new VTT file
-    output_file_path = "cleaned_subtitles.vtt"  # Specify your desired output file name
-    save_to_vtt(cleaned_df, output_file_path)
-
-    print(f"Cleaned subtitles saved to {output_file_path}")
+        print(f"Cleaned subtitles saved to {args.output}")
+        return 0
+    except Exception as e:
+        print(f"Error: {e}", file=sys.stderr)
+        return 1
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

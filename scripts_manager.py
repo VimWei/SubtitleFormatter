@@ -36,7 +36,7 @@ class ScriptsManager:
                 "category": "text_processing",
             },
             "clean-vtt": {
-                "path": "clean_vtt.py",
+                "path": "clean_vtt/main.py",
                 "description": "VTT文件清理工具 - 清理和格式化VTT字幕文件",
                 "dependency_group": "clean-vtt",
                 "usage": "scripts_manager.py clean-vtt <input_file> [options]",
@@ -52,7 +52,7 @@ class ScriptsManager:
                 "category": "converter",
             },
             "srt-resegment": {
-                "path": "srt_resegment_by_json.py",
+                "path": "srt_resegment/main.py",
                 "description": "SRT重分段工具 - 基于JSON时间戳重新分段SRT文件",
                 "dependency_group": None,  # 无外部依赖
                 "usage": "scripts_manager.py srt-resegment <json_file> <srt_file>",
@@ -60,7 +60,7 @@ class ScriptsManager:
                 "category": "converter",
             },
             "release": {
-                "path": "release.py",
+                "path": "release/main.py",
                 "description": "版本发布工具 - 自动化版本发布流程",
                 "dependency_group": "release",
                 "usage": "scripts_manager.py release [bump_type]",
@@ -69,6 +69,17 @@ class ScriptsManager:
                     "scripts_manager.py release minor",
                 ],
                 "category": "dev_tools",
+            },
+            "sentence-splitter": {
+                "path": "sentence_splitter/main.py",
+                "description": "句子分割工具 - 将文本按句分割，每句一行",
+                "dependency_group": None,  # 无外部依赖
+                "usage": "scripts_manager.py sentence-splitter <input_file> [options]",
+                "examples": [
+                    "scripts_manager.py sentence-splitter input.txt",
+                    "scripts_manager.py sentence-splitter input.txt -o output.txt",
+                ],
+                "category": "text_processing",
             },
         }
 
@@ -165,8 +176,6 @@ class ScriptsManager:
         try:
             # 使用 uv run 来运行脚本，确保在正确的虚拟环境中
             cmd = ["uv", "run", "python", str(script_path)] + processed_args
-            print(f"运行命令: {' '.join(cmd)}")
-            print(f"💡 提示: 输入文件默认从 data/input/ 读取，输出文件默认保存到 data/output/")
             # 使用项目根目录作为工作目录，这样相对路径能正确解析
             result = subprocess.run(cmd, cwd=self.project_root)
             return result.returncode
@@ -184,12 +193,9 @@ class ScriptsManager:
         input_dir.mkdir(parents=True, exist_ok=True)
         output_dir.mkdir(parents=True, exist_ok=True)
 
-        # 特殊处理：为 transcript-converter 自动添加输出目录
-        if script_name == "transcript-converter" and len(args) == 1:
-            # 如果只有一个参数（输入文件），自动添加输出目录
-            # 注意：transcript-converter 期望参数顺序为 [输入文件, 输出目录]
-            # 所以先处理输入文件，再添加输出目录
-            pass  # 在下面的循环中处理输入文件，然后在这里添加输出目录
+        # 定义需要特殊处理的脚本
+        scripts_need_output_dir = ["transcript-converter"]
+        scripts_with_output_options = ["sentence-splitter", "clean-vtt"]
 
         i = 0
         while i < len(args):
@@ -203,11 +209,9 @@ class ScriptsManager:
                     input_file = input_dir / arg
                     if input_file.exists():
                         processed_args.append(str(input_file))
-                        print(f"📁 使用输入文件: {input_file}")
                     else:
                         # 如果不在 data/input/ 中，保持原路径
                         processed_args.append(arg)
-                        print(f"📁 使用指定文件: {arg}")
                 else:
                     # 已经是完整路径，保持不变
                     processed_args.append(arg)
@@ -219,7 +223,6 @@ class ScriptsManager:
                     if "/" not in output_file and "\\" not in output_file:
                         output_path = output_dir / output_file
                         processed_args.extend([arg, str(output_path)])
-                        print(f"📁 输出文件将保存到: {output_path}")
                         i += 1  # 跳过下一个参数
                     else:
                         processed_args.extend([arg, output_file])
@@ -229,11 +232,27 @@ class ScriptsManager:
 
             i += 1
 
-        # 特殊处理：为 transcript-converter 自动添加输出目录
-        if script_name == "transcript-converter" and len(args) == 1:
+        # 特殊处理：为需要输出目录的脚本自动添加输出目录
+        if script_name in scripts_need_output_dir and len(args) == 1:
             # 如果只有一个参数（输入文件），自动添加输出目录
             processed_args.append(str(output_dir))
-            print(f"📁 输出文件将保存到: {output_dir}")
+
+        # 为没有指定输出选项的脚本自动设置默认输出路径
+        if script_name in scripts_with_output_options:
+            has_output_option = any(arg in ["--output", "-o"] for arg in args)
+            if not has_output_option:
+                # 根据输入文件名生成输出文件名
+                if len(args) > 0 and not args[0].startswith("-"):
+                    input_file = args[0]
+                    if "/" not in input_file and "\\" not in input_file:
+                        # 如果是简单文件名，生成对应的输出文件名
+                        if script_name == "sentence-splitter":
+                            output_file = output_dir / input_file
+                            processed_args.extend(["-o", str(output_file)])
+                        elif script_name == "clean-vtt":
+                            # clean-vtt 默认输出文件名
+                            output_file = output_dir / "cleaned_subtitles.vtt"
+                            processed_args.extend(["-o", str(output_file)])
 
         return processed_args
 
