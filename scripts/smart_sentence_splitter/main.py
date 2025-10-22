@@ -14,7 +14,11 @@ from typing import List, Tuple, Optional
 class SmartSentenceSplitter:
     """智能句子拆分器"""
 
-    def __init__(self):
+    def __init__(self, min_recursive_length: int = 70, max_depth: int = 5):
+        # 递归控制参数
+        self.min_recursive_length = min_recursive_length  # 最小递归长度阈值
+        self.max_depth = max_depth  # 最大递归深度
+        
         # 连接词列表 - 用于识别复合句的拆分点
         self.conjunctions = {
             # 并列连接词
@@ -215,13 +219,8 @@ class SmartSentenceSplitter:
         if len(sentence) < 60:  # 进一步降低长度阈值
             return False
         
-        # 检查是否包含不应该拆分的模式
-        problematic_patterns = [
-            r'which.*which.*and.*which',  # 多个which从句
-            r'who.*when.*and',  # who...when...and模式
-            r'which.*\$.*and.*which',  # 包含金额的which从句
-            # 移除过于宽泛的 even though 模式，因为 ", even though" 是好的拆分点
-        ]
+        # 检查是否包含不应该拆分的模式（已移除特例化规则，统一走长度/优先级策略）
+        problematic_patterns = []
         
         for pattern in problematic_patterns:
             if re.search(pattern, sentence, re.IGNORECASE):
@@ -233,8 +232,8 @@ class SmartSentenceSplitter:
 
     def split_sentence(self, sentence: str, depth: int = 0) -> List[str]:
         """拆分单个句子"""
-        # 防止递归过深
-        if depth > 3:  # 减少最大递归深度
+        # 递归停止条件：深度超限或长度不足
+        if depth >= self.max_depth or len(sentence) < self.min_recursive_length:
             return [sentence]
             
         if not self.should_split_sentence(sentence):
@@ -262,58 +261,18 @@ class SmartSentenceSplitter:
         part1 = sentence[:split_pos]
         part2 = sentence[split_pos:]
         
-        # 确保第二部分以大写字母开头或保持原样（仅用于逻辑判断，输出不改动文本）
-        part2_for_logic = part2.lstrip()
-        if part2_for_logic and part2_for_logic[0].islower():
-            # 如果第二部分以小写字母开头，说明可能缺少了开头的单词
-            # 特殊处理：检查是否是 "then" 或其他重要连接词开头
-            important_starters = ['then', 'so', 'because', 'since', 'when', 'where', 'while', 'though', 'although']
-            is_important_starter = any(part2_for_logic.lower().startswith(starter + ' ') for starter in important_starters)
-            
-            if is_important_starter:
-                # 对于重要连接词开头的句子，仍然进行拆分，并且递归处理
-                result = []
-                if part1 and len(part1) > 15:
-                    result.extend(self.split_sentence(part1, depth + 1))
-                elif part1:
-                    result.append(part1)
-                    
-                if part2 and len(part2) > 15:
-                    result.extend(self.split_sentence(part2, depth + 1))
-                elif part2:
-                    result.append(part2)
-                
-                return result if result else [sentence]
-            
-            # 在这种情况下，我们只拆分一次，不再递归
-            # 但是仍然进行拆分，只是不递归
-            # 只有当第二部分足够长时才拆分
-            if len(part2.strip()) > 20:
-                # 对于长句子，即使第二部分以小写字母开头，也尝试进一步拆分
-                if len(part2.strip()) > 80:  # 降低阈值
-                    # 尝试对第二部分进行拆分
-                    part2_split = self.split_sentence(part2, depth + 1)
-                    if len(part2_split) > 1:
-                        return [part1] + part2_split
-                    else:
-                        return [part1, part2]
-                else:
-                    return [part1, part2]
-            else:
-                return [sentence]
-        
         # 检查拆分后的部分是否太短（避免单个连接词成行）
         if len(part1.strip()) < 5 or len(part2.strip()) < 5:
             return [sentence]
         
-        # 递归拆分
+        # 递归拆分：对每个部分独立评估
         result = []
-        if part1 and len(part1) > 15:  # 降低第一部分长度要求
+        if part1 and len(part1) >= self.min_recursive_length:
             result.extend(self.split_sentence(part1, depth + 1))
         elif part1:
             result.append(part1)
             
-        if part2 and len(part2) > 15:  # 降低第二部分长度要求
+        if part2 and len(part2) >= self.min_recursive_length:
             result.extend(self.split_sentence(part2, depth + 1))
         elif part2:
             result.append(part2)
@@ -393,6 +352,14 @@ def main():
     parser.add_argument(
         "-o", "--output", dest="output_file", help="输出文件路径（可选，不指定则自动生成）"
     )
+    parser.add_argument(
+        "--min-length", type=int, default=70, 
+        help="最小递归长度阈值（默认70，低于此长度不再递归拆分）"
+    )
+    parser.add_argument(
+        "--max-depth", type=int, default=5,
+        help="最大递归深度（默认5，防止过度递归）"
+    )
     parser.add_argument("--version", action="version", version="智能句子拆分工具 v1.0.0")
 
     args = parser.parse_args()
@@ -414,7 +381,10 @@ def main():
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
     # 创建拆分器并处理文件
-    splitter = SmartSentenceSplitter()
+    splitter = SmartSentenceSplitter(
+        min_recursive_length=args.min_length,
+        max_depth=args.max_depth
+    )
     splitter.process_file(input_path, output_path)
 
 
