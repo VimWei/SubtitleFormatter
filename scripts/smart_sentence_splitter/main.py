@@ -66,7 +66,7 @@ class SmartSentenceSplitter:
         # 简单并列模式（用于排除简单的词汇并列）
         self.simple_enumeration_patterns = [
             r'\b\w+\s*,\s*\w+\s*,\s*\w+\b',  # 三个或更多简单词汇并列
-            r'\b\w+\s*,\s*(?!and|or|but|yet|so|for|nor|because|since|as|if|when|while|although|though|unless|until|before|after|however|therefore|moreover|furthermore|nevertheless|meanwhile|consequently|additionally|similarly|likewise|otherwise|instead|rather|indeed|which|that|who|whom|whose|where|when|why|how|then|next|finally|subsequently|a|an|the|this|that|these|those)\w+\b',  # 两个简单词汇并列，但排除连接词和冠词
+            r'\b\w+\s*,\s*(?!and|or|but|yet|so|for|nor|because|since|as|if|when|while|although|though|unless|until|before|after|however|therefore|moreover|furthermore|nevertheless|meanwhile|consequently|additionally|similarly|likewise|otherwise|instead|rather|indeed|which|that|who|whom|whose|where|when|why|how|then|next|finally|subsequently|a|an|the|this|that|these|those|you|we|they|he|she|it|i|me|us|them|him|her|might|could|would|should|will|can|may|must|shall)\w+\b',  # 两个简单词汇并列，但排除连接词、冠词、代词和助动词
         ]
 
     def is_number_context(self, text: str, pos: int) -> bool:
@@ -82,15 +82,93 @@ class SmartSentenceSplitter:
         return False
 
     def is_simple_enumeration(self, text: str, pos: int) -> bool:
-        """检查逗号是否在简单并列中"""
-        # 获取逗号前后的上下文
-        context_start = max(0, pos - 50)
-        context_end = min(len(text), pos + 50)
+        """检查逗号是否在简单并列中 - 基于词汇数量和语法结构判断"""
+        # 检查逗号后是否跟着从句引导词或短语连接词，如果是则不认为是简单并列
+        after_comma = text[pos+1:].strip()
+        subordinate_markers = ['that', 'which', 'who', 'whom', 'whose', 'where', 'when', 'why', 'how']
+        phrase_markers = ['such as', 'as well as', 'in order to', 'so that', 'in case', 'provided that', 'even though', 'as though', 'as if']
+        
+        for marker in subordinate_markers:
+            if after_comma.lower().startswith(marker + ' '):
+                return False
+        
+        for marker in phrase_markers:
+            if after_comma.lower().startswith(marker + ' '):
+                return False
+        
+        # 基于词汇数量和语法结构的智能判断
+        return self._analyze_comma_context(text, pos)
+    
+    def _analyze_comma_context(self, text: str, pos: int) -> bool:
+        """分析逗号上下文，判断是否为简单并列"""
+        # 获取逗号前后的词汇
+        before_text = text[:pos].strip()
+        after_text = text[pos+1:].strip()
+        
+        # 提取逗号前后的词汇（去除标点）
+        before_words = re.findall(r'\b\w+\b', before_text)
+        after_words = re.findall(r'\b\w+\b', after_text)
+        
+        # 规则1: 逗号前后都是单个词汇，且词汇长度较短
+        if len(before_words) == 1 and len(after_words) == 1:
+            before_word = before_words[0].lower()
+            after_word = after_words[0].lower()
+            
+            # 排除常见的句子结构词汇
+            sentence_starters = ['so', 'and', 'but', 'or', 'if', 'when', 'while', 'because', 'since', 'although']
+            pronouns = ['you', 'we', 'they', 'he', 'she', 'it', 'i', 'me', 'us', 'them', 'him', 'her']
+            articles = ['a', 'an', 'the']
+            prepositions = ['in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'from', 'up', 'about', 'into', 'through', 'during', 'before', 'after', 'above', 'below', 'between', 'among']
+            
+            # 如果前后都是短词且不是句子结构词汇，则可能是简单并列
+            if (len(before_word) <= 6 and len(after_word) <= 6 and 
+                before_word not in sentence_starters + pronouns + articles + prepositions and
+                after_word not in sentence_starters + pronouns + articles + prepositions):
+                return True
+        
+        # 规则2: 逗号前后都是2-3个短词汇的短语
+        if len(before_words) <= 3 and len(after_words) <= 3:
+            # 检查是否都是短词
+            all_words = before_words + after_words
+            if all(len(word) <= 6 for word in all_words):
+                # 排除包含动词、形容词等句子成分的情况
+                common_verbs = ['is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might', 'must', 'can']
+                if not any(word.lower() in common_verbs for word in all_words):
+                    return True
+        
+        # 规则3: 检查是否在连续的同类型词汇中（如颜色、数字、专有名词等）
+        # 获取更大的上下文来检测模式
+        context_start = max(0, pos - 100)
+        context_end = min(len(text), pos + 100)
         context = text[context_start:context_end]
         
-        for pattern in self.simple_enumeration_patterns:
-            if re.search(pattern, context):
-                return True
+        # 查找连续的同类型词汇模式
+        if self._is_consecutive_similar_words(context, pos - context_start):
+            return True
+        
+        return False
+    
+    def _is_consecutive_similar_words(self, context: str, relative_pos: int) -> bool:
+        """检查是否在连续的同类型词汇中"""
+        # 查找逗号前后的词汇模式
+        words = re.findall(r'\b\w+\b', context)
+        if len(words) < 3:
+            return False
+        
+        # 更智能的检测：检查是否在逗号附近有3个或更多连续的同类型短词
+        # 排除常见的句子结构词汇
+        sentence_words = {'so', 'and', 'but', 'or', 'if', 'when', 'while', 'because', 'since', 'although', 'you', 'we', 'they', 'he', 'she', 'it', 'i', 'me', 'us', 'them', 'him', 'her', 'a', 'an', 'the', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'from', 'up', 'about', 'into', 'through', 'during', 'before', 'after', 'above', 'below', 'between', 'among', 'is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might', 'must', 'can'}
+        
+        # 检查是否有3个或更多连续的非句子结构短词
+        consecutive_short_words = 0
+        for word in words:
+            if len(word) <= 5 and word.lower() not in sentence_words:  # 短词且不是句子结构词汇
+                consecutive_short_words += 1
+                if consecutive_short_words >= 3:
+                    return True
+            else:
+                consecutive_short_words = 0
+        
         return False
 
     def _is_in_subordinate_clause(self, sentence: str, pos: int) -> bool:
@@ -107,10 +185,8 @@ class SmartSentenceSplitter:
                 before_marker = sentence[:marker_pos]
                 if ',' in before_marker:
                     # 这是一个从句，检查位置是否在从句内部
-                    # 查找从句的结束位置（下一个逗号或句号）
-                    after_marker = sentence[marker_pos + len(marker):]
-                    # 简单检查：如果位置在从句引导词后，且在下一个主要标点前
-                    if pos > marker_pos + len(marker):
+                    # 如果位置在从句引导词之后，则认为在从句中
+                    if pos > marker_pos:
                         return True
         
         return False
@@ -123,6 +199,25 @@ class SmartSentenceSplitter:
             List of (position, priority, reason) tuples
         """
         split_points = []
+
+        # 句首从属连接词专门规则：若句子以从属连接词开头，优先使用第一个逗号作为候选
+        leading_subordinators = [
+            'while', 'although', 'though', 'when', 'if', 'since', 'because',
+            'as', 'whereas', 'once', 'after', 'before', 'until', 'unless'
+        ]
+        stripped = sentence.lstrip()
+        stripped_lower = stripped.lower()
+        starts_with_subordinator = any(
+            stripped_lower.startswith(w + ' ') or stripped_lower.startswith(w + ',')
+            for w in leading_subordinators
+        )
+        # 排除条件句开头的 if（如 "if it needs to..."）
+        if starts_with_subordinator and stripped_lower.startswith('if '):
+            # 检查是否是条件句（通常后面跟着主语+动词）
+            after_if = stripped[3:].strip()
+            if after_if and after_if.lower().startswith(('you', 'we', 'they', 'i', 'he', 'she', 'it')):
+                starts_with_subordinator = False
+        first_comma_pos = sentence.find(',')
         
         # 查找标点符号拆分点
         for punct, priority in self.punctuation_priority.items():
@@ -133,8 +228,10 @@ class SmartSentenceSplitter:
                 if punct == ',' and self.is_number_context(sentence, pos):
                     continue
                     
-                # 排除简单并列中的逗号
-                if punct == ',' and self.is_simple_enumeration(sentence, pos):
+                # 排除简单并列中的逗号（但若是句首从属从句的第一个逗号，则保留）
+                is_first_comma = (pos == first_comma_pos)
+                if punct == ',' and self.is_simple_enumeration(sentence, pos) \
+                   and not (starts_with_subordinator and is_first_comma):
                     continue
                 
                 # 检查逗号后是否有连接词
@@ -142,13 +239,17 @@ class SmartSentenceSplitter:
                     # 检查逗号后是否跟着连接词
                     after_comma = sentence[pos+1:].strip()
                     found_conjunction = False
+                    # 优先提升以从句引导词开头的逗号拆分点（that/which/who/where/when/why/how 等）
+                    elevated_after = {
+                        'that', 'which', 'who', 'whom', 'whose', 'where', 'when', 'why', 'how'
+                    }
                     for conjunction in self.conjunctions:
                         if after_comma.lower().startswith(conjunction + ' '):
-                            # 在连接词前拆分
-                            conjunction_pos = pos + 1 + after_comma.lower().find(conjunction)
+                            # 在逗号处拆分（逗号+连接词模式）
                             # 检查是否在从句中
-                            if not self._is_in_subordinate_clause(sentence, conjunction_pos):
-                                split_points.append((conjunction_pos, priority + 2, f"逗号+连接词: {conjunction}"))
+                            if not self._is_in_subordinate_clause(sentence, pos):
+                                boost = 6 if conjunction in elevated_after else 2
+                                split_points.append((pos, priority + boost, f"逗号+连接词: {conjunction}"))
                                 found_conjunction = True
                                 break
                     
@@ -172,21 +273,42 @@ class SmartSentenceSplitter:
                             if re.search(pattern, sentence[pos:pos+50], re.IGNORECASE):
                                 # 检查是否在从句中
                                 if not self._is_in_subordinate_clause(sentence, pos):
-                                    # 在逗号后拆分
-                                    split_points.append((pos, priority + 2, f"逗号+模式: {pattern}"))
+                                    # 在逗号后拆分；若是 ", that/which/who/..." 等从句开头，进一步提升优先级
+                                    if re.match(r',\s+(that|which|who|whom|whose|where|when|why|how)\s+', sentence[pos:pos+50], re.IGNORECASE):
+                                        split_points.append((pos, priority + 6, f"逗号+从句: {pattern}"))
+                                    else:
+                                        split_points.append((pos, priority + 2, f"逗号+模式: {pattern}"))
                                     found_conjunction = True
                                     break
                     
                     if not found_conjunction:
                         # 普通逗号拆分 - 只在非从句中进行
                         if not self._is_in_subordinate_clause(sentence, pos):
-                            split_points.append((pos, priority, f"标点符号: {punct}"))
+                            # 若是句首从属从句的第一个逗号，提高优先级
+                            boosted_priority = priority + 3 if (starts_with_subordinator and is_first_comma) else priority
+                            reason = "句首从属从句: ," if (starts_with_subordinator and is_first_comma) else f"标点符号: {punct}"
+                            split_points.append((pos, boosted_priority, reason))
                 else:
                     split_points.append((pos, priority, f"标点符号: {punct}"))
         
         # 查找连接词拆分点
         sentence_lower = sentence.lower()
+        
+        # 排除短语连接词中的单词，避免重复拆分
+        phrase_conjunctions = ['such as', 'as well as', 'in order to', 'so that', 'in case', 'provided that', 'even though', 'as though', 'as if']
+        excluded_words = set()
+        for phrase in phrase_conjunctions:
+            if phrase in sentence_lower:
+                words = phrase.split()
+                excluded_words.update(words)
+        
         for conjunction in self.conjunctions:
+            # 跳过短语连接词中的单词
+            if conjunction in excluded_words:
+                continue
+            # 跳过短语连接词本身
+            if conjunction in phrase_conjunctions:
+                continue
             # 查找连接词在句子中的位置
             pos = 0
             while True:
@@ -228,7 +350,29 @@ class SmartSentenceSplitter:
             
         # 检查是否有拆分点
         split_points = self.find_split_points(sentence)
-        return len(split_points) > 0
+        if len(split_points) > 0:
+            return True
+        
+        # 兜底规则：如果没有找到拆分点，但句子中间有逗号，且拆分后两部分都不太短，则允许拆分
+        import re
+        comma_matches = list(re.finditer(r',', sentence))
+        if len(comma_matches) > 0:
+            # 排除句末的逗号（逗号后直接跟着句末标点）
+            for match in comma_matches:
+                pos = match.start()
+                # 检查逗号后是否还有内容（不是句末逗号）
+                after_comma = sentence[pos+1:].strip()
+                if after_comma:
+                    # 检查是否是句末逗号：逗号后只有很少内容且以句末标点结尾
+                    after_comma_no_space = after_comma.lstrip()
+                    if after_comma_no_space and len(after_comma_no_space) > 10:  # 逗号后有足够的内容
+                        # 检查拆分后的两部分长度
+                        part1 = sentence[:pos].strip()
+                        part2 = after_comma
+                        if len(part1) >= 20 and len(part2) >= 20:  # 两部分都不太短
+                            return True
+        
+        return False
 
     def split_sentence(self, sentence: str, depth: int = 0) -> List[str]:
         """拆分单个句子"""
@@ -241,18 +385,53 @@ class SmartSentenceSplitter:
         
         split_points = self.find_split_points(sentence)
         if not split_points:
-            return [sentence]
-        
-        # 选择最佳拆分点（优先级最高的第一个）
-        best_split = min(split_points, key=lambda x: (-x[1], x[0]))
-        split_pos = best_split[0]
+            # 兜底规则：如果没有找到拆分点，但句子中间有逗号，且拆分后两部分都不太短，则使用逗号拆分
+            import re
+            comma_matches = list(re.finditer(r',', sentence))
+            for match in comma_matches:
+                pos = match.start()
+                # 检查逗号后是否还有内容（不是句末逗号）
+                after_comma = sentence[pos+1:].strip()
+                if after_comma:
+                    # 检查是否是句末逗号：逗号后只有很少内容且以句末标点结尾
+                    after_comma_no_space = after_comma.lstrip()
+                    if after_comma_no_space and len(after_comma_no_space) > 10:  # 逗号后有足够的内容
+                        # 检查拆分后的两部分长度
+                        part1 = sentence[:pos].strip()
+                        part2 = after_comma
+                        if len(part1) >= 20 and len(part2) >= 20:  # 两部分都不太短
+                            # 使用逗号作为拆分点
+                            split_pos = pos
+                            # 跳过逗号和空格
+                            split_pos += 1
+                            if split_pos < len(sentence) and sentence[split_pos] == ' ':
+                                split_pos += 1
+                            break
+            else:
+                return [sentence]
+        else:
+            # 选择最佳拆分点（优先级最高的，如果优先级相同则选择位置最靠左的）
+            best_split = max(split_points, key=lambda x: (x[1], -x[0]))
+            split_pos = best_split[0]
         
         # 若在逗号处分行，确保将逗号与其后的一个空格保留在上一行
         if 0 <= split_pos < len(sentence):
             if sentence[split_pos] == ',':
-                split_pos += 1
-                if split_pos < len(sentence) and sentence[split_pos] == ' ':  # 保留一个空格在上一行
+                # 检查逗号后是否跟着从句引导词
+                after_comma = sentence[split_pos+1:].strip()
+                subordinate_markers = ['that', 'which', 'who', 'whom', 'whose', 'where', 'when', 'why', 'how']
+                is_subordinate = any(after_comma.lower().startswith(marker + ' ') for marker in subordinate_markers)
+                
+                if is_subordinate:
+                    # 从句：跳过逗号和空格，让从句引导词在下一行开头
                     split_pos += 1
+                    if split_pos < len(sentence) and sentence[split_pos] == ' ':  # 跳过空格
+                        split_pos += 1
+                else:
+                    # 非从句：跳过逗号和空格
+                    split_pos += 1
+                    if split_pos < len(sentence) and sentence[split_pos] == ' ':  # 保留一个空格在上一行
+                        split_pos += 1
             elif sentence[split_pos] == ' ' and split_pos > 0 and sentence[split_pos - 1] == ',':
                 # 如果正好在逗号后的空格处分行，则跳过这个空格
                 split_pos += 1
@@ -262,7 +441,7 @@ class SmartSentenceSplitter:
         part2 = sentence[split_pos:]
         
         # 检查拆分后的部分是否太短（避免单个连接词成行）
-        if len(part1.strip()) < 5 or len(part2.strip()) < 5:
+        if len(part1.strip()) < 15 or len(part2.strip()) < 15:
             return [sentence]
         
         # 递归拆分：对每个部分独立评估
