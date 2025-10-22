@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.1.3] - 2025-10-22
+
+- refactor(scripts): optimize documentation and directory structure
+
 ## [1.1.2] - 2025-10-21
 
 - feat(scripts): introduce scripts manager and enhance text processing tools
