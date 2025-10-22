@@ -248,19 +248,27 @@ class SmartSentenceSplitter:
         best_split = min(split_points, key=lambda x: (-x[1], x[0]))
         split_pos = best_split[0]
         
-        # 拆分句子
-        part1 = sentence[:split_pos].strip()
-        part2 = sentence[split_pos:].strip()
+        # 若在逗号处分行，确保将逗号与其后的一个空格保留在上一行
+        if 0 <= split_pos < len(sentence):
+            if sentence[split_pos] == ',':
+                split_pos += 1
+                if split_pos < len(sentence) and sentence[split_pos] == ' ':  # 保留一个空格在上一行
+                    split_pos += 1
+            elif sentence[split_pos] == ' ' and split_pos > 0 and sentence[split_pos - 1] == ',':
+                # 如果正好在逗号后的空格处分行，则跳过这个空格
+                split_pos += 1
+
+        # 拆分句子（不修改任何标点或空白，只做换行）
+        part1 = sentence[:split_pos]
+        part2 = sentence[split_pos:]
         
-        # 清理第二部分（移除开头的标点符号）
-        part2 = re.sub(r'^[,;:]\s*', '', part2)
-        
-        # 确保第二部分以大写字母开头或保持原样
-        if part2 and part2[0].islower():
+        # 确保第二部分以大写字母开头或保持原样（仅用于逻辑判断，输出不改动文本）
+        part2_for_logic = part2.lstrip()
+        if part2_for_logic and part2_for_logic[0].islower():
             # 如果第二部分以小写字母开头，说明可能缺少了开头的单词
             # 特殊处理：检查是否是 "then" 或其他重要连接词开头
             important_starters = ['then', 'so', 'because', 'since', 'when', 'where', 'while', 'though', 'although']
-            is_important_starter = any(part2.lower().startswith(starter + ' ') for starter in important_starters)
+            is_important_starter = any(part2_for_logic.lower().startswith(starter + ' ') for starter in important_starters)
             
             if is_important_starter:
                 # 对于重要连接词开头的句子，仍然进行拆分，并且递归处理
