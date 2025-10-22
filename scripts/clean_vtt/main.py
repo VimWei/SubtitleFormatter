@@ -87,9 +87,9 @@ def main():
     parser = argparse.ArgumentParser(description="VTT文件清理工具 - 清理和格式化VTT字幕文件")
     parser.add_argument("input_file", help="输入的VTT文件路径")
     parser.add_argument("-o", "--output", default="cleaned_subtitles.vtt", help="输出文件路径")
-    
+
     args = parser.parse_args()
-    
+
     try:
         # Parse the VTT file
         vtt_lines = parse_vtt(args.input_file)
