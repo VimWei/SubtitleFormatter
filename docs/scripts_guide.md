@@ -24,9 +24,15 @@ uv run python scripts_manager.py help <script_name>
 uv run python scripts_manager.py text-diff old.txt new.txt --json
 ```
 
-### 句子分割
+### 文本转句子
 ```bash
-# 将文本按句分割
+# 将连续文本按句分割
+uv run python scripts_manager.py text-to-sentences input.txt
+```
+
+### 句子拆分
+```bash
+# 将长句拆分为更短的句子
 uv run python scripts_manager.py sentence-splitter input.txt
 ```
 
@@ -46,12 +52,16 @@ uv run python scripts_manager.py sentence-splitter input.txt
 
 ### 使用示例
 ```bash
-# 简单使用 - 文件在 data/input/ 中
-uv run python scripts_manager.py sentence-splitter input.txt
+# 文本转句子 - 文件在 data/input/ 中
+uv run python scripts_manager.py text-to-sentences input.txt
 # 输出自动保存到 data/output/input.txt
 
+# 句子拆分 - 文件在 data/input/ 中
+uv run python scripts_manager.py sentence-splitter input.txt
+# 输出自动保存到 data/output/input.smart_split.txt
+
 # 指定输出文件名
-uv run python scripts_manager.py sentence-splitter input.txt -o result.txt
+uv run python scripts_manager.py text-to-sentences input.txt -o result.txt
 # 输出保存到 data/output/result.txt
 
 # 使用完整路径

@@ -70,25 +70,25 @@ class ScriptsManager:
                 ],
                 "category": "dev_tools",
             },
+            "text-to-sentences": {
+                "path": "text_to_sentences/main.py",
+                "description": "文本转句子工具 - 将连续文本按句分割，每句一行",
+                "dependency_group": None,  # 无外部依赖
+                "usage": "scripts_manager.py text-to-sentences <input_file> [options]",
+                "examples": [
+                    "scripts_manager.py text-to-sentences input.txt",
+                    "scripts_manager.py text-to-sentences input.txt -o output.txt",
+                ],
+                "category": "text_processing",
+            },
             "sentence-splitter": {
                 "path": "sentence_splitter/main.py",
-                "description": "句子分割工具 - 将文本按句分割，每句一行",
+                "description": "句子拆分工具 - 将长句和复合句拆分为更短的句子，基于规则和启发式方法",
                 "dependency_group": None,  # 无外部依赖
                 "usage": "scripts_manager.py sentence-splitter <input_file> [options]",
                 "examples": [
                     "scripts_manager.py sentence-splitter input.txt",
                     "scripts_manager.py sentence-splitter input.txt -o output.txt",
-                ],
-                "category": "text_processing",
-            },
-            "smart-sentence-splitter": {
-                "path": "smart_sentence_splitter/main.py",
-                "description": "智能句子拆分工具 - 将长句和复合句拆分为更短的句子，基于规则和启发式方法",
-                "dependency_group": None,  # 无外部依赖
-                "usage": "scripts_manager.py smart-sentence-splitter <input_file> [options]",
-                "examples": [
-                    "scripts_manager.py smart-sentence-splitter input.txt",
-                    "scripts_manager.py smart-sentence-splitter input.txt -o output.txt",
                 ],
                 "category": "text_processing",
             },
@@ -206,7 +206,7 @@ class ScriptsManager:
 
         # 定义需要特殊处理的脚本
         scripts_need_output_dir = ["transcript-converter"]
-        scripts_with_output_options = ["sentence-splitter", "smart-sentence-splitter", "clean-vtt"]
+        scripts_with_output_options = ["text-to-sentences", "sentence-splitter", "clean-vtt"]
 
         i = 0
         while i < len(args):
@@ -257,11 +257,11 @@ class ScriptsManager:
                     input_file = args[0]
                     if "/" not in input_file and "\\" not in input_file:
                         # 如果是简单文件名，生成对应的输出文件名
-                        if script_name == "sentence-splitter":
+                        if script_name == "text-to-sentences":
                             output_file = output_dir / input_file
                             processed_args.extend(["-o", str(output_file)])
-                        elif script_name == "smart-sentence-splitter":
-                            # 为智能句子拆分器生成带.smart_split.txt后缀的文件名
+                        elif script_name == "sentence-splitter":
+                            # 为句子拆分器生成带.smart_split.txt后缀的文件名
                             input_stem = Path(input_file).stem
                             output_file = output_dir / f"{input_stem}.smart_split.txt"
                             processed_args.extend(["-o", str(output_file)])
