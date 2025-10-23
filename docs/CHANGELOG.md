@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.0] - 2025-10-23
+
+- fix(text-to-sentences): correct punctuation in examples for clarity
+- feat(punctuation_adder): refactor to follow SubtitleFormatter scripts standards and enhance post-processing
+- feat(punctuation_adder)：add new script to add punctuation
+- refactor: rename diff dependency to text-diff for clarity
+
 ## [1.2.1] - 2025-10-23
 
 - fix(sentence_splitter): clean up output formatting by removing trailing spaces
