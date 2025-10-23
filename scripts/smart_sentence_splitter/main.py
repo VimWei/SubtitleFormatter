@@ -52,6 +52,8 @@ class SmartSentenceSplitter:
             # 中优先级连接词  
             'because': 1, 'since': 1, 'although': 1, 'though': 1, 
             'unless': 1, 'until': 1, 'before': 1, 'after': 1,
+            # 从句引导词（中等优先级）
+            'that': 1, 'which': 1, 'who': 1, 'whom': 1, 'whose': 1, 'where': 1, 'when': 1, 'why': 1, 'how': 1,
             # 低优先级连接词
             'and': 0, 'or': 0, 'but': 0, 'yet': 0, 'so': 0, 'for': 0, 'nor': 0,
         }
