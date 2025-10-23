@@ -157,7 +157,7 @@ class SmartSentenceSplitter:
         
         # 更智能的检测：检查是否在逗号附近有3个或更多连续的同类型短词
         # 排除常见的句子结构词汇
-        sentence_words = {'so', 'and', 'but', 'or', 'if', 'when', 'while', 'because', 'since', 'although', 'you', 'we', 'they', 'he', 'she', 'it', 'i', 'me', 'us', 'them', 'him', 'her', 'a', 'an', 'the', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'from', 'up', 'about', 'into', 'through', 'during', 'before', 'after', 'above', 'below', 'between', 'among', 'is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might', 'must', 'can'}
+        sentence_words = {'so', 'and', 'but', 'or', 'if', 'when', 'while', 'because', 'since', 'although', 'you', 'we', 'they', 'he', 'she', 'it', 'i', 'me', 'us', 'them', 'him', 'her', 'a', 'an', 'the', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'from', 'up', 'about', 'into', 'through', 'during', 'before', 'after', 'above', 'below', 'between', 'among', 'is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might', 'must', 'can', 'not', 'no', 'yes', 'very', 'quite', 'rather', 'just', 'only', 'even', 'still', 'yet', 'already', 'also', 'too', 'either', 'neither', 'both', 'all', 'some', 'any', 'every', 'each', 'much', 'many', 'few', 'little', 'more', 'most', 'less', 'least', 'other', 'another', 'same', 'different', 'new', 'old', 'good', 'bad', 'big', 'small', 'long', 'short', 'high', 'low', 'first', 'last', 'next', 'previous', 'current', 'recent', 'early', 'late', 'fast', 'slow', 'easy', 'hard', 'simple', 'complex', 'important', 'necessary', 'possible', 'impossible', 'likely', 'unlikely', 'certain', 'uncertain', 'true', 'false', 'correct', 'incorrect', 'right', 'wrong', 'better', 'worse', 'best', 'worst'}
         
         # 检查是否有3个或更多连续的非句子结构短词
         consecutive_short_words = 0
@@ -170,6 +170,26 @@ class SmartSentenceSplitter:
                 consecutive_short_words = 0
         
         return False
+
+    def _is_valid_split_point(self, sentence: str, pos: int) -> bool:
+        """检查拆分点是否合适"""
+        # 检查拆分后两部分是否都足够长
+        part1 = sentence[:pos].strip()
+        part2 = sentence[pos:].strip()
+        
+        # 第一部分至少15字符，第二部分至少15字符
+        # 这已经自动排除了句首（<15字符）和句尾（<15字符）的情况
+        if len(part1) < 15 or len(part2) < 15:
+            return False
+        
+        # 检查拆分点是否在标点符号上（标点符号拆分需要特殊处理）
+        if pos < len(sentence) and sentence[pos] in '.,;:':
+            # 对于标点符号，检查后面是否有足够内容
+            after_punct = sentence[pos+1:].strip()
+            if len(after_punct) < 10:  # 标点后至少10字符
+                return False
+        
+        return True
 
     def _is_in_subordinate_clause(self, sentence: str, pos: int) -> bool:
         """检查位置是否在从句中"""
@@ -411,7 +431,20 @@ class SmartSentenceSplitter:
                 return [sentence]
         else:
             # 选择最佳拆分点（优先级最高的，如果优先级相同则选择位置最靠左的）
-            best_split = max(split_points, key=lambda x: (x[1], -x[0]))
+            # 智能筛选：排除句首、句尾、过短片段等不合适的拆分点
+            valid_splits = []
+            for pos, priority, reason in split_points:
+                # 检查拆分点是否合适
+                if self._is_valid_split_point(sentence, pos):
+                    valid_splits.append((pos, priority, reason))
+            
+            if valid_splits:
+                # 如果有有效拆分点，从中选择最佳的
+                best_split = max(valid_splits, key=lambda x: (x[1], -x[0]))
+            else:
+                # 如果没有有效拆分点，使用原来的逻辑
+                best_split = max(split_points, key=lambda x: (x[1], -x[0]))
+            
             split_pos = best_split[0]
         
         # 若在逗号处分行，确保将逗号与其后的一个空格保留在上一行
