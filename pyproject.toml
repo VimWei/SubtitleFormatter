@@ -49,6 +49,9 @@ clean-vtt = [
 release = [
     "tomli-w>=1.0.0",
 ]
+punctuation-adder = [
+    "deepmultilingualpunctuation>=0.1.0",
+]
 # 无依赖脚本不需要定义group
 
 [tool.uv]

@@ -92,6 +92,19 @@ class ScriptsManager:
                 ],
                 "category": "text_processing",
             },
+            "punctuation-adder": {
+                "path": "punctuation_adder/main.py",
+                "description": "自动标点恢复工具 - 使用机器学习模型为英文文本自动添加标点符号",
+                "dependency_group": "punctuation-adder",
+                "usage": "scripts_manager.py punctuation-adder <file_or_pattern> [options]",
+                "examples": [
+                    "scripts_manager.py punctuation-adder file.txt",
+                    "scripts_manager.py punctuation-adder *.txt",
+                    "scripts_manager.py punctuation-adder data/input/*.txt",
+                    "scripts_manager.py punctuation-adder file.txt -o output.txt",
+                ],
+                "category": "text_processing",
+            },
         }
 
     def list_scripts(self, category: Optional[str] = None):
