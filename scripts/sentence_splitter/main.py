@@ -693,7 +693,9 @@ class SentenceSplitter:
             # 写入输出文件
             with open(output_file, "w", encoding="utf-8") as f:
                 for sentence in processed_sentences:
-                    f.write(sentence + "\n")
+                    # 清除行尾空格
+                    cleaned_sentence = sentence.rstrip()
+                    f.write(cleaned_sentence + "\n")
 
             print(f"✅ 处理完成:")
             print(f"   原始句子数: {len(all_sentences)}")
