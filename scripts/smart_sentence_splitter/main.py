@@ -96,6 +96,12 @@ class SmartSentenceSplitter:
             if after_comma.lower().startswith(marker + ' '):
                 return False
         
+        # 检查复合从句引导词
+        compound_markers = ['in which', 'of which', 'at which', 'for which', 'with which', 'by which']
+        for marker in compound_markers:
+            if after_comma.lower().startswith(marker + ' '):
+                return False
+        
         # 基于词汇数量和语法结构的智能判断
         return self._analyze_comma_context(text, pos)
     
@@ -157,7 +163,7 @@ class SmartSentenceSplitter:
         
         # 更智能的检测：检查是否在逗号附近有3个或更多连续的同类型短词
         # 排除常见的句子结构词汇
-        sentence_words = {'so', 'and', 'but', 'or', 'if', 'when', 'while', 'because', 'since', 'although', 'you', 'we', 'they', 'he', 'she', 'it', 'i', 'me', 'us', 'them', 'him', 'her', 'a', 'an', 'the', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'from', 'up', 'about', 'into', 'through', 'during', 'before', 'after', 'above', 'below', 'between', 'among', 'is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might', 'must', 'can', 'not', 'no', 'yes', 'very', 'quite', 'rather', 'just', 'only', 'even', 'still', 'yet', 'already', 'also', 'too', 'either', 'neither', 'both', 'all', 'some', 'any', 'every', 'each', 'much', 'many', 'few', 'little', 'more', 'most', 'less', 'least', 'other', 'another', 'same', 'different', 'new', 'old', 'good', 'bad', 'big', 'small', 'long', 'short', 'high', 'low', 'first', 'last', 'next', 'previous', 'current', 'recent', 'early', 'late', 'fast', 'slow', 'easy', 'hard', 'simple', 'complex', 'important', 'necessary', 'possible', 'impossible', 'likely', 'unlikely', 'certain', 'uncertain', 'true', 'false', 'correct', 'incorrect', 'right', 'wrong', 'better', 'worse', 'best', 'worst'}
+        sentence_words = {'so', 'and', 'but', 'or', 'if', 'when', 'while', 'because', 'since', 'although', 'you', 'we', 'they', 'he', 'she', 'it', 'i', 'me', 'us', 'them', 'him', 'her', 'a', 'an', 'the', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'from', 'up', 'about', 'into', 'through', 'during', 'before', 'after', 'above', 'below', 'between', 'among', 'is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might', 'must', 'can', 'not', 'no', 'yes', 'very', 'quite', 'rather', 'just', 'only', 'even', 'still', 'yet', 'already', 'also', 'too', 'either', 'neither', 'both', 'all', 'some', 'any', 'every', 'each', 'much', 'many', 'few', 'little', 'more', 'most', 'less', 'least', 'other', 'another', 'same', 'different', 'new', 'old', 'good', 'bad', 'big', 'small', 'long', 'short', 'high', 'low', 'first', 'last', 'next', 'previous', 'current', 'recent', 'early', 'late', 'fast', 'slow', 'easy', 'hard', 'simple', 'complex', 'important', 'necessary', 'possible', 'impossible', 'likely', 'unlikely', 'certain', 'uncertain', 'true', 'false', 'correct', 'incorrect', 'right', 'wrong', 'better', 'worse', 'best', 'worst', 's', 't', 'd', 'll', 've', 're', 'm', 'n'}
         
         # 检查是否有3个或更多连续的非句子结构短词
         consecutive_short_words = 0
