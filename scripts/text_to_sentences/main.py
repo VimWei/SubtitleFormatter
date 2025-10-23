@@ -106,7 +106,7 @@ class TextToSentences:
                 # 获取输入文件名（不含扩展名）
                 input_stem = input_file.stem
                 # 生成输出文件路径：data/output/原文件名.txt
-                output_file = Path("data/output") / f"{input_stem}.txt"
+                output_file = Path("data/output") / f"{input_stem}.sentence.txt"
                 # 确保输出目录存在
                 output_file.parent.mkdir(parents=True, exist_ok=True)
 

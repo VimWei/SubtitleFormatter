@@ -54,11 +54,11 @@ uv run python scripts_manager.py sentence-splitter input.txt
 ```bash
 # 文本转句子 - 文件在 data/input/ 中
 uv run python scripts_manager.py text-to-sentences input.txt
-# 输出自动保存到 data/output/input.txt
+# 输出自动保存到 data/output/input.sentence.txt
 
 # 句子拆分 - 文件在 data/input/ 中
 uv run python scripts_manager.py sentence-splitter input.txt
-# 输出自动保存到 data/output/input.smart_split.txt
+# 输出自动保存到 data/output/input.split.txt
 
 # 指定输出文件名
 uv run python scripts_manager.py text-to-sentences input.txt -o result.txt

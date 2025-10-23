@@ -687,7 +687,7 @@ class SentenceSplitter:
             # 如果没有指定输出文件，自动生成
             if output_file is None:
                 input_stem = input_file.stem
-                output_file = Path("data/output") / f"{input_stem}.smart_split.txt"
+                output_file = Path("data/output") / f"{input_stem}.split.txt"
                 output_file.parent.mkdir(parents=True, exist_ok=True)
 
             # 写入输出文件

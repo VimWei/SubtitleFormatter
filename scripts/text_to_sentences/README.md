@@ -9,7 +9,7 @@
 - **简单高效**: 基于正则表达式的句子分割
 - **保持原样**: 只进行句子分割，不做其他文本处理
 - **自动保存**: 默认自动保存到 data/output/ 目录
-- **智能命名**: 使用原文件名作为输出文件名
+- **智能命名**: 使用原文件名添加 `.sentence.txt` 后缀
 - **无依赖**: 仅使用Python标准库
 
 ## 使用方法
@@ -47,7 +47,7 @@ uv run python scripts_manager.py text-to-sentences input.txt -o output.txt
 - 保持原文本内容不变
 - 自动去除多余空白字符
 - 默认保存到 `data/output/` 目录
-- 使用原文件名作为输出文件名
+- 使用原文件名添加 `.sentence.txt` 后缀
 
 ## 示例
 

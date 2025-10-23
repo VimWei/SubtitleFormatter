@@ -56,7 +56,7 @@ uv run python scripts_manager.py sentence-splitter input.txt -o output.txt
 
 ### 输出格式
 - **格式**: 每行一个拆分后的句子
-- **命名**: 自动添加 `.smart_split.txt` 后缀
+- **命名**: 自动添加 `.split.txt` 后缀
 - **位置**: 默认保存到 `data/output/` 目录
 
 ## 拆分示例

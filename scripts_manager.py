@@ -258,12 +258,14 @@ class ScriptsManager:
                     if "/" not in input_file and "\\" not in input_file:
                         # 如果是简单文件名，生成对应的输出文件名
                         if script_name == "text-to-sentences":
-                            output_file = output_dir / input_file
+                            # 为文本转句子工具生成带.sentence.txt后缀的文件名
+                            input_stem = Path(input_file).stem
+                            output_file = output_dir / f"{input_stem}.sentence.txt"
                             processed_args.extend(["-o", str(output_file)])
                         elif script_name == "sentence-splitter":
-                            # 为句子拆分器生成带.smart_split.txt后缀的文件名
+                            # 为句子拆分器生成带.split.txt后缀的文件名
                             input_stem = Path(input_file).stem
-                            output_file = output_dir / f"{input_stem}.smart_split.txt"
+                            output_file = output_dir / f"{input_stem}.split.txt"
                             processed_args.extend(["-o", str(output_file)])
                         elif script_name == "clean-vtt":
                             # clean-vtt 默认输出文件名
