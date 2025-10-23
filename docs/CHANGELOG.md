@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.2.0] - 2025-10-23
+
+- refactor: rename scripts for clearer functionality distinction
+- fix(smart_sentence_splitter): prioritize clause-introducing conjunctions
+- fix(smart_sentence_splitter): increase max recursion depth from 5 to 8
+- fix(smart_sentence_splitter): improve number context detection and enumeration logic
+- fix(smart_sentence_splitter): improve compound clause detection and enumeration logic
+- fix: exclude sentence boundaries from split point selection
+- refactor(smart_sentence_splitter): improve split point selection and enumeration detection
+- feat(smart_sentence_splitter): length/depth stop, remove lowercase check, drop special cases
+- fix(smart_sentence_splitter): preserve punctuation/whitespace when splitting lines
+- feat(scripts): add smart sentence splitter tool
+
 ## [1.1.3] - 2025-10-22
 
 - refactor(scripts): optimize documentation and directory structure
