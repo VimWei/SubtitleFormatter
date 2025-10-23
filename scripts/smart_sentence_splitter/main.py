@@ -71,42 +71,50 @@ class SmartSentenceSplitter:
 
     def is_number_context(self, text: str, pos: int) -> bool:
         """检查逗号是否在数字上下文中"""
-        # 检查前后是否有数字
+        # 获取逗号前后的内容
         before = text[:pos].rstrip()
         after = text[pos+1:].lstrip()
         
-        # 检查是否匹配数字模式
-        for pattern in self.number_patterns:
-            if re.search(pattern, text[max(0, pos-20):pos+20]):
+        # 检查逗号前后是否都是数字（千位分隔符情况）
+        if before and after:
+            # 检查逗号前是否有数字结尾
+            before_match = re.search(r'\d+$', before)
+            # 检查逗号后是否有数字开头
+            after_match = re.search(r'^\d+', after)
+            
+            if before_match and after_match:
                 return True
+        
+        # 检查是否在货币格式中（如 $3,000, €1,000, £500 等）
+        if pos > 0:
+            # 检查逗号前是否有货币符号
+            currency_symbols = ['$', '€', '£', '¥', '₹', '₽', '₩', '₪', '₨', '₦', '₡', '₱', '₫', '₴', '₸', '₼', '₾', '₿']
+            if text[pos-1] in currency_symbols:
+                # 检查逗号后是否有数字
+                after_match = re.search(r'^\d+', after)
+                if after_match:
+                    return True
+        
+        # 检查是否在数字模式中（如 1,000,000 或 3,000）
+        # 使用更精确的正则表达式检查逗号是否在数字中间
+        context = text[max(0, pos-10):pos+10]
+        number_patterns = [
+            r'\d{1,3}(,\d{3})+',  # 千位分隔符：1,000 或 1,000,000
+            r'\d+,\d{3}',         # 简单千位分隔符：3,000
+        ]
+        
+        for pattern in number_patterns:
+            if re.search(pattern, context):
+                return True
+        
         return False
 
     def is_simple_enumeration(self, text: str, pos: int) -> bool:
-        """检查逗号是否在简单并列中 - 基于词汇数量和语法结构判断"""
-        # 检查逗号后是否跟着从句引导词或短语连接词，如果是则不认为是简单并列
-        after_comma = text[pos+1:].strip()
-        subordinate_markers = ['that', 'which', 'who', 'whom', 'whose', 'where', 'when', 'why', 'how']
-        phrase_markers = ['such as', 'as well as', 'in order to', 'so that', 'in case', 'provided that', 'even though', 'as though', 'as if']
+        """检查逗号是否在简单并列中 - 仅基于词汇数量判断"""
+        # 首先检查是否在数字上下文中，如果是则不认为是简单并列
+        if self.is_number_context(text, pos):
+            return False
         
-        for marker in subordinate_markers:
-            if after_comma.lower().startswith(marker + ' '):
-                return False
-        
-        for marker in phrase_markers:
-            if after_comma.lower().startswith(marker + ' '):
-                return False
-        
-        # 检查复合从句引导词
-        compound_markers = ['in which', 'of which', 'at which', 'for which', 'with which', 'by which']
-        for marker in compound_markers:
-            if after_comma.lower().startswith(marker + ' '):
-                return False
-        
-        # 基于词汇数量和语法结构的智能判断
-        return self._analyze_comma_context(text, pos)
-    
-    def _analyze_comma_context(self, text: str, pos: int) -> bool:
-        """分析逗号上下文，判断是否为简单并列"""
         # 获取逗号前后的词汇
         before_text = text[:pos].strip()
         after_text = text[pos+1:].strip()
@@ -115,67 +123,13 @@ class SmartSentenceSplitter:
         before_words = re.findall(r'\b\w+\b', before_text)
         after_words = re.findall(r'\b\w+\b', after_text)
         
-        # 规则1: 逗号前后都是单个词汇，且词汇长度较短
-        if len(before_words) == 1 and len(after_words) == 1:
-            before_word = before_words[0].lower()
-            after_word = after_words[0].lower()
-            
-            # 排除常见的句子结构词汇
-            sentence_starters = ['so', 'and', 'but', 'or', 'if', 'when', 'while', 'because', 'since', 'although']
-            pronouns = ['you', 'we', 'they', 'he', 'she', 'it', 'i', 'me', 'us', 'them', 'him', 'her']
-            articles = ['a', 'an', 'the']
-            prepositions = ['in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'from', 'up', 'about', 'into', 'through', 'during', 'before', 'after', 'above', 'below', 'between', 'among']
-            
-            # 如果前后都是短词且不是句子结构词汇，则可能是简单并列
-            if (len(before_word) <= 6 and len(after_word) <= 6 and 
-                before_word not in sentence_starters + pronouns + articles + prepositions and
-                after_word not in sentence_starters + pronouns + articles + prepositions):
-                return True
-        
-        # 规则2: 逗号前后都是2-3个短词汇的短语
-        if len(before_words) <= 3 and len(after_words) <= 3:
-            # 检查是否都是短词
-            all_words = before_words + after_words
-            if all(len(word) <= 6 for word in all_words):
-                # 排除包含动词、形容词等句子成分的情况
-                common_verbs = ['is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might', 'must', 'can']
-                if not any(word.lower() in common_verbs for word in all_words):
-                    return True
-        
-        # 规则3: 检查是否在连续的同类型词汇中（如颜色、数字、专有名词等）
-        # 获取更大的上下文来检测模式
-        context_start = max(0, pos - 100)
-        context_end = min(len(text), pos + 100)
-        context = text[context_start:context_end]
-        
-        # 查找连续的同类型词汇模式
-        if self._is_consecutive_similar_words(context, pos - context_start):
+        # 简单判断：如果逗号前后都只有1-2个词汇，且总词汇数不超过6个，则认为是简单并列
+        total_words = len(before_words) + len(after_words)
+        if total_words <= 6 and len(before_words) <= 2 and len(after_words) <= 2:
             return True
         
         return False
     
-    def _is_consecutive_similar_words(self, context: str, relative_pos: int) -> bool:
-        """检查是否在连续的同类型词汇中"""
-        # 查找逗号前后的词汇模式
-        words = re.findall(r'\b\w+\b', context)
-        if len(words) < 3:
-            return False
-        
-        # 更智能的检测：检查是否在逗号附近有3个或更多连续的同类型短词
-        # 排除常见的句子结构词汇
-        sentence_words = {'so', 'and', 'but', 'or', 'if', 'when', 'while', 'because', 'since', 'although', 'you', 'we', 'they', 'he', 'she', 'it', 'i', 'me', 'us', 'them', 'him', 'her', 'a', 'an', 'the', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'from', 'up', 'about', 'into', 'through', 'during', 'before', 'after', 'above', 'below', 'between', 'among', 'is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might', 'must', 'can', 'not', 'no', 'yes', 'very', 'quite', 'rather', 'just', 'only', 'even', 'still', 'yet', 'already', 'also', 'too', 'either', 'neither', 'both', 'all', 'some', 'any', 'every', 'each', 'much', 'many', 'few', 'little', 'more', 'most', 'less', 'least', 'other', 'another', 'same', 'different', 'new', 'old', 'good', 'bad', 'big', 'small', 'long', 'short', 'high', 'low', 'first', 'last', 'next', 'previous', 'current', 'recent', 'early', 'late', 'fast', 'slow', 'easy', 'hard', 'simple', 'complex', 'important', 'necessary', 'possible', 'impossible', 'likely', 'unlikely', 'certain', 'uncertain', 'true', 'false', 'correct', 'incorrect', 'right', 'wrong', 'better', 'worse', 'best', 'worst', 's', 't', 'd', 'll', 've', 're', 'm', 'n'}
-        
-        # 检查是否有3个或更多连续的非句子结构短词
-        consecutive_short_words = 0
-        for word in words:
-            if len(word) <= 5 and word.lower() not in sentence_words:  # 短词且不是句子结构词汇
-                consecutive_short_words += 1
-                if consecutive_short_words >= 3:
-                    return True
-            else:
-                consecutive_short_words = 0
-        
-        return False
 
     def _is_valid_split_point(self, sentence: str, pos: int) -> bool:
         """检查拆分点是否合适"""
