@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.2.1] - 2025-10-23
+
+- fix(sentence_splitter): clean up output formatting by removing trailing spaces
+- refactor: update output file naming conventions
+
 ## [1.2.0] - 2025-10-23
 
 - refactor: rename scripts for clearer functionality distinction
