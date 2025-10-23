@@ -6,7 +6,7 @@
 - 解析参数：必填 `input_file`，可选 `--output`
 - 递归控制参数：
   - `--min-length`（默认 70）：最小递归长度阈值；低于该长度不再继续递归拆分
-  - `--max-depth`（默认 5）：最大递归深度；达到该深度即停止递归
+  - `--max-depth`（默认 8）：最大递归深度；达到该深度即停止递归
 - 校验路径，创建 `SmartSentenceSplitter`，调用 `process_file`
 
 ### 文件处理（`process_file`）

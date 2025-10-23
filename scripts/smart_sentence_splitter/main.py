@@ -14,7 +14,7 @@ from typing import List, Tuple, Optional
 class SmartSentenceSplitter:
     """智能句子拆分器"""
 
-    def __init__(self, min_recursive_length: int = 70, max_depth: int = 5):
+    def __init__(self, min_recursive_length: int = 70, max_depth: int = 8):
         # 递归控制参数
         self.min_recursive_length = min_recursive_length  # 最小递归长度阈值
         self.max_depth = max_depth  # 最大递归深度
@@ -529,8 +529,8 @@ def main():
         help="最小递归长度阈值（默认70，低于此长度不再递归拆分）"
     )
     parser.add_argument(
-        "--max-depth", type=int, default=5,
-        help="最大递归深度（默认5，防止过度递归）"
+        "--max-depth", type=int, default=8,
+        help="最大递归深度（默认8，防止过度递归）"
     )
     parser.add_argument("--version", action="version", version="智能句子拆分工具 v1.0.0")
 
