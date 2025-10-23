@@ -38,7 +38,7 @@ dev = [
     "coverage>=7.6.0",
 ]
 # 脚本独立依赖组
-diff = [
+text-diff = [
     "colorama>=0.4.4",
     "rich>=13.0.0",
     "click>=8.0.0",
