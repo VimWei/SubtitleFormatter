@@ -58,9 +58,9 @@ Let's take a look at some examples of Agentic AI applications. One task that man
 
 ### 输出结果
 ```
-Let's take a look at some examples of Agentic AI applications
-One task that many businesses carry out is invoice processing
-So given an invoice like this, you might want to write software to extract the most important fields
+Let's take a look at some examples of Agentic AI applications.
+One task that many businesses carry out is invoice processing.
+So given an invoice like this, you might want to write software to extract the most important fields.
 ```
 
 ## 技术实现
