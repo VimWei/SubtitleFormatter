@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.3.2] - 2025-10-25
+
+- feat(sentence_splitter): unify punctuation handling in sentence splitting
+
 ## [1.3.1] - 2025-10-24
 
 - feat(sentence_splitter): enhance conjunction handling and priority settings
