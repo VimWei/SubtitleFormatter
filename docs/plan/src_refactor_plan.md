@@ -62,10 +62,33 @@
 
 ## 🎯 重构目标
 
+### 插件化架构优势
+
+#### 1. 灵活性
+- **自由组合**: 可以任意组合和排序插件
+- **动态配置**: 通过配置文件控制插件启用/禁用
+- **运行时调整**: 支持动态添加/移除插件
+
+#### 2. 可扩展性
+- **新功能添加**: 只需实现新的插件类
+- **向后兼容**: 现有插件不受新插件影响
+- **独立开发**: 每个插件可以独立开发和测试
+
+#### 3. 可维护性
+- **职责分离**: 每个插件只负责特定功能
+- **接口统一**: 所有插件遵循相同的接口规范
+- **类型安全**: 自动检查数据类型兼容性
+
 ### 新的处理流程
 
 ```
-原始文本 → text_cleaning → punctuation_adder → text_to_sentences → sentence_splitter → 最终输出
+原始文本 → [插件链] → 最终输出
+
+插件链示例:
+text_cleaning → punctuation_adder → text_to_sentences → sentence_splitter
+
+未来可扩展为:
+text_cleaning → punctuation_adder → text_to_sentences → sentence_splitter → grammar_checker → style_optimizer
 ```
 
 ### 组件替换映射
@@ -106,39 +129,54 @@
 
 ### 阶段一：架构设计 (1-2天)
 
-#### 1.1 新 TextProcessor 设计
-```python
-class TextProcessor:
-    def __init__(self, config):
-        self.config = config
-        self.text_cleaner = TextCleaner()
-        self.punctuation_adder = PunctuationAdder()
-        self.text_to_sentences = TextToSentences()
-        self.sentence_splitter = SentenceSplitter()
-    
-    def process(self):
-        # 1. 文本清理
-        cleaned_text = self.text_cleaner.process(text)
-        
-        # 2. 标点恢复
-        punctuated_text = self.punctuation_adder.process(cleaned_text)
-        
-        # 3. 句子分割
-        sentences = self.text_to_sentences.process(punctuated_text)
-        
-        # 4. 句子拆分
-        final_sentences = self.sentence_splitter.process(sentences)
-        
-        return final_sentences
+#### 1.1 插件化架构设计
+本重构将采用插件化架构，提供更灵活、可扩展的文本处理能力。
+
+**详细设计**: [插件化架构设计文档](plugin_architecture_design.md)
+
+**核心特性**:
+- 🔄 **灵活组合**: 支持自由组合和排序处理组件
+- 🚀 **可扩展性**: 轻松添加新功能而不影响现有组件  
+- 🛠️ **可维护性**: 清晰的职责分离和统一的接口规范
+- ⚙️ **配置驱动**: 通过配置文件控制处理流程
+
+#### 1.2 插件化配置系统
+```toml
+# 新的插件化配置结构
+[plugins]
+# 插件执行顺序
+order = ["text_cleaning", "punctuation_adder", "text_to_sentences", "sentence_splitter"]
+
+# 文本清理插件
+[plugins.text_cleaning]
+enabled = true
+# 保留现有配置
+
+# 标点恢复插件
+[plugins.punctuation_adder]
+enabled = true
+model_name = "oliverguhr/fullstop-punctuation-multilang-large"
+local_models_dir = "models/"
+
+# 句子分割插件
+[plugins.text_to_sentences]
+enabled = true
+# 无额外配置
+
+# 句子拆分插件
+[plugins.sentence_splitter]
+enabled = true
+min_recursive_length = 70
+max_depth = 8
+
+# 未来可扩展的插件示例
+[plugins.future_plugin]
+enabled = false
+# 新功能配置
 ```
 
-#### 1.2 配置系统更新
-- **删除** `filler_handling` 相关配置
-- **删除** `sentence_splitting` 相关配置  
-- **删除** `line_breaking` 相关配置
-- **新增** `punctuation_adder` 配置选项
-- **新增** `text_to_sentences` 配置选项
-- **新增** `sentence_splitter` 配置选项
+#### 1.3 插件实现
+具体的插件实现示例和开发指南请参考: [插件化架构设计文档](plugin_architecture_design.md#插件实现示例)
 
 ### 阶段二：组件集成 (2-3天)
 
@@ -257,6 +295,10 @@ sentence-splitter = []  # 无外部依赖
 2. **最小化影响**: 确保现有功能不受影响
 3. **渐进式迁移**: 分阶段实施，降低风险
 4. **充分测试**: 每个阶段都要进行充分测试
+
+## 🚀 未来扩展计划
+
+详细的插件扩展计划、开发指南和架构演进路径请参考: [插件化架构设计文档](plugin_architecture_design.md#扩展性设计)
 
 ---
 
