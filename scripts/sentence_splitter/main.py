@@ -85,6 +85,140 @@ class SentenceSplitter:
             "as if",
         }
 
+        # 固定短语模式定义（用于保护不被拆分）
+        self.fixed_phrases = {
+            "so that": {"start_words": ["so"], "end_words": ["that"], "length": 8},
+            "provided that": {"start_words": ["provided"], "end_words": ["that"], "length": 13},
+            "as though": {"start_words": ["as"], "end_words": ["though"], "length": 9},
+            "as if": {"start_words": ["as"], "end_words": ["if"], "length": 6},
+            "even though": {"start_words": ["even"], "end_words": ["though"], "length": 12},
+            "such as": {"start_words": ["such"], "end_words": ["as"], "length": 8},
+            "as well as": {"start_words": ["as"], "end_words": ["as"], "length": 9},
+            "in order to": {"start_words": ["in"], "end_words": ["to"], "length": 11},
+            "in case": {"start_words": ["in"], "end_words": ["case"], "length": 7},
+        }
+
+        # 标点符号优先级（用于确定最佳拆分点）
+        self.punctuation_priority = {
+            ";": 5,  # 分号优先级最高
+            ":": 4,  # 冒号次之
+            ",": 3,  # 逗号第三
+        }
+
+        # 连接词优先级
+        self.conjunction_priority = {
+            # 高优先级连接词
+            "however": 2,
+            "therefore": 2,
+            "moreover": 2,
+            "furthermore": 2,
+            "nevertheless": 2,
+            "meanwhile": 2,
+            "consequently": 2,
+            # 中优先级连接词
+            "because": 1,
+            "since": 1,
+            "although": 1,
+            "though": 1,
+            "unless": 1,
+            "until": 1,
+            "before": 1,
+            "after": 1,
+            "while": 1,
+            "when": 1,
+            "where": 1,
+            "which": 1,
+            "that": 1,
+            "who": 1,
+            "whom": 1,
+            "whose": 1,
+            "why": 1,
+            "how": 1,
+            # 转折连接词（高优先级）
+            "but": 2,
+            "yet": 2,
+            # 低优先级连接词
+            "and": 0,
+            "or": 0,
+            "so": 0,
+            "for": 0,
+            "nor": 0,
+            "then": 0,
+            "next": 0,
+            "finally": 0,
+            "meanwhile": 0,
+            "subsequently": 0,
+            "additionally": 0,
+            "similarly": 0,
+            "likewise": 0,
+            "otherwise": 0,
+            "instead": 0,
+            "rather": 0,
+            "indeed": 0,
+            # 短语连接词
+            "such as": 0,
+            "as well as": 0,
+            "in order to": 0,
+            "so that": 0,
+            "in case": 0,
+            "provided that": 0,
+            "even though": 0,
+            "as though": 0,
+            "as if": 0,
+        }
+
+        # 数字模式（用于排除数字分隔符）
+        self.number_patterns = [
+            r"\d{1,3}(,\d{3})+",  # 1,000 或 1,000,000
+            r"\d+\.\d+",  # 小数
+        ]
+
+        # 简单并列模式（用于排除简单词汇并列）
+        self.simple_enumeration_patterns = [
+            r"\b\w+,\s*\w+,\s*\w+\b",  # apple, banana, orange
+        ]
+
+    def _is_in_fixed_phrase(self, sentence: str, pos: int, conjunction: str) -> bool:
+        """
+        检查连接词是否在固定短语中
+        
+        Args:
+            sentence: 完整句子
+            pos: 连接词位置
+            conjunction: 连接词
+            
+        Returns:
+            bool: 如果在固定短语中返回True，否则返回False
+        """
+        sentence_lower = sentence.lower()
+        
+        # 遍历所有固定短语模式
+        for phrase, pattern in self.fixed_phrases.items():
+            start_words = pattern["start_words"]
+            end_words = pattern["end_words"]
+            phrase_length = pattern["length"]
+            
+            # 检查当前连接词是否是固定短语的起始词
+            if conjunction in start_words:
+                # 检查从当前位置开始的短语是否匹配
+                if pos + phrase_length <= len(sentence_lower):
+                    if sentence_lower[pos:pos+phrase_length].startswith(phrase):
+                        return True
+            
+            # 检查当前连接词是否是固定短语的结束词
+            elif conjunction in end_words:
+                # 检查前面是否有匹配的起始词
+                for start_word in start_words:
+                    start_pos = pos - len(start_word) - 1  # -1 for space
+                    if start_pos >= 0:
+                        # 检查是否匹配固定短语
+                        if start_pos + phrase_length <= len(sentence_lower):
+                            if sentence_lower[start_pos:start_pos+phrase_length].startswith(phrase):
+                                return True
+        
+        return False
+
+
         # 标点符号优先级（用于确定最佳拆分点）
         self.punctuation_priority = {
             ";": 5,  # 分号优先级最高
@@ -224,25 +358,6 @@ class SentenceSplitter:
 
         return False
 
-    def _is_valid_split_point(self, sentence: str, pos: int) -> bool:
-        """检查拆分点是否合适"""
-        # 检查拆分后两部分是否都足够长
-        part1 = sentence[:pos].strip()
-        part2 = sentence[pos:].strip()
-
-        # 第一部分至少15字符，第二部分至少15字符
-        # 这已经自动排除了句首（<15字符）和句尾（<15字符）的情况
-        if len(part1) < 15 or len(part2) < 15:
-            return False
-
-        # 检查拆分点是否在标点符号上（标点符号拆分需要特殊处理）
-        if pos < len(sentence) and sentence[pos] in ".,;:":
-            # 对于标点符号，检查后面是否有足够内容
-            after_punct = sentence[pos + 1 :].strip()
-            if len(after_punct) < 10:  # 标点后至少10字符
-                return False
-
-        return True
 
     def _is_in_subordinate_clause(self, sentence: str, pos: int) -> bool:
         """检查位置是否在从句中"""
@@ -274,53 +389,90 @@ class SentenceSplitter:
 
         return False
 
-    def _is_valid_split_point_without_clause_check(self, sentence: str, pos: int) -> bool:
-        """不检查从句的拆分点有效性"""
-        part1 = sentence[:pos].strip()
-        part2 = sentence[pos:].strip()
+    def _is_valid_split_point(self, sentence: str, pos: int, round_num: int = 1) -> bool:
+        """
+        拆分点有效性检查（支持逐步退化）
+        round_num: 1=正常, 2=移除从句检测, 3=移除简单并列检测, 4=降低长度要求, 5=移除所有限制
+        """
+        # 根据轮次设置最小长度要求
+        if round_num >= 4:
+            min_length = 10  # 第4轮：降低长度要求
+        else:
+            min_length = 15  # 第1-3轮：正常长度要求
         
-        if len(part1) < 15 or len(part2) < 15:
-            return False
-        
-        # 不检查从句，但检查其他限制
-        if sentence[pos] == "," and self.is_number_context(sentence, pos):
-            return False
-        
-        if sentence[pos] == "," and self.is_simple_enumeration(sentence, pos):
-            return False
-        
-        return True
+        # 考虑逗号处理逻辑，计算实际拆分位置
+        actual_pos = pos
+        if 0 <= pos < len(sentence):
+            if sentence[pos] == ",":
+                # 检查逗号后是否跟着从句引导词
+                after_comma = sentence[pos + 1 :].strip()
+                subordinate_markers = [
+                    "that",
+                    "which",
+                    "who",
+                    "whom",
+                    "whose",
+                    "where",
+                    "when",
+                    "why",
+                    "how",
+                ]
+                is_subordinate = any(
+                    after_comma.lower().startswith(marker + " ") for marker in subordinate_markers
+                )
 
-    def _is_valid_split_point_without_enumeration_check(self, sentence: str, pos: int) -> bool:
-        """不检查简单并列的拆分点有效性"""
-        part1 = sentence[:pos].strip()
-        part2 = sentence[pos:].strip()
+                if is_subordinate:
+                    # 从句：跳过逗号和空格，让从句引导词在下一行开头
+                    actual_pos += 1
+                    if actual_pos < len(sentence) and sentence[actual_pos] == " ":  # 跳过空格
+                        actual_pos += 1
+                else:
+                    # 非从句：跳过逗号和空格
+                    actual_pos += 1
+                    if (
+                        actual_pos < len(sentence) and sentence[actual_pos] == " "
+                    ):  # 保留一个空格在上一行
+                        actual_pos += 1
+            elif sentence[pos] == ":":
+                # 冒号：跳过冒号和空格，让后续内容在下一行开头
+                actual_pos += 1
+                if actual_pos < len(sentence) and sentence[actual_pos] == " ":  # 跳过空格
+                    actual_pos += 1
+            elif sentence[pos] == " " and pos > 0 and sentence[pos - 1] == ",":
+                # 如果正好在逗号后的空格处分行，则跳过这个空格
+                actual_pos += 1
+            elif sentence[pos] == " " and pos > 0 and sentence[pos - 1] == ":":
+                # 如果正好在冒号后的空格处分行，则跳过这个空格
+                actual_pos += 1
         
-        if len(part1) < 15 or len(part2) < 15:
-            return False
-        
-        # 只检查数字上下文
-        if sentence[pos] == "," and self.is_number_context(sentence, pos):
-            return False
-        
-        return True
-
-    def _is_valid_split_point_with_reduced_length(self, sentence: str, pos: int, min_length: int) -> bool:
-        """降低最小长度要求的拆分点有效性"""
-        part1 = sentence[:pos].strip()
-        part2 = sentence[pos:].strip()
+        # 使用实际拆分位置计算长度
+        part1 = sentence[:actual_pos].strip()
+        part2 = sentence[actual_pos:].strip()
         
         if len(part1) < min_length or len(part2) < min_length:
             return False
         
-        # 只检查数字上下文
+        # 检查数字上下文（所有轮次都检查）
         if sentence[pos] == "," and self.is_number_context(sentence, pos):
             return False
         
+        # 第3轮及以后：移除简单并列检测
+        if round_num < 3:
+            if sentence[pos] == "," and self.is_simple_enumeration(sentence, pos):
+                return False
+        
+        # 第1轮：检查从句（第2轮及以后不检查）
+        if round_num == 1:
+            if self._is_in_subordinate_clause(sentence, pos):
+                return False
+        
         return True
 
-    def find_split_points_degraded(self, sentence: str) -> List[Tuple[int, int, str]]:
-        """退化版本的拆分点查找 - 降低长度要求，允许更多拆分点"""
+    def find_split_points(self, sentence: str, round_num: int = 1) -> List[Tuple[int, int, str]]:
+        """
+        拆分点查找（支持逐步退化）
+        round_num: 1=正常, 2=移除从句检测, 3=移除简单并列检测, 4=降低长度要求, 5=移除所有限制
+        """
         split_points = []
         
         # 查找标点符号拆分点（简化版本）
@@ -338,9 +490,21 @@ class SentenceSplitter:
                     found_conjunction = False
                     
                     # 检查逗号后的连接词
+                    elevated_after = {
+                        "that", "which", "who", "whom", "whose", 
+                        "where", "when", "why", "how"
+                    }
+                    # 转折连接词获得更高优先级
+                    contrast_conjunctions = {"but", "yet"}
+                    
                     for conjunction in self.conjunctions:
                         if after_comma.lower().startswith(conjunction + " "):
-                            boost = 6 if conjunction in self.elevated_after else 2
+                            if conjunction in elevated_after:
+                                boost = 6
+                            elif conjunction in contrast_conjunctions:
+                                boost = 4  # 转折连接词优先级高于普通连接词
+                            else:
+                                boost = 2
                             split_points.append(
                                 (pos, priority + boost, f"逗号+连接词: {conjunction}")
                             )
@@ -387,6 +551,11 @@ class SentenceSplitter:
                 if pos == -1:
                     break
                 
+                # 检查是否在固定短语中，如果是则跳过
+                if self._is_in_fixed_phrase(sentence, pos, conjunction):
+                    pos += len(conjunction)  # 跳过当前连接词，继续查找
+                    continue
+                
                 # 确保是完整的单词
                 if (
                     pos > 0
@@ -396,14 +565,35 @@ class SentenceSplitter:
                         or not sentence_lower[pos + len(conjunction)].isalnum()
                     )
                 ):
-                    # 退化版本：降低长度要求
+                    # 简单处理：如果 that 后面是逗号，则不是有效的拆分点
+                    if conjunction == "that":
+                        if pos + 4 < len(sentence) and sentence[pos + 4] == ",":
+                            pos += len(conjunction)
+                            continue
+                    
+                    # 根据轮次设置长度要求
                     before_conjunction = sentence[:pos].strip()
                     after_conjunction = sentence[pos + len(conjunction) :].strip()
                     
-                    # 退化要求：前部分>10字符，后部分>10字符
-                    if len(before_conjunction) > 10 and len(after_conjunction) > 10:
-                        priority = self.conjunction_priority.get(conjunction, 0)
-                        split_points.append((pos, priority, f"连接词: {conjunction}"))
+                    # 长度要求：第5轮降低到5字符，第4轮降低到10字符，其他轮次保持20字符
+                    if round_num >= 5:
+                        min_length = 5
+                    elif round_num >= 4:
+                        min_length = 10
+                    else:
+                        min_length = 20
+                    
+                    if len(before_conjunction) > min_length and len(after_conjunction) > min_length:
+                        # 第2轮：移除从句检测
+                        if round_num >= 2:
+                            # 不检查从句，直接添加
+                            priority = self.conjunction_priority.get(conjunction, 0)
+                            split_points.append((pos, priority, f"连接词: {conjunction}"))
+                        else:
+                            # 第1轮：正常检查从句
+                            if not self._is_in_subordinate_clause(sentence, pos):
+                                priority = self.conjunction_priority.get(conjunction, 0)
+                                split_points.append((pos, priority, f"连接词: {conjunction}"))
                 
                 pos += len(conjunction)
         
@@ -411,281 +601,76 @@ class SentenceSplitter:
         split_points.sort(key=lambda x: x[0])
         return split_points
 
-    def find_best_split_with_fallback(self, sentence: str) -> Optional[Tuple[int, int, str, int]]:
-        """带兜底方案的拆分点查找（重新设计）"""
+    def find_best_split(self, sentence: str) -> Optional[Tuple[int, int, str, int]]:
+        """拆分点查找（支持逐步退化）"""
         # 第1轮：正常策略
         split_points = self.find_split_points(sentence)
         if split_points:
             valid_splits = []
             for pos, priority, reason in split_points:
-                if self._is_valid_split_point(sentence, pos):
+                if self._is_valid_split_point(sentence, pos, round_num=1):
                     valid_splits.append((pos, priority, reason))
             
             if valid_splits:
+                # 按优先级排序，选择最佳拆分点
                 best = max(valid_splits, key=lambda x: (x[1], -x[0]))
                 return (best[0], best[1], best[2], 1)  # 添加轮次信息
         
         # 第2轮：移除从句检测
+        split_points = self.find_split_points(sentence, round_num=2)
         if split_points:
             valid_splits = []
             for pos, priority, reason in split_points:
-                if self._is_valid_split_point_without_clause_check(sentence, pos):
+                if self._is_valid_split_point(sentence, pos, round_num=2):
                     valid_splits.append((pos, priority, reason))
             
             if valid_splits:
+                # 按优先级排序，选择最佳拆分点
                 best = max(valid_splits, key=lambda x: (x[1], -x[0]))
                 return (best[0], best[1], best[2], 2)
         
         # 第3轮：移除简单并列检测
+        split_points = self.find_split_points(sentence, round_num=3)
         if split_points:
             valid_splits = []
             for pos, priority, reason in split_points:
-                if self._is_valid_split_point_without_enumeration_check(sentence, pos):
+                if self._is_valid_split_point(sentence, pos, round_num=3):
                     valid_splits.append((pos, priority, reason))
             
             if valid_splits:
+                # 按优先级排序，选择最佳拆分点
                 best = max(valid_splits, key=lambda x: (x[1], -x[0]))
                 return (best[0], best[1], best[2], 3)
         
-        # 第4轮：使用退化版本的拆分点查找
-        degraded_split_points = self.find_split_points_degraded(sentence)
-        if degraded_split_points:
+        # 第4轮：降低长度要求
+        split_points = self.find_split_points(sentence, round_num=4)
+        if split_points:
             valid_splits = []
-            for pos, priority, reason in degraded_split_points:
-                if self._is_valid_split_point_with_reduced_length(sentence, pos, min_length=10):
+            for pos, priority, reason in split_points:
+                if self._is_valid_split_point(sentence, pos, round_num=4):
                     valid_splits.append((pos, priority, reason))
             
             if valid_splits:
+                # 按优先级排序，选择最佳拆分点
                 best = max(valid_splits, key=lambda x: (x[1], -x[0]))
                 return (best[0], best[1], best[2], 4)
         
-        # 如果4轮弱化后仍然找不到有效拆分点，返回None
+        # 第5轮：移除所有限制
+        split_points = self.find_split_points(sentence, round_num=5)
+        if split_points:
+            valid_splits = []
+            for pos, priority, reason in split_points:
+                if self._is_valid_split_point(sentence, pos, round_num=5):
+                    valid_splits.append((pos, priority, reason))
+            
+            if valid_splits:
+                # 按优先级排序，选择最佳拆分点
+                best = max(valid_splits, key=lambda x: (x[1], -x[0]))
+                return (best[0], best[1], best[2], 5)
+        
+        # 如果5轮弱化后仍然找不到有效拆分点，返回None
         return None
 
-    def find_split_points(self, sentence: str) -> List[Tuple[int, int, str]]:
-        """
-        找到句子中的拆分点
-
-        Returns:
-            List of (position, priority, reason) tuples
-        """
-        split_points = []
-
-        # 句首从属连接词专门规则：若句子以从属连接词开头，优先使用第一个逗号作为候选
-        leading_subordinators = [
-            "while",
-            "although",
-            "though",
-            "when",
-            "if",
-            "since",
-            "because",
-            "as",
-            "whereas",
-            "once",
-            "after",
-            "before",
-            "until",
-            "unless",
-        ]
-        stripped = sentence.lstrip()
-        stripped_lower = stripped.lower()
-        starts_with_subordinator = any(
-            stripped_lower.startswith(w + " ") or stripped_lower.startswith(w + ",")
-            for w in leading_subordinators
-        )
-        # 排除条件句开头的 if（如 "if it needs to..."）
-        if starts_with_subordinator and stripped_lower.startswith("if "):
-            # 检查是否是条件句（通常后面跟着主语+动词）
-            after_if = stripped[3:].strip()
-            if after_if and after_if.lower().startswith(
-                ("you", "we", "they", "i", "he", "she", "it")
-            ):
-                starts_with_subordinator = False
-        first_comma_pos = sentence.find(",")
-
-        # 查找标点符号拆分点
-        for punct, priority in self.punctuation_priority.items():
-            for match in re.finditer(re.escape(punct), sentence):
-                pos = match.start()
-
-                # 排除数字上下文中的逗号
-                if punct == "," and self.is_number_context(sentence, pos):
-                    continue
-
-                # 排除简单并列中的逗号（但若是句首从属从句的第一个逗号，则保留）
-                is_first_comma = pos == first_comma_pos
-                if (
-                    punct == ","
-                    and self.is_simple_enumeration(sentence, pos)
-                    and not (starts_with_subordinator and is_first_comma)
-                ):
-                    continue
-
-                # 检查逗号后是否有连接词
-                if punct == ",":
-                    # 检查逗号后是否跟着连接词
-                    after_comma = sentence[pos + 1 :].strip()
-                    found_conjunction = False
-                    # 优先提升以从句引导词开头的逗号拆分点（that/which/who/where/when/why/how 等）
-                    elevated_after = {
-                        "that",
-                        "which",
-                        "who",
-                        "whom",
-                        "whose",
-                        "where",
-                        "when",
-                        "why",
-                        "how",
-                    }
-                    for conjunction in self.conjunctions:
-                        if after_comma.lower().startswith(conjunction + " "):
-                            # 在逗号处拆分（逗号+连接词模式）
-                            # 暂时不检查从句，让弱化方案处理
-                            boost = 6 if conjunction in elevated_after else 2
-                            split_points.append(
-                                (pos, priority + boost, f"逗号+连接词: {conjunction}")
-                            )
-                            found_conjunction = True
-                            break
-
-                    # 如果没有找到连接词，检查其他常见模式
-                    if not found_conjunction:
-                        # 检查 ", then", ", so", ", which" 等模式
-                        comma_patterns = [
-                            r",\s+then\s+",
-                            r",\s+so\s+",
-                            r",\s+which\s+",
-                            r",\s+that\s+",
-                            r",\s+where\s+",
-                            r",\s+when\s+",
-                            r",\s+who\s+",
-                            r",\s+why\s+",
-                            r",\s+how\s+",
-                            r",\s+next\s+",
-                            r",\s+finally\s+",
-                            r",\s+such\s+as\s+",
-                            r",\s+as\s+well\s+as\s+",
-                            r",\s+in\s+order\s+to\s+",
-                            r",\s+so\s+that\s+",
-                            r",\s+in\s+case\s+",
-                            r",\s+provided\s+that\s+",
-                            r",\s+and\s+also\s+",
-                            r",\s+but\s+that\s+",
-                            r",\s+or\s+if\s+",
-                            r",\s+even\s+though\s+",
-                            r",\s+although\s+",
-                            r",\s+though\s+",
-                            r",\s+because\s+",
-                            r",\s+since\s+",
-                            r",\s+unless\s+",
-                            r",\s+until\s+",
-                            r",\s+before\s+",
-                            r",\s+after\s+",
-                            r",\s+while\s+",
-                            r",\s+if\s+",
-                            r",\s+and\s+if\s+",
-                            r",\s+or\s+if\s+",
-                            r",\s+but\s+if\s+",
-                            r",\s+when\s+if\s+",
-                            r",\s+where\s+if\s+",
-                        ]
-                        for pattern in comma_patterns:
-                            if re.search(pattern, sentence[pos : pos + 50], re.IGNORECASE):
-                                # 暂时不检查从句，让弱化方案处理
-                                # 在逗号后拆分；若是 ", that/which/who/..." 等从句开头，进一步提升优先级
-                                if re.match(
-                                    r",\s+(that|which|who|whom|whose|where|when|why|how)\s+",
-                                    sentence[pos : pos + 50],
-                                    re.IGNORECASE,
-                                ):
-                                    split_points.append(
-                                        (pos, priority + 6, f"逗号+从句: {pattern}")
-                                    )
-                                else:
-                                    split_points.append(
-                                        (pos, priority + 2, f"逗号+模式: {pattern}")
-                                    )
-                                found_conjunction = True
-                                break
-
-                    if not found_conjunction:
-                        # 普通逗号拆分 - 暂时不检查从句，让弱化方案处理
-                        # 若是句首从属从句的第一个逗号，提高优先级
-                        boosted_priority = (
-                            priority + 3
-                            if (starts_with_subordinator and is_first_comma)
-                            else priority
-                        )
-                        reason = (
-                            "句首从属从句: ,"
-                            if (starts_with_subordinator and is_first_comma)
-                            else f"标点符号: {punct}"
-                        )
-                        split_points.append((pos, boosted_priority, reason))
-                else:
-                    split_points.append((pos, priority, f"标点符号: {punct}"))
-
-        # 查找连接词拆分点
-        sentence_lower = sentence.lower()
-
-        # 排除短语连接词中的单词，避免重复拆分
-        phrase_conjunctions = [
-            "such as",
-            "as well as",
-            "in order to",
-            "so that",
-            "in case",
-            "provided that",
-            "even though",
-            "as though",
-            "as if",
-        ]
-        excluded_words = set()
-        for phrase in phrase_conjunctions:
-            if phrase in sentence_lower:
-                words = phrase.split()
-                excluded_words.update(words)
-
-        for conjunction in self.conjunctions:
-            # 跳过短语连接词中的单词
-            if conjunction in excluded_words:
-                continue
-            # 跳过短语连接词本身
-            if conjunction in phrase_conjunctions:
-                continue
-            # 查找连接词在句子中的位置
-            pos = 0
-            while True:
-                pos = sentence_lower.find(conjunction, pos)
-                if pos == -1:
-                    break
-                # 确保是完整的单词，并且不在句子开头
-                if (
-                    pos > 0
-                    and (pos == 0 or not sentence_lower[pos - 1].isalnum())
-                    and (
-                        pos + len(conjunction) >= len(sentence_lower)
-                        or not sentence_lower[pos + len(conjunction)].isalnum()
-                    )
-                ):
-                    # 检查连接词前后是否有足够的内容
-                    before_conjunction = sentence[:pos].strip()
-                    after_conjunction = sentence[pos + len(conjunction) :].strip()
-
-                    # 只有当连接词前后都有足够内容时才拆分
-                    if len(before_conjunction) > 20 and len(after_conjunction) > 20:
-                        # 额外检查：避免拆分从句中的连接词
-                        if not self._is_in_subordinate_clause(sentence, pos):
-                            # 使用连接词优先级
-                            priority = self.conjunction_priority.get(conjunction, 0)
-                            split_points.append((pos, priority, f"连接词: {conjunction}"))
-                pos += len(conjunction)
-
-        # 按位置排序
-        split_points.sort(key=lambda x: x[0])
-        return split_points
 
     def should_split_sentence(self, sentence: str) -> bool:
         """判断句子是否需要拆分"""
@@ -701,7 +686,7 @@ class SentenceSplitter:
                 return False
 
         # 检查是否有拆分点
-        split_points = self.find_split_points(sentence)
+        split_points = self.find_split_points(sentence, round_num=1)
         if len(split_points) > 0:
             return True
 
@@ -739,7 +724,7 @@ class SentenceSplitter:
             return [sentence]
 
         # 使用带兜底方案的拆分点查找
-        best_split = self.find_best_split_with_fallback(sentence)
+        best_split = self.find_best_split(sentence)
         
         if best_split is None:
             # 如果找不到有效拆分点，保持原样（留给人工处理）
@@ -798,7 +783,9 @@ class SentenceSplitter:
         part2 = sentence[split_pos:]
 
         # 检查拆分后的部分是否太短（避免单个连接词成行）
-        if len(part1.strip()) < 15 or len(part2.strip()) < 15:
+        # 对于兜底方案，允许更短的后部分
+        min_part_length = 8 if round_num >= 4 else 10
+        if len(part1.strip()) < min_part_length or len(part2.strip()) < min_part_length:
             return [sentence]
 
         # 递归拆分：对每个部分独立评估
