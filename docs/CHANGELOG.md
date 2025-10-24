@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.3.3] - 2025-10-25
+
+- feat(docs): add comprehensive refactor plan for src/ main program
+- chore(docs): archive old plan
+
 ## [1.3.2] - 2025-10-25
 
 - feat(sentence_splitter): unify punctuation handling in sentence splitting
