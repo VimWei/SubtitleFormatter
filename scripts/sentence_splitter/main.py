@@ -353,7 +353,7 @@ class SentenceSplitter:
         if 0 <= pos < len(sentence):
             # 定义所有需要统一处理的标点符号
             punctuation_marks = {",", ":", ";", ".", "!", "?", "—", "–", "…"}
-            
+
             if sentence[pos] in punctuation_marks:
                 # 对于逗号，需要特殊处理从句引导词
                 if sentence[pos] == ",":
@@ -371,7 +371,8 @@ class SentenceSplitter:
                         "how",
                     ]
                     is_subordinate = any(
-                        after_comma.lower().startswith(marker + " ") for marker in subordinate_markers
+                        after_comma.lower().startswith(marker + " ")
+                        for marker in subordinate_markers
                     )
 
                     if is_subordinate:
@@ -691,7 +692,7 @@ class SentenceSplitter:
         if 0 <= split_pos < len(sentence):
             # 定义所有需要统一处理的标点符号
             punctuation_marks = {",", ":", ";", ".", "!", "?", "—", "–", "…"}
-            
+
             if sentence[split_pos] in punctuation_marks:
                 # 对于逗号，需要特殊处理从句引导词
                 if sentence[split_pos] == ",":
@@ -709,7 +710,8 @@ class SentenceSplitter:
                         "how",
                     ]
                     is_subordinate = any(
-                        after_comma.lower().startswith(marker + " ") for marker in subordinate_markers
+                        after_comma.lower().startswith(marker + " ")
+                        for marker in subordinate_markers
                     )
 
                     if is_subordinate:
