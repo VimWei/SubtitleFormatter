@@ -103,6 +103,9 @@ class SentenceSplitter:
             ";": 5,  # 分号优先级最高
             ":": 4,  # 冒号次之
             ",": 3,  # 逗号第三
+            "—": 3,  # 长破折号
+            "–": 3,  # 短破折号
+            "…": 3,  # 省略号
         }
 
         # 连接词优先级
@@ -345,50 +348,53 @@ class SentenceSplitter:
         else:
             min_length = 15  # 第1-3轮：正常长度要求
 
-        # 考虑逗号处理逻辑，计算实际拆分位置
+        # 统一处理所有标点符号，计算实际拆分位置
         actual_pos = pos
         if 0 <= pos < len(sentence):
-            if sentence[pos] == ",":
-                # 检查逗号后是否跟着从句引导词
-                after_comma = sentence[pos + 1 :].strip()
-                subordinate_markers = [
-                    "that",
-                    "which",
-                    "who",
-                    "whom",
-                    "whose",
-                    "where",
-                    "when",
-                    "why",
-                    "how",
-                ]
-                is_subordinate = any(
-                    after_comma.lower().startswith(marker + " ") for marker in subordinate_markers
-                )
+            # 定义所有需要统一处理的标点符号
+            punctuation_marks = {",", ":", ";", ".", "!", "?", "—", "–", "…"}
+            
+            if sentence[pos] in punctuation_marks:
+                # 对于逗号，需要特殊处理从句引导词
+                if sentence[pos] == ",":
+                    # 检查逗号后是否跟着从句引导词
+                    after_comma = sentence[pos + 1 :].strip()
+                    subordinate_markers = [
+                        "that",
+                        "which",
+                        "who",
+                        "whom",
+                        "whose",
+                        "where",
+                        "when",
+                        "why",
+                        "how",
+                    ]
+                    is_subordinate = any(
+                        after_comma.lower().startswith(marker + " ") for marker in subordinate_markers
+                    )
 
-                if is_subordinate:
-                    # 从句：跳过逗号和空格，让从句引导词在下一行开头
+                    if is_subordinate:
+                        # 从句：跳过逗号和空格，让从句引导词在下一行开头
+                        actual_pos += 1
+                        if actual_pos < len(sentence) and sentence[actual_pos] == " ":  # 跳过空格
+                            actual_pos += 1
+                    else:
+                        # 非从句：跳过逗号和空格
+                        actual_pos += 1
+                        if (
+                            actual_pos < len(sentence) and sentence[actual_pos] == " "
+                        ):  # 保留一个空格在上一行
+                            actual_pos += 1
+                else:
+                    # 其他标点符号：统一跳过标点符号和其后的空格
                     actual_pos += 1
                     if actual_pos < len(sentence) and sentence[actual_pos] == " ":  # 跳过空格
                         actual_pos += 1
-                else:
-                    # 非从句：跳过逗号和空格
+            elif sentence[pos] == " " and pos > 0:
+                # 如果正好在标点符号后的空格处分行，则跳过这个空格
+                if sentence[pos - 1] in punctuation_marks:
                     actual_pos += 1
-                    if (
-                        actual_pos < len(sentence) and sentence[actual_pos] == " "
-                    ):  # 保留一个空格在上一行
-                        actual_pos += 1
-            elif sentence[pos] == ":":
-                # 冒号：跳过冒号和空格，让后续内容在下一行开头
-                actual_pos += 1
-                if actual_pos < len(sentence) and sentence[actual_pos] == " ":  # 跳过空格
-                    actual_pos += 1
-            elif sentence[pos] == " " and pos > 0 and sentence[pos - 1] == ",":
-                # 如果正好在逗号后的空格处分行，则跳过这个空格
-                actual_pos += 1
-            elif sentence[pos] == " " and pos > 0 and sentence[pos - 1] == ":":
-                # 如果正好在冒号后的空格处分行，则跳过这个空格
-                actual_pos += 1
 
         # 使用实际拆分位置计算长度
         part1 = sentence[:actual_pos].strip()
@@ -681,49 +687,52 @@ class SentenceSplitter:
 
         split_pos, priority, reason, round_num = best_split
 
-        # 若在逗号处分行，确保将逗号与其后的一个空格保留在上一行
+        # 统一处理所有标点符号：保留标点符号在上一行，跳过其后的空格
         if 0 <= split_pos < len(sentence):
-            if sentence[split_pos] == ",":
-                # 检查逗号后是否跟着从句引导词
-                after_comma = sentence[split_pos + 1 :].strip()
-                subordinate_markers = [
-                    "that",
-                    "which",
-                    "who",
-                    "whom",
-                    "whose",
-                    "where",
-                    "when",
-                    "why",
-                    "how",
-                ]
-                is_subordinate = any(
-                    after_comma.lower().startswith(marker + " ") for marker in subordinate_markers
-                )
+            # 定义所有需要统一处理的标点符号
+            punctuation_marks = {",", ":", ";", ".", "!", "?", "—", "–", "…"}
+            
+            if sentence[split_pos] in punctuation_marks:
+                # 对于逗号，需要特殊处理从句引导词
+                if sentence[split_pos] == ",":
+                    # 检查逗号后是否跟着从句引导词
+                    after_comma = sentence[split_pos + 1 :].strip()
+                    subordinate_markers = [
+                        "that",
+                        "which",
+                        "who",
+                        "whom",
+                        "whose",
+                        "where",
+                        "when",
+                        "why",
+                        "how",
+                    ]
+                    is_subordinate = any(
+                        after_comma.lower().startswith(marker + " ") for marker in subordinate_markers
+                    )
 
-                if is_subordinate:
-                    # 从句：跳过逗号和空格，让从句引导词在下一行开头
+                    if is_subordinate:
+                        # 从句：跳过逗号和空格，让从句引导词在下一行开头
+                        split_pos += 1
+                        if split_pos < len(sentence) and sentence[split_pos] == " ":  # 跳过空格
+                            split_pos += 1
+                    else:
+                        # 非从句：跳过逗号和空格
+                        split_pos += 1
+                        if (
+                            split_pos < len(sentence) and sentence[split_pos] == " "
+                        ):  # 保留一个空格在上一行
+                            split_pos += 1
+                else:
+                    # 其他标点符号：统一跳过标点符号和其后的空格
                     split_pos += 1
                     if split_pos < len(sentence) and sentence[split_pos] == " ":  # 跳过空格
                         split_pos += 1
-                else:
-                    # 非从句：跳过逗号和空格
+            elif sentence[split_pos] == " " and split_pos > 0:
+                # 如果正好在标点符号后的空格处分行，则跳过这个空格
+                if sentence[split_pos - 1] in punctuation_marks:
                     split_pos += 1
-                    if (
-                        split_pos < len(sentence) and sentence[split_pos] == " "
-                    ):  # 保留一个空格在上一行
-                        split_pos += 1
-            elif sentence[split_pos] == ":":
-                # 冒号：跳过冒号和空格，让后续内容在下一行开头
-                split_pos += 1
-                if split_pos < len(sentence) and sentence[split_pos] == " ":  # 跳过空格
-                    split_pos += 1
-            elif sentence[split_pos] == " " and split_pos > 0 and sentence[split_pos - 1] == ",":
-                # 如果正好在逗号后的空格处分行，则跳过这个空格
-                split_pos += 1
-            elif sentence[split_pos] == " " and split_pos > 0 and sentence[split_pos - 1] == ":":
-                # 如果正好在冒号后的空格处分行，则跳过这个空格
-                split_pos += 1
 
         # 拆分句子（不修改任何标点或空白，只做换行）
         part1 = sentence[:split_pos]
