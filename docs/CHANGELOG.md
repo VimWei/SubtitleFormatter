@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.3.1] - 2025-10-24
+
+- feat(sentence_splitter): enhance conjunction handling and priority settings
+- refactor(sentence_splitter): optimize splitting algorithm parameters
+- feat(sentence_splitter): enhance sentence splitting logic and improve documentation
+- feat(sentence_splitter): implement fallback strategy and colon handling
+- chore: remove unused dependencies from uv.lock
+- refactor: update dependencies and enhance README documentation
+
 ## [1.3.0] - 2025-10-23
 
 - fix(text-to-sentences): correct punctuation in examples for clarity
