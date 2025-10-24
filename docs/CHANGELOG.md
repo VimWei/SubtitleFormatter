@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.3.4] - 2025-10-25
+
+- feat(docs): introduce plugin architecture design document
+
 ## [1.3.3] - 2025-10-25
 
 - feat(docs): add comprehensive refactor plan for src/ main program
