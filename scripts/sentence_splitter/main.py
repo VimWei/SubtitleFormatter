@@ -10,6 +10,7 @@ import sys
 from pathlib import Path
 from typing import List, Optional, Tuple
 
+
 class SentenceSplitter:
     """句子拆分器"""
 
@@ -127,8 +128,8 @@ class SentenceSplitter:
             "before": 1,
             "after": 1,
             "as": 1,  # 从属连接词
-            "if": 1,   # 条件连接词
-            "while": 1, # 时间连接词
+            "if": 1,  # 条件连接词
+            "while": 1,  # 时间连接词
             # 从句引导词（中等优先级）
             "that": 1,
             "which": 1,
@@ -157,7 +158,7 @@ class SentenceSplitter:
             "next": 0,
             "finally": 0,
             "subsequently": 0,
-            "even": 0, 
+            "even": 0,
             # 短语连接词（低优先级）
             "such as": 0,
             "as well as": 0,
@@ -205,7 +206,7 @@ class SentenceSplitter:
             if conjunction in start_words:
                 # 检查从当前位置开始的短语是否匹配
                 if pos + phrase_length <= len(sentence_lower):
-                    if sentence_lower[pos:pos+phrase_length].startswith(phrase):
+                    if sentence_lower[pos : pos + phrase_length].startswith(phrase):
                         return True
 
             # 检查当前连接词是否是固定短语的结束词
@@ -216,7 +217,9 @@ class SentenceSplitter:
                     if start_pos >= 0:
                         # 检查是否匹配固定短语
                         if start_pos + phrase_length <= len(sentence_lower):
-                            if sentence_lower[start_pos:start_pos+phrase_length].startswith(phrase):
+                            if sentence_lower[start_pos : start_pos + phrase_length].startswith(
+                                phrase
+                            ):
                                 return True
 
         return False
@@ -349,15 +352,15 @@ class SentenceSplitter:
                 # 检查逗号后是否跟着从句引导词
                 after_comma = sentence[pos + 1 :].strip()
                 subordinate_markers = [
-                        "that",
-                        "which",
-                        "who",
-                        "whom",
-                        "whose",
-                        "where",
-                        "when",
-                        "why",
-                        "how",
+                    "that",
+                    "which",
+                    "who",
+                    "whom",
+                    "whose",
+                    "where",
+                    "when",
+                    "why",
+                    "how",
                 ]
                 is_subordinate = any(
                     after_comma.lower().startswith(marker + " ") for marker in subordinate_markers
@@ -429,8 +432,15 @@ class SentenceSplitter:
 
                     # 检查逗号后的连接词
                     elevated_after = {
-                        "that", "which", "who", "whom", "whose",
-                        "where", "when", "why", "how"
+                        "that",
+                        "which",
+                        "who",
+                        "whom",
+                        "whose",
+                        "where",
+                        "when",
+                        "why",
+                        "how",
                     }
                     # 转折连接词获得更高优先级
                     contrast_conjunctions = {"but", "yet"}
@@ -459,20 +469,20 @@ class SentenceSplitter:
 
                         for pattern in comma_patterns:
                             if re.search(pattern, sentence[pos : pos + 50], re.IGNORECASE):
-                                    if re.match(
-                                        r",\s+(that|which|who|whom|whose|where|when|why|how)\s+",
-                                        sentence[pos : pos + 50],
-                                        re.IGNORECASE,
-                                    ):
-                                        split_points.append(
-                                            (pos, priority + 6, f"逗号+从句: {pattern}")
-                                        )
-                                    else:
-                                        split_points.append(
-                                            (pos, priority + 2, f"逗号+模式: {pattern}")
-                                        )
-                                    found_conjunction = True
-                                    break
+                                if re.match(
+                                    r",\s+(that|which|who|whom|whose|where|when|why|how)\s+",
+                                    sentence[pos : pos + 50],
+                                    re.IGNORECASE,
+                                ):
+                                    split_points.append(
+                                        (pos, priority + 6, f"逗号+从句: {pattern}")
+                                    )
+                                else:
+                                    split_points.append(
+                                        (pos, priority + 2, f"逗号+模式: {pattern}")
+                                    )
+                                found_conjunction = True
+                                break
 
                     if not found_conjunction:
                         # 普通逗号拆分
@@ -707,7 +717,7 @@ class SentenceSplitter:
                 # 冒号：跳过冒号和空格，让后续内容在下一行开头
                 split_pos += 1
                 if split_pos < len(sentence) and sentence[split_pos] == " ":  # 跳过空格
-                        split_pos += 1
+                    split_pos += 1
             elif sentence[split_pos] == " " and split_pos > 0 and sentence[split_pos - 1] == ",":
                 # 如果正好在逗号后的空格处分行，则跳过这个空格
                 split_pos += 1
@@ -790,6 +800,7 @@ class SentenceSplitter:
             print(f"❌ 处理文件时出错: {e}")
             sys.exit(1)
 
+
 def main():
     """主函数"""
     parser = argparse.ArgumentParser(
@@ -845,6 +856,7 @@ def main():
     # 创建拆分器并处理文件
     splitter = SentenceSplitter(min_recursive_length=args.min_length, max_depth=args.max_depth)
     splitter.process_file(input_path, output_path)
+
 
 if __name__ == "__main__":
     main()
