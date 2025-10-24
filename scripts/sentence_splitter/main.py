@@ -10,7 +10,6 @@ import sys
 from pathlib import Path
 from typing import List, Optional, Tuple
 
-
 class SentenceSplitter:
     """句子拆分器"""
 
@@ -181,30 +180,30 @@ class SentenceSplitter:
     def _is_in_fixed_phrase(self, sentence: str, pos: int, conjunction: str) -> bool:
         """
         检查连接词是否在固定短语中
-        
+
         Args:
             sentence: 完整句子
             pos: 连接词位置
             conjunction: 连接词
-            
+
         Returns:
             bool: 如果在固定短语中返回True，否则返回False
         """
         sentence_lower = sentence.lower()
-        
+
         # 遍历所有固定短语模式
         for phrase, pattern in self.fixed_phrases.items():
             start_words = pattern["start_words"]
             end_words = pattern["end_words"]
             phrase_length = pattern["length"]
-            
+
             # 检查当前连接词是否是固定短语的起始词
             if conjunction in start_words:
                 # 检查从当前位置开始的短语是否匹配
                 if pos + phrase_length <= len(sentence_lower):
                     if sentence_lower[pos:pos+phrase_length].startswith(phrase):
                         return True
-            
+
             # 检查当前连接词是否是固定短语的结束词
             elif conjunction in end_words:
                 # 检查前面是否有匹配的起始词
@@ -215,9 +214,8 @@ class SentenceSplitter:
                         if start_pos + phrase_length <= len(sentence_lower):
                             if sentence_lower[start_pos:start_pos+phrase_length].startswith(phrase):
                                 return True
-        
-        return False
 
+        return False
 
         # 标点符号优先级（用于确定最佳拆分点）
         self.punctuation_priority = {
@@ -358,7 +356,6 @@ class SentenceSplitter:
 
         return False
 
-
     def _is_in_subordinate_clause(self, sentence: str, pos: int) -> bool:
         """检查位置是否在从句中"""
         # 查找最近的从句引导词
@@ -399,7 +396,7 @@ class SentenceSplitter:
             min_length = 10  # 第4轮：降低长度要求
         else:
             min_length = 15  # 第1-3轮：正常长度要求
-        
+
         # 考虑逗号处理逻辑，计算实际拆分位置
         actual_pos = pos
         if 0 <= pos < len(sentence):
@@ -407,15 +404,15 @@ class SentenceSplitter:
                 # 检查逗号后是否跟着从句引导词
                 after_comma = sentence[pos + 1 :].strip()
                 subordinate_markers = [
-                    "that",
-                    "which",
-                    "who",
-                    "whom",
-                    "whose",
-                    "where",
-                    "when",
-                    "why",
-                    "how",
+                        "that",
+                        "which",
+                        "who",
+                        "whom",
+                        "whose",
+                        "where",
+                        "when",
+                        "why",
+                        "how",
                 ]
                 is_subordinate = any(
                     after_comma.lower().startswith(marker + " ") for marker in subordinate_markers
@@ -444,28 +441,24 @@ class SentenceSplitter:
             elif sentence[pos] == " " and pos > 0 and sentence[pos - 1] == ":":
                 # 如果正好在冒号后的空格处分行，则跳过这个空格
                 actual_pos += 1
-        
+
         # 使用实际拆分位置计算长度
         part1 = sentence[:actual_pos].strip()
         part2 = sentence[actual_pos:].strip()
-        
+
         if len(part1) < min_length or len(part2) < min_length:
             return False
-        
-        # 检查数字上下文（所有轮次都检查）
-        if sentence[pos] == "," and self.is_number_context(sentence, pos):
-            return False
-        
+
         # 第3轮及以后：移除简单并列检测
         if round_num < 3:
             if sentence[pos] == "," and self.is_simple_enumeration(sentence, pos):
                 return False
-        
+
         # 第1轮：检查从句（第2轮及以后不检查）
         if round_num == 1:
             if self._is_in_subordinate_clause(sentence, pos):
                 return False
-        
+
         return True
 
     def find_split_points(self, sentence: str, round_num: int = 1) -> List[Tuple[int, int, str]]:
@@ -474,29 +467,29 @@ class SentenceSplitter:
         round_num: 1=正常, 2=移除从句检测, 3=移除简单并列检测, 4=降低长度要求, 5=移除所有限制
         """
         split_points = []
-        
+
         # 查找标点符号拆分点（简化版本）
         for punct, priority in self.punctuation_priority.items():
             for match in re.finditer(re.escape(punct), sentence):
                 pos = match.start()
-                
+
                 # 排除数字上下文中的逗号
                 if punct == "," and self.is_number_context(sentence, pos):
                     continue
-                
+
                 # 逗号特殊处理
                 if punct == ",":
                     after_comma = sentence[pos + 1 :].strip()
                     found_conjunction = False
-                    
+
                     # 检查逗号后的连接词
                     elevated_after = {
-                        "that", "which", "who", "whom", "whose", 
+                        "that", "which", "who", "whom", "whose",
                         "where", "when", "why", "how"
                     }
                     # 转折连接词获得更高优先级
                     contrast_conjunctions = {"but", "yet"}
-                    
+
                     for conjunction in self.conjunctions:
                         if after_comma.lower().startswith(conjunction + " "):
                             if conjunction in elevated_after:
@@ -505,12 +498,12 @@ class SentenceSplitter:
                                 boost = 4  # 转折连接词优先级高于普通连接词
                             else:
                                 boost = 2
-                            split_points.append(
-                                (pos, priority + boost, f"逗号+连接词: {conjunction}")
-                            )
-                            found_conjunction = True
-                            break
-                    
+                                split_points.append(
+                                    (pos, priority + boost, f"逗号+连接词: {conjunction}")
+                                )
+                                found_conjunction = True
+                                break
+
                     if not found_conjunction:
                         # 检查逗号模式
                         comma_patterns = [
@@ -518,30 +511,30 @@ class SentenceSplitter:
                             r",\s+(and|or|but|so|yet|for|nor)\s+",
                             r",\s+(however|therefore|moreover|furthermore|meanwhile)\s+",
                         ]
-                        
+
                         for pattern in comma_patterns:
                             if re.search(pattern, sentence[pos : pos + 50], re.IGNORECASE):
-                                if re.match(
-                                    r",\s+(that|which|who|whom|whose|where|when|why|how)\s+",
-                                    sentence[pos : pos + 50],
-                                    re.IGNORECASE,
-                                ):
-                                    split_points.append(
-                                        (pos, priority + 6, f"逗号+从句: {pattern}")
-                                    )
-                                else:
-                                    split_points.append(
-                                        (pos, priority + 2, f"逗号+模式: {pattern}")
-                                    )
-                                found_conjunction = True
-                                break
-                    
+                                    if re.match(
+                                        r",\s+(that|which|who|whom|whose|where|when|why|how)\s+",
+                                        sentence[pos : pos + 50],
+                                        re.IGNORECASE,
+                                    ):
+                                        split_points.append(
+                                            (pos, priority + 6, f"逗号+从句: {pattern}")
+                                        )
+                                    else:
+                                        split_points.append(
+                                            (pos, priority + 2, f"逗号+模式: {pattern}")
+                                        )
+                                    found_conjunction = True
+                                    break
+
                     if not found_conjunction:
                         # 普通逗号拆分
                         split_points.append((pos, priority, f"标点符号: {punct}"))
                 else:
                     split_points.append((pos, priority, f"标点符号: {punct}"))
-        
+
         # 连接词拆分（退化版本 - 降低长度要求）
         for conjunction in self.conjunctions:
             sentence_lower = sentence.lower()
@@ -550,12 +543,12 @@ class SentenceSplitter:
                 pos = sentence_lower.find(conjunction, pos)
                 if pos == -1:
                     break
-                
+
                 # 检查是否在固定短语中，如果是则跳过
                 if self._is_in_fixed_phrase(sentence, pos, conjunction):
                     pos += len(conjunction)  # 跳过当前连接词，继续查找
                     continue
-                
+
                 # 确保是完整的单词
                 if (
                     pos > 0
@@ -570,19 +563,17 @@ class SentenceSplitter:
                         if pos + 4 < len(sentence) and sentence[pos + 4] == ",":
                             pos += len(conjunction)
                             continue
-                    
+
                     # 根据轮次设置长度要求
                     before_conjunction = sentence[:pos].strip()
                     after_conjunction = sentence[pos + len(conjunction) :].strip()
-                    
-                    # 长度要求：第5轮降低到5字符，第4轮降低到10字符，其他轮次保持20字符
-                    if round_num >= 5:
-                        min_length = 5
-                    elif round_num >= 4:
+
+                    # 长度要求：第4-5轮降低到10字符，其他轮次保持20字符
+                    if round_num >= 4:
                         min_length = 10
                     else:
                         min_length = 20
-                    
+
                     if len(before_conjunction) > min_length and len(after_conjunction) > min_length:
                         # 第2轮：移除从句检测
                         if round_num >= 2:
@@ -594,9 +585,9 @@ class SentenceSplitter:
                             if not self._is_in_subordinate_clause(sentence, pos):
                                 priority = self.conjunction_priority.get(conjunction, 0)
                                 split_points.append((pos, priority, f"连接词: {conjunction}"))
-                
+
                 pos += len(conjunction)
-        
+
         # 按位置排序
         split_points.sort(key=lambda x: x[0])
         return split_points
@@ -610,12 +601,12 @@ class SentenceSplitter:
             for pos, priority, reason in split_points:
                 if self._is_valid_split_point(sentence, pos, round_num=1):
                     valid_splits.append((pos, priority, reason))
-            
+
             if valid_splits:
                 # 按优先级排序，选择最佳拆分点
                 best = max(valid_splits, key=lambda x: (x[1], -x[0]))
                 return (best[0], best[1], best[2], 1)  # 添加轮次信息
-        
+
         # 第2轮：移除从句检测
         split_points = self.find_split_points(sentence, round_num=2)
         if split_points:
@@ -623,12 +614,12 @@ class SentenceSplitter:
             for pos, priority, reason in split_points:
                 if self._is_valid_split_point(sentence, pos, round_num=2):
                     valid_splits.append((pos, priority, reason))
-            
+
             if valid_splits:
                 # 按优先级排序，选择最佳拆分点
                 best = max(valid_splits, key=lambda x: (x[1], -x[0]))
                 return (best[0], best[1], best[2], 2)
-        
+
         # 第3轮：移除简单并列检测
         split_points = self.find_split_points(sentence, round_num=3)
         if split_points:
@@ -636,12 +627,12 @@ class SentenceSplitter:
             for pos, priority, reason in split_points:
                 if self._is_valid_split_point(sentence, pos, round_num=3):
                     valid_splits.append((pos, priority, reason))
-            
+
             if valid_splits:
                 # 按优先级排序，选择最佳拆分点
                 best = max(valid_splits, key=lambda x: (x[1], -x[0]))
                 return (best[0], best[1], best[2], 3)
-        
+
         # 第4轮：降低长度要求
         split_points = self.find_split_points(sentence, round_num=4)
         if split_points:
@@ -649,12 +640,12 @@ class SentenceSplitter:
             for pos, priority, reason in split_points:
                 if self._is_valid_split_point(sentence, pos, round_num=4):
                     valid_splits.append((pos, priority, reason))
-            
+
             if valid_splits:
                 # 按优先级排序，选择最佳拆分点
                 best = max(valid_splits, key=lambda x: (x[1], -x[0]))
                 return (best[0], best[1], best[2], 4)
-        
+
         # 第5轮：移除所有限制
         split_points = self.find_split_points(sentence, round_num=5)
         if split_points:
@@ -662,20 +653,19 @@ class SentenceSplitter:
             for pos, priority, reason in split_points:
                 if self._is_valid_split_point(sentence, pos, round_num=5):
                     valid_splits.append((pos, priority, reason))
-            
+
             if valid_splits:
                 # 按优先级排序，选择最佳拆分点
                 best = max(valid_splits, key=lambda x: (x[1], -x[0]))
                 return (best[0], best[1], best[2], 5)
-        
+
         # 如果5轮弱化后仍然找不到有效拆分点，返回None
         return None
-
 
     def should_split_sentence(self, sentence: str) -> bool:
         """判断句子是否需要拆分"""
         # 长度阈值
-        if len(sentence) < 60:  # 进一步降低长度阈值
+        if len(sentence) < self.min_recursive_length:  # 与递归拆分条件保持一致
             return False
 
         # 检查是否包含不应该拆分的模式（已移除特例化规则，统一走长度/优先级策略）
@@ -725,13 +715,15 @@ class SentenceSplitter:
 
         # 使用带兜底方案的拆分点查找
         best_split = self.find_best_split(sentence)
-        
+
         if best_split is None:
             # 如果找不到有效拆分点，保持原样（留给人工处理）
             if len(sentence) > 100:  # 只对长句输出警告
                 print(f"⚠️  无法拆分长句（长度: {len(sentence)}）: {sentence[:50]}...")
-            return [sentence]
-        
+                return [sentence]
+            else:
+                return [sentence]
+
         split_pos, priority, reason, round_num = best_split
 
         # 若在逗号处分行，确保将逗号与其后的一个空格保留在上一行
@@ -770,7 +762,7 @@ class SentenceSplitter:
                 # 冒号：跳过冒号和空格，让后续内容在下一行开头
                 split_pos += 1
                 if split_pos < len(sentence) and sentence[split_pos] == " ":  # 跳过空格
-                    split_pos += 1
+                        split_pos += 1
             elif sentence[split_pos] == " " and split_pos > 0 and sentence[split_pos - 1] == ",":
                 # 如果正好在逗号后的空格处分行，则跳过这个空格
                 split_pos += 1
@@ -853,7 +845,6 @@ class SentenceSplitter:
             print(f"❌ 处理文件时出错: {e}")
             sys.exit(1)
 
-
 def main():
     """主函数"""
     parser = argparse.ArgumentParser(
@@ -909,7 +900,6 @@ def main():
     # 创建拆分器并处理文件
     splitter = SentenceSplitter(min_recursive_length=args.min_length, max_depth=args.max_depth)
     splitter.process_file(input_path, output_path)
-
 
 if __name__ == "__main__":
     main()
