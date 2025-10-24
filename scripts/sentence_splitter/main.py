@@ -114,6 +114,9 @@ class SentenceSplitter:
             "nevertheless": 2,
             "meanwhile": 2,
             "consequently": 2,
+            # 转折连接词（高优先级）
+            "but": 2,
+            "yet": 2,
             # 中优先级连接词
             "because": 1,
             "since": 1,
@@ -123,19 +126,27 @@ class SentenceSplitter:
             "until": 1,
             "before": 1,
             "after": 1,
-            "while": 1,
-            "when": 1,
-            "where": 1,
-            "which": 1,
+            "as": 1,  # 从属连接词
+            "if": 1,   # 条件连接词
+            "while": 1, # 时间连接词
+            # 从句引导词（中等优先级）
             "that": 1,
+            "which": 1,
             "who": 1,
             "whom": 1,
             "whose": 1,
+            "where": 1,
+            "when": 1,
             "why": 1,
             "how": 1,
-            # 转折连接词（高优先级）
-            "but": 2,
-            "yet": 2,
+            # 其他连接词（中等优先级）
+            "additionally": 1,
+            "similarly": 1,
+            "likewise": 1,
+            "otherwise": 1,
+            "instead": 1,
+            "rather": 1,
+            "indeed": 1,
             # 低优先级连接词
             "and": 0,
             "or": 0,
@@ -145,16 +156,9 @@ class SentenceSplitter:
             "then": 0,
             "next": 0,
             "finally": 0,
-            "meanwhile": 0,
             "subsequently": 0,
-            "additionally": 0,
-            "similarly": 0,
-            "likewise": 0,
-            "otherwise": 0,
-            "instead": 0,
-            "rather": 0,
-            "indeed": 0,
-            # 短语连接词
+            "even": 0, 
+            # 短语连接词（低优先级）
             "such as": 0,
             "as well as": 0,
             "in order to": 0,
@@ -216,65 +220,6 @@ class SentenceSplitter:
                                 return True
 
         return False
-
-        # 标点符号优先级（用于确定最佳拆分点）
-        self.punctuation_priority = {
-            ";": 5,  # 分号优先级最高
-            ":": 4,  # 冒号次之
-            ",": 3,  # 逗号第三
-        }
-
-        # 连接词优先级
-        self.conjunction_priority = {
-            # 高优先级连接词
-            "however": 2,
-            "therefore": 2,
-            "moreover": 2,
-            "furthermore": 2,
-            "nevertheless": 2,
-            "meanwhile": 2,
-            "consequently": 2,
-            # 中优先级连接词
-            "because": 1,
-            "since": 1,
-            "although": 1,
-            "though": 1,
-            "unless": 1,
-            "until": 1,
-            "before": 1,
-            "after": 1,
-            # 从句引导词（中等优先级）
-            "that": 1,
-            "which": 1,
-            "who": 1,
-            "whom": 1,
-            "whose": 1,
-            "where": 1,
-            "when": 1,
-            "why": 1,
-            "how": 1,
-            # 低优先级连接词
-            "and": 0,
-            "or": 0,
-            "but": 0,
-            "yet": 0,
-            "so": 0,
-            "for": 0,
-            "nor": 0,
-        }
-
-        # 数字格式模式（用于排除数字中的逗号）
-        self.number_patterns = [
-            r"\d{1,3}(,\d{3})*",  # 千位分隔符：1,000,000
-            r"\d+\.\d+",  # 小数：3.14
-            r"\$\d+(,\d{3})*",  # 货币：$1,000
-        ]
-
-        # 简单并列模式（用于排除简单的词汇并列）
-        self.simple_enumeration_patterns = [
-            r"\b\w+\s*,\s*\w+\s*,\s*\w+\b",  # 三个或更多简单词汇并列
-            r"\b\w+\s*,\s*(?!and|or|but|yet|so|for|nor|because|since|as|if|when|while|although|though|unless|until|before|after|however|therefore|moreover|furthermore|nevertheless|meanwhile|consequently|additionally|similarly|likewise|otherwise|instead|rather|indeed|which|that|who|whom|whose|where|when|why|how|then|next|finally|subsequently|a|an|the|this|that|these|those|you|we|they|he|she|it|i|me|us|them|him|her|might|could|would|should|will|can|may|must|shall)\w+\b",  # 两个简单词汇并列，但排除连接词、冠词、代词和助动词
-        ]
 
     def is_number_context(self, text: str, pos: int) -> bool:
         """检查逗号是否在数字上下文中"""
@@ -498,11 +443,11 @@ class SentenceSplitter:
                                 boost = 4  # 转折连接词优先级高于普通连接词
                             else:
                                 boost = 2
-                                split_points.append(
-                                    (pos, priority + boost, f"逗号+连接词: {conjunction}")
-                                )
-                                found_conjunction = True
-                                break
+                            split_points.append(
+                                (pos, priority + boost, f"逗号+连接词: {conjunction}")
+                            )
+                            found_conjunction = True
+                            break
 
                     if not found_conjunction:
                         # 检查逗号模式
