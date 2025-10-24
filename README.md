@@ -100,30 +100,42 @@ Subtitle Formatter 是一个智能文本格式化工具，它能够进行智能�
 
 ## 脚本工具
 
-SubtitleFormatter 还提供了一系列独立的脚本工具，用于文本处理、格式转换等任务。
+SubtitleFormatter 提供了一系列独立的脚本工具，用于各种文本处理和格式转换任务。
 
 ### 快速开始
 ```bash
-# 列出所有脚本
+# 列出所有可用脚本
 uv run python scripts_manager.py list
 
-# 运行文本差异检测
-uv run python scripts_manager.py text-diff old.txt new.txt --json
+# 运行句子分割工具
+uv run python scripts_manager.py sentence-splitter input.txt --output output.txt
 
-# 显示脚本帮助
+# 显示特定脚本的帮助信息
 uv run python scripts_manager.py help text-diff
 ```
 
 ### 可用脚本
-- **text-diff**: 文本差异检测工具
-- **clean-vtt**: VTT文件清理工具
-- **transcript-converter**: 字幕格式转换工具
-- **srt-resegment**: SRT重分段工具
-- **release**: 版本发布工具
 
-### 详细说明
-- **用户使用**: 请参考 [脚本使用指南](docs/scripts_guide.md)
-- **开发者文档**: 请参考 [scripts/README.md](scripts/README.md)
+#### 文本处理工具
+- **text-diff**: 智能文本差异检测和对比工具
+- **text-to-sentences**: 文本断句工具
+- **sentence-splitter**: 高级句子分割工具
+- **punctuation-adder**: 智能标点符号添加工具
+
+#### 字幕格式工具
+- **clean-vtt**: VTT 字幕文件清理工具
+- **srt-resegment**: SRT 字幕重分段工具
+- **transcript-converter**: 字幕格式转换工具
+
+#### 其他工具
+- **batch-replace**: 批量文本替换工具（Vim 脚本）
+- **txt-resegment**: 文本重分段工具（Vim 脚本）
+- **release**: 版本发布和打包工具
+
+### 使用说明
+- **用户指南**: 详细使用说明请参考 [脚本使用指南](docs/scripts_guide.md)
+- **开发者文档**: 技术实现和架构说明请参考 [Scripts_Development_Guide.md](scripts/Scripts_Development_Guide.md)
+- **依赖管理**: 各脚本的依赖通过 `uv` 自动管理，无需手动安装
 
 ## License
 

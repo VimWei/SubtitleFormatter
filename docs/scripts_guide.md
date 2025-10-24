@@ -76,4 +76,4 @@ uv run python scripts_manager.py text-diff /path/to/old.txt /path/to/new.txt
 
 ### 脚本开发
 如需开发新脚本，请查阅：
-- `scripts/README.md` - 脚本开发规范
+- `scripts/Scripts_Development_Guide.md` - 脚本开发规范
