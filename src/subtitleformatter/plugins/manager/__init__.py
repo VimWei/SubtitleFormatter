@@ -23,6 +23,7 @@ from .dependency_injection import (
     register_singleton,
 )
 from .plugin_config import PluginConfigManager
+from .plugin_config_manager import PluginConfigManager as NewPluginConfigManager
 from .plugin_events import (
     PluginEvent,
     PluginEventBus,
@@ -37,6 +38,7 @@ __all__ = [
     "DependencyContainer",
     "DependencyInjector",
     "PluginConfigManager",
+    "NewPluginConfigManager",
     "PluginEventSystem",
     "PluginEventBus",
     "PluginEvent",

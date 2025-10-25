@@ -177,6 +177,7 @@ class MainWindow(QMainWindow):
         def run(self) -> None:
             try:
                 from subtitleformatter.processors.text_processor import TextProcessor
+                from subtitleformatter.processors.plugin_text_processor import PluginTextProcessor
 
                 # 设置统一日志系统，让日志同时输出到终端和GUI
                 def gui_log_callback(message: str):
@@ -188,7 +189,17 @@ class MainWindow(QMainWindow):
                 logger.enable_terminal(True)
 
                 self.log.emit("Starting format...")
-                processor = TextProcessor(self.runtime_cfg)
+                
+                # Check if plugin system is enabled
+                if self.runtime_cfg.get("plugins") and self.runtime_cfg.get("plugins", {}).get("order"):
+                    # Use new plugin-based processor
+                    processor = PluginTextProcessor(self.runtime_cfg)
+                    self.log.emit("🔌 Using plugin-based processing system")
+                else:
+                    # Use legacy processor for backward compatibility
+                    processor = TextProcessor(self.runtime_cfg)
+                    self.log.emit("📜 Using legacy processing system")
+                
                 processor.process()
                 self.done.emit(True, "Format completed.")
             except Exception as e:

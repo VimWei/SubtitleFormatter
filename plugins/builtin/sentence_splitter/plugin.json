@@ -1,0 +1,52 @@
+{
+    "name": "builtin/sentence_splitter",
+    "version": "1.0.0",
+    "description": "句子拆分插件，将长句和复合句拆分为更短的句子",
+    "author": "SubtitleFormatter Team",
+    "class_name": "SentenceSplitterPlugin",
+    "category": "text_processing",
+    "tags": ["sentence", "split", "conjunction", "recursive", "heuristic"],
+    "dependencies": [],
+    "config_schema": {
+        "type": "object",
+        "properties": {
+            "enabled": {
+                "type": "boolean",
+                "default": true,
+                "description": "是否启用句子拆分功能"
+            },
+            "min_recursive_length": {
+                "type": "integer",
+                "default": 70,
+                "description": "最小递归长度阈值，低于此长度不再递归拆分"
+            },
+            "max_depth": {
+                "type": "integer",
+                "default": 8,
+                "description": "最大递归深度，防止过度递归"
+            },
+            "max_degradation_round": {
+                "type": "integer",
+                "default": 5,
+                "minimum": 1,
+                "maximum": 5,
+                "description": "最大退化轮次：1=严格模式(只执行第1轮)，3=中等模式，5=宽松模式(执行全部5轮)"
+            }
+        },
+        "additionalProperties": false
+    },
+    "input_types": ["string", "list"],
+    "output_types": ["string", "list"],
+    "examples": [
+        {
+            "input": "This is a very long sentence that contains multiple clauses and should be split into shorter, more manageable parts.",
+            "output": "This is a very long sentence that contains multiple clauses,\nand should be split into shorter, more manageable parts.",
+            "description": "将长句拆分为更短的句子"
+        },
+        {
+            "input": "The project was successful, however, we need to improve the quality, and we should also consider the cost.",
+            "output": "The project was successful,\nhowever, we need to improve the quality,\nand we should also consider the cost.",
+            "description": "基于连接词和标点符号拆分复合句"
+        }
+    ]
+}

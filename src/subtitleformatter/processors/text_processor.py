@@ -2,10 +2,18 @@
 Text processing coordinator for SubtitleFormatter.
 """
 
-from ..core.filler_remover import FillerRemover
-from ..core.line_breaker import LineBreaker
-from ..core.sentence_handler import SentenceHandler
 from ..core.text_cleaner import TextCleaner
+
+# Import deprecated modules with fallback
+try:
+    from ..core.filler_remover import FillerRemover
+    from ..core.line_breaker import LineBreaker
+    from ..core.sentence_handler import SentenceHandler
+except ImportError:
+    # These modules have been removed in the plugin migration
+    FillerRemover = None
+    LineBreaker = None
+    SentenceHandler = None
 from ..models.model_manager import ModelManager
 from ..utils.debug_output import DebugOutput
 from ..utils.unified_logger import log_debug_info, log_info, log_stats, log_step, logger
@@ -85,9 +93,14 @@ class TextProcessor:
 
         # 2. 智能断句（可跳过）
         if stages_cfg.get("sentence_splitting", True):
-            log_step("正在进行智能断句")
-            sentence_handler = SentenceHandler(self.config)
-            sentences = sentence_handler.process(cleaned_text)
+            if SentenceHandler is None:
+                log_info("SentenceHandler 已移除，请使用插件系统")
+                # Fallback: simple sentence splitting
+                sentences = [s.strip() for s in cleaned_text.split('.') if s.strip()]
+            else:
+                log_step("正在进行智能断句")
+                sentence_handler = SentenceHandler(self.config)
+                sentences = sentence_handler.process(cleaned_text)
 
             if isinstance(sentences, list):
                 log_debug_info(f"共拆分出 {len(sentences)} 个句子")
@@ -105,9 +118,14 @@ class TextProcessor:
 
         # 3. 停顿词处理（可跳过）
         if stages_cfg.get("filler_handling", True):
-            log_step("正在处理停顿词")
-            filler_remover = FillerRemover(self.config)
-            processed_sentences, filler_stats = filler_remover.process(sentences)
+            if FillerRemover is None:
+                log_info("FillerRemover 已移除，请使用插件系统")
+                processed_sentences = sentences
+                filler_stats = {}
+            else:
+                log_step("正在处理停顿词")
+                filler_remover = FillerRemover(self.config)
+                processed_sentences, filler_stats = filler_remover.process(sentences)
 
             if filler_stats:
                 total_count = sum(filler_stats.values())
@@ -128,9 +146,13 @@ class TextProcessor:
 
         # 4. 智能断行（可跳过）
         if stages_cfg.get("line_breaking", True):
-            log_step("正在进行智能断行")
-            line_breaker = LineBreaker(self.config)
-            final_text = line_breaker.process(processed_sentences)
+            if LineBreaker is None:
+                log_info("LineBreaker 已移除，请使用插件系统")
+                final_text = "\n".join(processed_sentences)
+            else:
+                log_step("正在进行智能断行")
+                line_breaker = LineBreaker(self.config)
+                final_text = line_breaker.process(processed_sentences)
         else:
             # 若跳过断行，直接用句子列表拼接为单行文本
             final_text = "\n".join(processed_sentences)

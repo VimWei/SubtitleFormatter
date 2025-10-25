@@ -1,0 +1,60 @@
+{
+    "name": "builtin/text_to_sentences",
+    "version": "1.0.0",
+    "description": "文本转句子插件，将连续文本按句分割，每句一行",
+    "author": "SubtitleFormatter Team",
+    "class_name": "TextToSentencesPlugin",
+    "category": "text_processing",
+    "tags": ["sentence", "split", "segmentation", "regex"],
+    "dependencies": [],
+    "config_schema": {
+        "type": "object",
+        "properties": {
+            "enabled": {
+                "type": "boolean",
+                "default": true,
+                "description": "是否启用文本转句子功能"
+            },
+            "sentence_endings": {
+                "type": "array",
+                "default": [".", "!", "?"],
+                "description": "句子结束标点符号列表"
+            },
+            "abbreviation_patterns": {
+                "type": "array",
+                "default": ["Mr.", "Mrs.", "Dr.", "Prof.", "Inc.", "Ltd.", "Co.", "Corp."],
+                "description": "常见缩写词模式列表"
+            },
+            "normalize_whitespace": {
+                "type": "boolean",
+                "default": true,
+                "description": "是否规范化空白字符"
+            },
+            "remove_empty_sentences": {
+                "type": "boolean",
+                "default": true,
+                "description": "是否移除空句子"
+            },
+            "filter_ellipsis_only": {
+                "type": "boolean",
+                "default": false,
+                "description": "是否过滤只包含省略号的句子"
+            }
+        },
+        "additionalProperties": false
+    },
+    "input_types": ["string", "list"],
+    "output_types": ["string", "list"],
+    "examples": [
+        {
+            "input": "Hello world. This is a test! How are you?",
+            "output": "Hello world.\nThis is a test!\nHow are you?",
+            "description": "将连续文本分割为句子"
+        },
+        {
+            "input": "Dr. Smith is here. He works at Inc. Corp.",
+            "output": "Dr. Smith is here.\nHe works at Inc. Corp.",
+            "description": "处理缩写词，避免误分割"
+        }
+    ]
+}

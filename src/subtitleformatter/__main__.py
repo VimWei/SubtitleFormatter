@@ -16,6 +16,7 @@ from pathlib import Path
 
 from .config.loader import load_config
 from .processors.text_processor import TextProcessor
+from .processors.plugin_text_processor import PluginTextProcessor
 
 
 def main():
@@ -60,7 +61,16 @@ def run_cli(config_path: str = None):
             # Load default config
             config = load_config()
 
-        processor = TextProcessor(config)
+        # Check if plugin system is enabled
+        if config.get("plugins") and config.get("plugins", {}).get("order"):
+            # Use new plugin-based processor
+            processor = PluginTextProcessor(config)
+            print("🔌 Using plugin-based processing system")
+        else:
+            # Use legacy processor for backward compatibility
+            processor = TextProcessor(config)
+            print("📜 Using legacy processing system")
+        
         processor.process()
         print("✅ Processing completed successfully!")
 

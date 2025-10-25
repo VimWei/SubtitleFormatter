@@ -1,0 +1,65 @@
+{
+    "name": "builtin/text_cleaning",
+    "version": "1.0.0",
+    "description": "基础文本清理插件，用于统一空白字符、换行符、标点符号并清理多余空行",
+    "author": "SubtitleFormatter Team",
+    "class_name": "TextCleaningPlugin",
+    "category": "text_processing",
+    "tags": ["cleaning", "normalization", "whitespace", "punctuation"],
+    "dependencies": [],
+    "config_schema": {
+        "type": "object",
+        "properties": {
+            "enabled": {
+                "type": "boolean",
+                "default": true,
+                "description": "是否启用文本清理功能"
+            },
+            "normalize_punctuation": {
+                "type": "boolean", 
+                "default": true,
+                "description": "是否规范化标点符号（全角转半角）"
+            },
+            "normalize_numbers": {
+                "type": "boolean",
+                "default": true,
+                "description": "是否规范化数字（全角转半角）"
+            },
+            "normalize_whitespace": {
+                "type": "boolean",
+                "default": true,
+                "description": "是否规范化空白字符"
+            },
+            "clean_empty_lines": {
+                "type": "boolean",
+                "default": true,
+                "description": "是否清理多余空行"
+            },
+            "add_spaces_around_punctuation": {
+                "type": "boolean",
+                "default": true,
+                "description": "是否在标点符号后添加空格"
+            },
+            "remove_bom": {
+                "type": "boolean",
+                "default": true,
+                "description": "是否移除UTF-8 BOM标记"
+            }
+        },
+        "additionalProperties": false
+    },
+    "input_types": ["string", "list"],
+    "output_types": ["string", "list"],
+    "examples": [
+        {
+            "input": "Hello　world，this　is　a　test。",
+            "output": "Hello world, this is a test.",
+            "description": "规范化全角标点和空格"
+        },
+        {
+            "input": "This is a test\n\n\n\nAnother paragraph",
+            "output": "This is a test\n\nAnother paragraph",
+            "description": "清理多余空行"
+        }
+    ]
+}

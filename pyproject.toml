@@ -52,16 +52,82 @@ package = true
 
 
 [tool.pytest.ini_options]
+# 测试发现
 testpaths = ["tests"]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
 cache_dir = "tests/.pytest_cache"
+
+# 输出选项
+addopts = [
+    "--strict-markers",
+    "--strict-config", 
+    "--disable-warnings",
+    "--tb=short",
+    "--durations=10"
+]
+
+# 标记定义
+markers = [
+    "unit: 单元测试",
+    "integration: 集成测试", 
+    "performance: 性能测试",
+    "slow: 慢速测试",
+    "plugin: 插件测试",
+    "text_cleaning: 文本清理插件测试",
+    "punctuation_adder: 标点恢复插件测试",
+    "text_to_sentences: 文本转句子插件测试",
+    "sentence_splitter: 句子拆分插件测试"
+]
+
+# 过滤警告
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning", 
+    "ignore::UserWarning:transformers.*"
+]
+
+# 最小版本要求
+minversion = "6.0"
+
+# 测试超时（秒）- 需要 pytest-timeout 插件
+# timeout = 300
+
+# 日志配置
+log_cli = true
+log_cli_level = "INFO"
+log_cli_format = "%(asctime)s [%(levelname)8s] %(name)s: %(message)s"
+log_cli_date_format = "%Y-%m-%d %H:%M:%S"
 
 
 [tool.coverage.run]
 data_file = "tests/.coverage"
-
+source = ["plugins/builtin"]
+omit = [
+    "*/tests/*",
+    "*/test_*", 
+    "*/__pycache__/*",
+    "*/venv/*",
+    "*/env/*"
+]
 
 [tool.coverage.html]
 directory = "tests/htmlcov"
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if self.debug:",
+    "if settings.DEBUG",
+    "raise AssertionError",
+    "raise NotImplementedError", 
+    "if 0:",
+    "if __name__ == .__main__.:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod"
+]
 
 
 [tool.isort]

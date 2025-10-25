@@ -1,0 +1,55 @@
+{
+    "name": "builtin/punctuation_adder",
+    "version": "1.0.0",
+    "description": "自动标点恢复插件，使用机器学习模型为英文文本自动添加标点符号",
+    "author": "SubtitleFormatter Team",
+    "class_name": "PunctuationAdderPlugin",
+    "category": "text_processing",
+    "tags": ["punctuation", "ml", "deepmultilingualpunctuation", "capitalization"],
+    "dependencies": ["deepmultilingualpunctuation"],
+    "config_schema": {
+        "type": "object",
+        "properties": {
+            "enabled": {
+                "type": "boolean",
+                "default": true,
+                "description": "是否启用标点恢复功能"
+            },
+            "model_name": {
+                "type": "string",
+                "default": "oliverguhr/fullstop-punctuation-multilang-large",
+                "description": "使用的标点恢复模型名称"
+            },
+            "capitalize_sentences": {
+                "type": "boolean",
+                "default": true,
+                "description": "是否将句子首字母大写"
+            },
+            "split_sentences": {
+                "type": "boolean",
+                "default": true,
+                "description": "是否将文本分割为句子"
+            },
+            "replace_dashes": {
+                "type": "boolean",
+                "default": true,
+                "description": "是否将破折号替换为逗号"
+            }
+        },
+        "additionalProperties": false
+    },
+    "input_types": ["string", "list"],
+    "output_types": ["string", "list"],
+    "examples": [
+        {
+            "input": "hello world this is a test without punctuation",
+            "output": "Hello world, this is a test without punctuation.",
+            "description": "添加标点符号和首字母大写"
+        },
+        {
+            "input": "this is a long sentence that needs punctuation and capitalization",
+            "output": "This is a long sentence that needs punctuation and capitalization.",
+            "description": "处理长句并添加标点"
+        }
+    ]
+}
