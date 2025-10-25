@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.3.9] - 2025-10-26
+
+- Update .gitignore to remove .coverage file from tests
+
 ## [1.3.8] - 2025-10-26
 
 - feat: Complete Phase 3 pluginization of core components

@@ -1,6 +1,6 @@
 [project]
 name = "subtitleformatter"
-version = "1.3.8"
+version = "1.3.9"
 description = "An intelligent subtitle processing tool that uses NLP models to clean, segment, and format text for better readability"
 readme = "README.md"
 authors = [
@@ -29,6 +29,7 @@ dev = [
     "mypy>=1.0.0",
     "isort>=5.10.0",
     "coverage>=7.6.0",
+    "pytest-cov>=7.0.0",
 ]
 # 脚本独立依赖组
 text-diff = [
