@@ -1,35 +1,60 @@
 # Simple Uppercase Plugin
 
-This is a simple example plugin that demonstrates the basic plugin structure for SubtitleFormatter.
+## 描述
 
-## Features
+这是一个示例插件，演示了如何创建 SubtitleFormatter 插件。该插件将输入的文本转换为大写字母。
 
-- Converts input text to uppercase
-- Handles both string and list inputs
-- Minimal configuration requirements
+## 功能
 
-## Usage
+- 将文本转换为大写字母
+- 支持启用/禁用功能
+- 支持保留空格选项
 
-This plugin can be used in a plugin chain to convert text to uppercase. It's primarily intended as an example for plugin development.
+## 配置
 
-## Configuration
-
-No special configuration is required. The plugin accepts a simple `enabled` boolean flag.
-
-## Example
-
-```python
-from subtitleformatter.plugins import PluginRegistry, PluginLifecycleManager
-
-# Load the plugin
-registry = PluginRegistry()
-registry.add_plugin_dir(Path("plugins/examples"))
-registry.scan_plugins()
-
-lifecycle = PluginLifecycleManager(registry)
-plugin = lifecycle.load_plugin("simple_uppercase")
-
-# Process text
-result = plugin.process("hello world")
-print(result)  # "HELLO WORLD"
+```json
+{
+    "enabled": true,
+    "preserve_spaces": true
+}
 ```
+
+### 配置选项
+
+- `enabled` (bool): 是否启用插件，默认为 `true`
+- `preserve_spaces` (bool): 是否保留空格，默认为 `true`
+
+## 使用方法
+
+1. 将插件放置在 `plugins/examples/simple_uppercase/` 目录
+2. 在主程序配置中启用插件
+3. 运行文本处理流程
+
+## 示例
+
+### 输入
+```
+hello world
+```
+
+### 输出
+```
+HELLO WORLD
+```
+
+## 开发
+
+### 依赖
+
+- Python 3.8+
+- SubtitleFormatter
+
+### 测试
+
+```bash
+python -m pytest tests/
+```
+
+## 许可证
+
+MIT License

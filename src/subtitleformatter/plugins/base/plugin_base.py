@@ -49,10 +49,11 @@ class TextProcessorPlugin(ABC):
         self.config = config or {}
         self._initialized = False
         self._dependencies: Dict[str, Any] = {}
-
+        
         # Validate configuration if schema is provided
         if self.config_schema:
             self._validate_config()
+            self._apply_default_values()
 
     @abstractmethod
     def process(self, text: Union[str, List[str]]) -> Union[str, List[str]]:
@@ -71,6 +72,31 @@ class TextProcessorPlugin(ABC):
             NotImplementedError: If not implemented by subclass
         """
         raise NotImplementedError("Subclasses must implement the process method")
+    
+    def process_batch(self, texts: List[str], batch_size: int = 100) -> List[str]:
+        """
+        Process a batch of texts efficiently.
+        
+        This method provides optimized batch processing for large datasets.
+        Plugins can override this method to implement custom batch processing logic.
+        
+        Args:
+            texts: List of texts to process
+            batch_size: Number of texts to process in each batch
+            
+        Returns:
+            List of processed texts
+        """
+        if not texts:
+            return []
+        
+        results = []
+        for i in range(0, len(texts), batch_size):
+            batch = texts[i:i + batch_size]
+            batch_results = self.process(batch)
+            results.extend(batch_results)
+        
+        return results
 
     def initialize(self) -> None:
         """
@@ -91,6 +117,37 @@ class TextProcessorPlugin(ABC):
         """
         self._initialized = False
         logger.debug(f"Plugin {self.name} cleaned up")
+    
+    def is_initialized(self) -> bool:
+        """
+        Check if plugin is initialized.
+        
+        Returns:
+            True if plugin is initialized, False otherwise
+        """
+        return self._initialized
+
+    def get_config(self) -> Dict[str, Any]:
+        """Get current plugin configuration."""
+        return self.config.copy()
+    
+    def set_config(self, config: Dict[str, Any]) -> None:
+        """Set plugin configuration."""
+        self.config = config.copy()
+        if self.config_schema:
+            self._validate_config()
+    
+    def validate_config(self, config: Dict[str, Any]) -> bool:
+        """Validate configuration data."""
+        if not self.config_schema:
+            return True
+        
+        required_fields = self.config_schema.get("required", [])
+        for field in required_fields:
+            if field not in config:
+                return False
+        
+        return True
 
     def get_info(self) -> Dict[str, Any]:
         """
@@ -149,23 +206,70 @@ class TextProcessorPlugin(ABC):
         """
         return name in self._dependencies
 
+    def _apply_default_values(self) -> None:
+        """Apply default values from schema."""
+        if not self.config_schema:
+            return
+        
+        default_values = self.config_schema.get("default_values", {})
+        for field, default_value in default_values.items():
+            if field not in self.config:
+                self.config[field] = default_value
+    
     def _validate_config(self) -> None:
         """
         Validate plugin configuration against schema.
 
         Raises:
-            ValueError: If configuration is invalid
+            PluginConfigurationError: If configuration is invalid
         """
         if not self.config_schema:
             return
 
-        # Basic validation - can be extended with jsonschema library
+        errors = []
+        
+        # 验证必需字段
         required_fields = self.config_schema.get("required", [])
         for field in required_fields:
             if field not in self.config:
-                raise PluginConfigurationError(
-                    f"Required configuration field '{field}' missing for plugin '{self.name}'"
-                )
+                errors.append(f"Required field '{field}' is missing")
+        
+        # 验证字段类型
+        field_types = self.config_schema.get("field_types", {})
+        for field, expected_type in field_types.items():
+            if field in self.config:
+                if not isinstance(self.config[field], expected_type):
+                    errors.append(
+                        f"Field '{field}' must be of type {expected_type.__name__}, "
+                        f"got {type(self.config[field]).__name__}"
+                    )
+        
+        # 验证字段值
+        field_validators = self.config_schema.get("field_validators", {})
+        for field, validator in field_validators.items():
+            if field in self.config:
+                try:
+                    result = validator(self.config[field])
+                    if result is False:
+                        errors.append(f"Field '{field}' validation failed: value '{self.config[field]}' is invalid")
+                except Exception as e:
+                    errors.append(f"Field '{field}' validation failed: {e}")
+        
+        # 检查未知字段
+        allowed_fields = set(required_fields)
+        allowed_fields.update(self.config_schema.get("optional", {}).keys())
+        allowed_fields.update(field_types.keys())
+        
+        for field in self.config.keys():
+            if field not in allowed_fields:
+                errors.append(f"Unknown field '{field}' is not allowed")
+        
+        if errors:
+            raise PluginConfigurationError(
+                f"Configuration validation failed: {'; '.join(errors)}",
+                plugin_name=self.name,
+                invalid_fields=[field for field in self.config.keys() if field not in allowed_fields]
+            )
 
     def __str__(self) -> str:
         """String representation of the plugin."""
@@ -178,23 +282,49 @@ class TextProcessorPlugin(ABC):
 
 class PluginError(Exception):
     """Base exception class for plugin-related errors."""
-
-    pass
+    
+    def __init__(self, message: str, plugin_name: str = None, error_code: str = None):
+        super().__init__(message)
+        self.plugin_name = plugin_name
+        self.error_code = error_code
+    
+    def __str__(self):
+        base_msg = super().__str__()
+        if self.plugin_name:
+            base_msg = f"[{self.plugin_name}] {base_msg}"
+        if self.error_code:
+            base_msg = f"{base_msg} (Error Code: {self.error_code})"
+        return base_msg
 
 
 class PluginInitializationError(PluginError):
     """Raised when plugin initialization fails."""
-
-    pass
+    
+    def __init__(self, message: str, plugin_name: str = None, cause: Exception = None):
+        super().__init__(message, plugin_name, "INIT_ERROR")
+        self.cause = cause
 
 
 class PluginConfigurationError(PluginError):
     """Raised when plugin configuration is invalid."""
-
-    pass
+    
+    def __init__(self, message: str, plugin_name: str = None, invalid_fields: list = None):
+        super().__init__(message, plugin_name, "CONFIG_ERROR")
+        self.invalid_fields = invalid_fields or []
 
 
 class PluginDependencyError(PluginError):
     """Raised when plugin dependency is missing or invalid."""
+    
+    def __init__(self, message: str, plugin_name: str = None, missing_dependencies: list = None):
+        super().__init__(message, plugin_name, "DEPENDENCY_ERROR")
+        self.missing_dependencies = missing_dependencies or []
 
-    pass
+
+class PluginProcessingError(PluginError):
+    """Raised when plugin processing fails."""
+    
+    def __init__(self, message: str, plugin_name: str = None, input_data: str = None, cause: Exception = None):
+        super().__init__(message, plugin_name, "PROCESSING_ERROR")
+        self.input_data = input_data
+        self.cause = cause

@@ -37,9 +37,10 @@ class MockPluginWithConfig(TextProcessorPlugin):
     author = "Test Author"
     dependencies = []
     config_schema = {
-        "type": "object",
-        "properties": {"enabled": {"type": "boolean"}, "param1": {"type": "string"}},
         "required": ["enabled"],
+        "optional": {"param1": "default_value"},
+        "field_types": {"enabled": bool, "param1": str},
+        "default_values": {"enabled": True, "param1": "default_value"}
     }
 
     def process(self, text):
@@ -161,13 +162,15 @@ class TestPluginErrors:
     def test_plugin_initialization_error(self):
         """Test PluginInitializationError exception."""
         error = PluginInitializationError("Init error")
-        assert str(error) == "Init error"
+        assert "Init error" in str(error)
+        assert "(Error Code: INIT_ERROR)" in str(error)
         assert isinstance(error, PluginError)
 
     def test_plugin_configuration_error(self):
         """Test PluginConfigurationError exception."""
         error = PluginConfigurationError("Config error")
-        assert str(error) == "Config error"
+        assert "Config error" in str(error)
+        assert "(Error Code: CONFIG_ERROR)" in str(error)
         assert isinstance(error, PluginError)
 
     def test_plugin_dependency_error(self):
@@ -175,5 +178,6 @@ class TestPluginErrors:
         from subtitleformatter.plugins import PluginDependencyError
 
         error = PluginDependencyError("Dependency error")
-        assert str(error) == "Dependency error"
+        assert "Dependency error" in str(error)
+        assert "(Error Code: DEPENDENCY_ERROR)" in str(error)
         assert isinstance(error, PluginError)

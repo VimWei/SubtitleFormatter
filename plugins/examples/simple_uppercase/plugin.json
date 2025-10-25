@@ -1,18 +1,22 @@
 {
     "name": "simple_uppercase",
     "version": "1.0.0",
-    "description": "A simple plugin that converts text to uppercase",
+    "description": "将文本转换为大写字母的简单插件",
     "author": "SubtitleFormatter Team",
     "class_name": "SimpleUppercasePlugin",
     "dependencies": [],
     "config_schema": {
-        "type": "object",
-        "properties": {
-            "enabled": {
-                "type": "boolean",
-                "default": true
-            }
+        "required": ["enabled"],
+        "optional": {
+            "preserve_spaces": true
         },
-        "required": []
+        "field_types": {
+            "enabled": "bool",
+            "preserve_spaces": "bool"
+        },
+        "default_values": {
+            "enabled": true,
+            "preserve_spaces": true
+        }
     }
 }
