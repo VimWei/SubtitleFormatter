@@ -9,14 +9,14 @@ __pycache__/
 *.egg-info/
 
 # Build artifacts
-dist/
-build/
+/dist/
+/build/
 *.log
 
 # Data files
-legacy/
-data/
-models/
+/legacy/
+/data/
+/models/
 
 # test
 tests/__pycache__/
