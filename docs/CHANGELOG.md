@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.3.7] - 2025-10-25
+
+- feat: implement plugin interface and base class system
+- feat(tests): add comprehensive performance, requirements clarification, and user scenarios tests for plugin system
+
 ## [1.3.6] - 2025-10-25
 
 - feat: implement plugin infrastructure foundation
