@@ -40,7 +40,7 @@ class MockPluginWithConfig(TextProcessorPlugin):
         "required": ["enabled"],
         "optional": {"param1": "default_value"},
         "field_types": {"enabled": bool, "param1": str},
-        "default_values": {"enabled": True, "param1": "default_value"}
+        "default_values": {"enabled": True, "param1": "default_value"},
     }
 
     def process(self, text):
