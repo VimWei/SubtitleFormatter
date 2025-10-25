@@ -14,15 +14,15 @@ Core Components:
 
 Usage:
     from subtitleformatter.plugins import PluginRegistry, PluginLifecycleManager
-    
+
     # Create registry and scan for plugins
     registry = PluginRegistry()
     registry.add_plugin_dir(Path("plugins"))
     registry.scan_plugins()
-    
+
     # Create lifecycle manager
     lifecycle = PluginLifecycleManager(registry)
-    
+
     # Load plugins
     plugins = lifecycle.load_plugins({
         "builtin/text_cleaning": {"enabled": True},
@@ -32,10 +32,10 @@ Usage:
 
 from .base import PluginRegistry, TextProcessorPlugin
 from .base.plugin_base import (
-    PluginError,
-    PluginInitializationError,
     PluginConfigurationError,
     PluginDependencyError,
+    PluginError,
+    PluginInitializationError,
 )
 from .manager import (
     DependencyContainer,
