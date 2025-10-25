@@ -1,0 +1,18 @@
+{
+    "name": "simple_uppercase",
+    "version": "1.0.0",
+    "description": "A simple plugin that converts text to uppercase",
+    "author": "SubtitleFormatter Team",
+    "class_name": "SimpleUppercasePlugin",
+    "dependencies": [],
+    "config_schema": {
+        "type": "object",
+        "properties": {
+            "enabled": {
+                "type": "boolean",
+                "default": true
+            }
+        },
+        "required": []
+    }
+}
