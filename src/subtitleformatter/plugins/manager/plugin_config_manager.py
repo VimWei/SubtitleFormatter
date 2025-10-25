@@ -51,11 +51,11 @@ class PluginConfigManager:
         """
         if config_path and config_path.exists():
             return self._load_from_file(config_path)
-        
+
         # Try to load from main config
         if plugin_name in self._configs:
             return self._configs[plugin_name]
-        
+
         # Return default configuration
         return self._default_configs.get(plugin_name, {})
 
@@ -68,7 +68,7 @@ class PluginConfigManager:
         """
         # Load plugin order
         self._plugin_order = main_config.get("plugins", {}).get("order", [])
-        
+
         # Load individual plugin configurations
         plugins_config = main_config.get("plugins", {})
         for key, value in plugins_config.items():
@@ -153,23 +153,23 @@ class PluginConfigManager:
             List of validation errors (empty if valid)
         """
         errors = []
-        
+
         # Basic validation
         if not isinstance(config, dict):
             errors.append(f"Plugin config must be a dictionary")
             return errors
-        
+
         # Check for required fields
         if "enabled" not in config:
             errors.append(f"Plugin config missing 'enabled' field")
-        
+
         # Type validation for common fields
         if "enabled" in config and not isinstance(config["enabled"], bool):
             errors.append(f"Plugin 'enabled' field must be boolean")
-        
+
         # Plugin-specific validation can be added here
         # For now, we'll do basic validation
-        
+
         return errors
 
     def save_plugin_configs_to_main_config(self, main_config: Dict[str, Any]) -> Dict[str, Any]:
@@ -185,14 +185,14 @@ class PluginConfigManager:
         # Ensure plugins section exists
         if "plugins" not in main_config:
             main_config["plugins"] = {}
-        
+
         # Set plugin order
         main_config["plugins"]["order"] = self._plugin_order
-        
+
         # Set individual plugin configurations
         for plugin_name, config in self._configs.items():
             main_config["plugins"][plugin_name] = config
-        
+
         return main_config
 
     def export_plugin_config(self, plugin_name: str, output_path: Path) -> None:
@@ -204,10 +204,10 @@ class PluginConfigManager:
             output_path: Path to output file
         """
         config = self.get_plugin_config(plugin_name)
-        
+
         # Ensure output directory exists
         output_path.parent.mkdir(parents=True, exist_ok=True)
-        
+
         # Write configuration file
         if output_path.suffix.lower() == ".json":
             with output_path.open("w", encoding="utf-8") as f:
@@ -231,17 +231,17 @@ class PluginConfigManager:
         """
         if not input_path.exists():
             raise FileNotFoundError(f"Configuration file not found: {input_path}")
-        
+
         config = self._load_from_file(input_path)
-        
+
         # Validate configuration
         errors = self.validate_plugin_config(plugin_name, config)
         if errors:
             raise ValueError(f"Invalid plugin configuration: {', '.join(errors)}")
-        
+
         # Set configuration
         self.set_plugin_config(plugin_name, config)
-        
+
         return config
 
     def _load_from_file(self, config_path: Path) -> Dict[str, Any]:
@@ -274,16 +274,16 @@ class PluginConfigManager:
         summary = {
             "plugin_order": self._plugin_order,
             "enabled_plugins": self.get_enabled_plugins(),
-            "plugin_configs": {}
+            "plugin_configs": {},
         }
-        
+
         for plugin_name in self._plugin_order:
             config = self.get_plugin_config(plugin_name)
             summary["plugin_configs"][plugin_name] = {
                 "enabled": self.is_plugin_enabled(plugin_name),
-                "config_keys": list(config.keys())
+                "config_keys": list(config.keys()),
             }
-        
+
         return summary
 
     def reset_plugin_config(self, plugin_name: str) -> None:
@@ -295,7 +295,7 @@ class PluginConfigManager:
         """
         if plugin_name in self._configs:
             del self._configs[plugin_name]
-        
+
         logger.info(f"Reset configuration for plugin: {plugin_name}")
 
     def reset_all_plugin_configs(self) -> None:

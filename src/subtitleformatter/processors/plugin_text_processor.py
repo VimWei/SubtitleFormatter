@@ -17,7 +17,7 @@ from ..utils.unified_logger import log_debug_info, log_info, log_stats, log_step
 class PluginTextProcessor:
     """
     Plugin-based text processing coordinator.
-    
+
     This class coordinates the text processing workflow using plugins
     instead of hardcoded processing stages.
     """
@@ -74,6 +74,7 @@ class PluginTextProcessor:
 
         # Log file information using unified logger
         import os
+
         filename = os.path.basename(input_file)
         log_info(f"已读入文件 {filename}")
         log_debug_info(f"文本长度: {len(text)} 字符")
@@ -99,26 +100,26 @@ class PluginTextProcessor:
         """Initialize the plugin system components."""
         # Initialize plugin registry
         self.plugin_registry = PluginRegistry()
-        
+
         # Add plugin directories
         plugin_dirs = [
             Path("plugins/builtin"),
             Path("plugins/examples"),
         ]
-        
+
         for plugin_dir in plugin_dirs:
             if plugin_dir.exists():
                 self.plugin_registry.add_plugin_dir(plugin_dir)
-        
+
         # Scan for plugins
         self.plugin_registry.scan_plugins()
-        
+
         # Initialize plugin lifecycle manager
         self.plugin_lifecycle = PluginLifecycleManager(self.plugin_registry)
-        
+
         # Initialize plugin configuration manager
         self.plugin_config_manager = NewPluginConfigManager()
-        
+
         # Load plugin configurations from main config
         self.plugin_config_manager.load_plugin_configs_from_main_config(self.config)
 
@@ -126,28 +127,28 @@ class PluginTextProcessor:
         """Load and initialize plugins based on configuration."""
         # Get enabled plugins in order
         enabled_plugins = self.plugin_config_manager.get_enabled_plugins()
-        
+
         if not enabled_plugins:
             log_info("没有启用的插件，使用原始文本")
             return
-        
+
         log_info(f"启用的插件: {', '.join(enabled_plugins)}")
-        
+
         # Load each plugin
         for plugin_name in enabled_plugins:
             try:
                 # Get plugin configuration
                 plugin_config = self.plugin_config_manager.get_plugin_config(plugin_name)
-                
+
                 # Load plugin instance
                 plugin_instance = self.plugin_lifecycle.load_plugin(plugin_name, plugin_config)
-                
+
                 if plugin_instance:
                     self.loaded_plugins.append(plugin_instance)
                     log_info(f"已加载插件: {plugin_name}")
                 else:
                     log_info(f"插件加载失败: {plugin_name}")
-                    
+
             except Exception as e:
                 logger.error(f"加载插件 {plugin_name} 时出错: {e}")
                 log_info(f"跳过插件: {plugin_name}")
@@ -155,64 +156,64 @@ class PluginTextProcessor:
     def _process_text_through_plugins(self, text: str, debug_output: DebugOutput) -> str:
         """
         Process text through the plugin chain.
-        
+
         Args:
             text: Input text
             debug_output: Debug output instance
-            
+
         Returns:
             Processed text
         """
         current_text = text
-        
+
         for i, plugin in enumerate(self.loaded_plugins):
             plugin_name = plugin.name
             log_step(f"正在执行插件: {plugin_name}")
-            
+
             try:
                 # Process text with plugin
                 processed_text = plugin.process(current_text)
-                
+
                 # Log processing statistics
                 if isinstance(processed_text, str):
                     log_debug_info(f"插件 {plugin_name} 处理结果:")
                     log_debug_info(f"  - 输入长度: {len(current_text)} 字符")
                     log_debug_info(f"  - 输出长度: {len(processed_text)} 字符")
                     log_debug_info(f"  - 长度变化: {len(processed_text) - len(current_text)} 字符")
-                
+
                 # Show debug output
                 debug_output.show_step(f"插件处理: {plugin_name}", processed_text)
-                
+
                 # Update current text
                 current_text = processed_text
-                
+
                 log_info(f"插件 {plugin_name} 处理完成")
-                
+
             except Exception as e:
                 logger.error(f"插件 {plugin_name} 处理时出错: {e}")
                 log_info(f"插件 {plugin_name} 处理失败，跳过")
                 # Continue with previous text if plugin fails
                 continue
-        
+
         return current_text
 
     def get_plugin_status(self) -> Dict[str, Any]:
         """
         Get status information about loaded plugins.
-        
+
         Returns:
             Dictionary containing plugin status information
         """
         return {
             "total_plugins": len(self.loaded_plugins),
             "loaded_plugins": [plugin.name for plugin in self.loaded_plugins],
-            "plugin_config_summary": self.plugin_config_manager.get_plugin_config_summary()
+            "plugin_config_summary": self.plugin_config_manager.get_plugin_config_summary(),
         }
 
     def cleanup(self) -> None:
         """Clean up plugin resources."""
         if self.plugin_lifecycle:
             self.plugin_lifecycle.cleanup_all_plugins()
-        
+
         self.loaded_plugins.clear()
         log_info("插件资源清理完成")

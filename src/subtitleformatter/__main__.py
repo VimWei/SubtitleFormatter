@@ -15,8 +15,8 @@ import sys
 from pathlib import Path
 
 from .config.loader import load_config
-from .processors.text_processor import TextProcessor
 from .processors.plugin_text_processor import PluginTextProcessor
+from .processors.text_processor import TextProcessor
 
 
 def main():
@@ -70,7 +70,7 @@ def run_cli(config_path: str = None):
             # Use legacy processor for backward compatibility
             processor = TextProcessor(config)
             print("📜 Using legacy processing system")
-        
+
         processor.process()
         print("✅ Processing completed successfully!")
 

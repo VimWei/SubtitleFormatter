@@ -9,10 +9,10 @@
 - 覆盖率测试
 """
 
-import sys
+import argparse
 import os
 import subprocess
-import argparse
+import sys
 from pathlib import Path
 
 # 添加项目根目录到路径
@@ -23,7 +23,7 @@ sys.path.insert(0, str(project_root))
 def run_tests(test_path=None, verbose=False, coverage=False, parallel=False):
     """
     运行测试
-    
+
     Args:
         test_path: 测试路径，如果为None则运行所有测试
         verbose: 是否显示详细输出
@@ -32,31 +32,27 @@ def run_tests(test_path=None, verbose=False, coverage=False, parallel=False):
     """
     # 构建pytest命令
     cmd = ["uv", "run", "pytest"]
-    
+
     if verbose:
         cmd.append("-v")
-    
+
     if parallel:
         cmd.extend(["-n", "auto"])
-    
+
     if coverage:
         # 注意：需要安装 pytest-cov 插件才能使用覆盖率功能
         # pip install pytest-cov
-        cmd.extend([
-            "--cov=plugins.builtin",
-            "--cov-report=html",
-            "--cov-report=term-missing"
-        ])
-    
+        cmd.extend(["--cov=plugins.builtin", "--cov-report=html", "--cov-report=term-missing"])
+
     if test_path:
         cmd.append(test_path)
     else:
         cmd.append("tests/plugins/builtin")
         cmd.append("tests/plugins/integration")
-    
+
     print(f"运行命令: {' '.join(cmd)}")
     print("=" * 60)
-    
+
     # 运行测试
     try:
         result = subprocess.run(cmd, cwd=project_root, check=True)
@@ -71,23 +67,18 @@ def run_tests(test_path=None, verbose=False, coverage=False, parallel=False):
 
 def run_individual_plugin_tests():
     """运行单个插件测试"""
-    plugins = [
-        "text_cleaning",
-        "punctuation_adder", 
-        "text_to_sentences",
-        "sentence_splitter"
-    ]
-    
+    plugins = ["text_cleaning", "punctuation_adder", "text_to_sentences", "sentence_splitter"]
+
     print("运行单个插件测试...")
     print("=" * 60)
-    
+
     all_passed = True
     for plugin in plugins:
         print(f"\n测试 {plugin} 插件...")
         test_path = f"tests/plugins/builtin/{plugin}/test_plugin.py"
         if not run_tests(test_path, verbose=True):
             all_passed = False
-    
+
     return all_passed
 
 
@@ -109,52 +100,34 @@ def main():
     """主函数"""
     parser = argparse.ArgumentParser(description="运行插件测试")
     parser.add_argument(
-        "--plugin", 
+        "--plugin",
         choices=["text_cleaning", "punctuation_adder", "text_to_sentences", "sentence_splitter"],
-        help="运行指定插件的测试"
+        help="运行指定插件的测试",
     )
-    parser.add_argument(
-        "--integration", 
-        action="store_true",
-        help="运行集成测试"
-    )
-    parser.add_argument(
-        "--all", 
-        action="store_true",
-        help="运行所有测试"
-    )
-    parser.add_argument(
-        "--coverage", 
-        action="store_true",
-        help="生成覆盖率报告"
-    )
-    parser.add_argument(
-        "--parallel", 
-        action="store_true",
-        help="并行运行测试"
-    )
-    parser.add_argument(
-        "--verbose", 
-        action="store_true",
-        help="显示详细输出"
-    )
-    
+    parser.add_argument("--integration", action="store_true", help="运行集成测试")
+    parser.add_argument("--all", action="store_true", help="运行所有测试")
+    parser.add_argument("--coverage", action="store_true", help="生成覆盖率报告")
+    parser.add_argument("--parallel", action="store_true", help="并行运行测试")
+    parser.add_argument("--verbose", action="store_true", help="显示详细输出")
+
     args = parser.parse_args()
-    
+
     # 如果没有指定任何选项，默认运行所有测试
     if not any([args.plugin, args.integration, args.all]):
         args.all = True
-    
+
     success = True
-    
+
     if args.plugin:
         test_path = f"tests/plugins/builtin/{args.plugin}/test_plugin.py"
-        success = run_tests(test_path, verbose=args.verbose, coverage=args.coverage, parallel=args.parallel)
+        success = run_tests(
+            test_path, verbose=args.verbose, coverage=args.coverage, parallel=args.parallel
+        )
     elif args.integration:
         success = run_integration_tests()
     elif args.all:
         success = run_all_tests()
-    
+
     if success:
         print("\n测试完成！")
         sys.exit(0)

@@ -96,7 +96,7 @@ class TextProcessor:
             if SentenceHandler is None:
                 log_info("SentenceHandler 已移除，请使用插件系统")
                 # Fallback: simple sentence splitting
-                sentences = [s.strip() for s in cleaned_text.split('.') if s.strip()]
+                sentences = [s.strip() for s in cleaned_text.split(".") if s.strip()]
             else:
                 log_step("正在进行智能断句")
                 sentence_handler = SentenceHandler(self.config)

@@ -15,9 +15,10 @@ from .text_cleaner import TextCleaner
 
 # Deprecated imports - kept for backward compatibility
 try:
-    from .sentence_handler import SentenceHandler
     from .filler_remover import FillerRemover
     from .line_breaker import LineBreaker
+    from .sentence_handler import SentenceHandler
+
     __all__ = ["TextCleaner", "SentenceHandler", "FillerRemover", "LineBreaker"]
 except ImportError:
     # These modules have been removed in the plugin migration
