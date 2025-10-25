@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.3.8] - 2025-10-26
+
+- feat: Complete Phase 3 pluginization of core components
+
 ## [1.3.7] - 2025-10-25
 
 - feat: implement plugin interface and base class system
