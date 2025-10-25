@@ -4,6 +4,8 @@
 
 本文档详细描述了 SubtitleFormatter 插件化架构的 GUI 设计方案，旨在充分发挥插件化架构的灵活性和可扩展性优势。
 
+**文档定位**: 本文档专注于**GUI设计**，包括界面布局、交互设计、动态UI更新等。核心架构设计请参考 [插件架构设计文档](plugin_architecture_design.md)，开发指南请参考 [插件开发指南](plugin_development_guide.md)，实施计划请参考 [主重构计划](src_refactor_plan.md)。
+
 ## 🎯 设计目标
 
 ### 核心目标
@@ -52,9 +54,7 @@ class PluginManagementPanel(QWidget):
     
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.plugin_manager = LocalPluginManager()
         self.setup_ui()
-        self.load_plugins()
     
     def setup_ui(self):
         layout = QVBoxLayout()
@@ -72,39 +72,6 @@ class PluginManagementPanel(QWidget):
         layout.addWidget(self.plugin_details)
         
         self.setLayout(layout)
-    
-    def load_plugins(self):
-        """加载可用插件"""
-        self.plugin_manager.scan_plugins()
-
-class LocalPluginManager:
-    """本地插件管理器 - 类似 vim 插件管理"""
-    
-    def __init__(self, plugin_dir: str = "plugins"):
-        self.plugin_dir = Path(plugin_dir)
-        self.plugin_dir.mkdir(exist_ok=True)
-        self.plugins = {}
-        self.scan_plugins()
-    
-    def scan_plugins(self):
-        """扫描插件目录，自动发现插件"""
-        for plugin_path in self.plugin_dir.glob("*/plugin.py"):
-            try:
-                plugin_info = self.load_plugin_info(plugin_path.parent)
-                if plugin_info:
-                    self.plugins[plugin_info["name"]] = plugin_info
-            except Exception as e:
-                print(f"Failed to load plugin {plugin_path}: {e}")
-    
-    def install_plugin(self, plugin_source: str) -> bool:
-        """安装插件 - 支持本地文件夹、Git仓库、ZIP文件"""
-        # 实现安装逻辑
-        pass
-    
-    def uninstall_plugin(self, plugin_name: str) -> bool:
-        """卸载插件"""
-        # 实现卸载逻辑
-        pass
 
 class SimplePluginManagerWidget(QWidget):
     """简单插件管理界面"""
@@ -596,61 +563,15 @@ class ResponsiveLayout(QVBoxLayout):
         pass
 ```
 
-## 📝 插件开发规范
+## 📝 相关文档
 
-### 1. 插件目录结构
-```
-my_plugin/
-├── plugin.json          # 插件元数据 (必需)
-├── plugin.py            # 插件主实现 (必需)
-├── requirements.txt     # 依赖包 (可选)
-└── README.md           # 说明文档 (可选)
-```
+### 插件开发指南
+详细的插件开发规范、实现示例和使用流程请参考：
+**[插件开发指南文档](plugin_development_guide.md)**
 
-### 2. plugin.json 格式
-```json
-{
-    "name": "my_plugin",
-    "version": "1.0.0",
-    "description": "我的自定义插件",
-    "author": "Your Name",
-    "input_type": "str",
-    "output_type": "str",
-    "enabled": true,
-    "dependencies": [],
-    "git_url": "https://github.com/user/my_plugin.git"
-}
-```
-
-### 3. 插件实现示例
-```python
-# plugin.py
-from typing import Any
-from ..core.plugin_base import TextProcessorPlugin
-
-class MyPlugin(TextProcessorPlugin):
-    """我的自定义插件"""
-    
-    def get_input_type(self) -> type:
-        return str
-    
-    def get_output_type(self) -> type:
-        return str
-    
-    def process(self, input_data: str) -> str:
-        """处理文本数据"""
-        # 在这里实现你的处理逻辑
-        result = input_data.upper()  # 示例：转大写
-        return result
-```
-
-### 4. 安装方式
-1. **本地文件夹**: 直接复制插件文件夹到 `plugins/` 目录
-2. **Git 仓库**: 克隆到 `plugins/` 目录，支持 `git pull` 更新
-3. **ZIP 文件**: 解压到 `plugins/` 目录
-
-### 5. 使用流程
-1. 开发插件 → 2. 放置到 plugins 目录 → 3. 重启应用或点击刷新 → 4. 在插件链中配置使用
+### 插件架构设计
+核心架构设计、接口定义和配置系统请参考：
+**[插件架构设计文档](plugin_architecture_design.md)**
 
 ## 🚀 高级特性
 

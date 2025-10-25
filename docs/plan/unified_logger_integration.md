@@ -4,6 +4,8 @@
 
 确保现有的优秀日志系统 `UnifiedLogger` 和 `DebugOutput` 能够完美兼容新的内核流程，保持统一的日志管理和调试输出功能。
 
+**文档定位**: 本文档专注于**UnifiedLogger集成**，是主重构计划的子任务。整体实施计划请参考 [主重构计划](src_refactor_plan.md)，基础设施架构请参考 [基础设施架构文档](infrastructure_architecture.md)。
+
 ## 🔍 现状分析
 
 ### UnifiedLogger 优势
@@ -74,11 +76,11 @@ class PunctuationAdder:
 
 ### 2. DebugOutput 适配
 ```python
-# 更新步骤名称映射
+# 更新步骤名称映射 - 使用完整的命名空间引用
 step_mappings = {
-    "标点恢复": "punctuation_adder",
-    "句子分割": "text_to_sentences", 
-    "句子拆分": "sentence_splitter"
+    "标点恢复": "builtin/punctuation_adder",
+    "句子分割": "builtin/text_to_sentences", 
+    "句子拆分": "builtin/sentence_splitter"
 }
 ```
 

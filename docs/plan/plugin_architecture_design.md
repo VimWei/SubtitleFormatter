@@ -4,6 +4,8 @@
 
 本文档详细描述了 SubtitleFormatter 的插件化架构设计，旨在解决当前线性串行处理流程的局限性，提供更灵活、可扩展的文本处理架构。
 
+**文档定位**: 本文档专注于**核心架构设计**，包括插件基类、接口定义、配置系统等。具体的实施计划请参考 [主重构计划](src_refactor_plan.md)，开发指南请参考 [插件开发指南](plugin_development_guide.md)。
+
 ## 🎯 设计目标
 
 ### 核心目标
@@ -197,172 +199,72 @@ class TextProcessor:
         return None
 ```
 
-### 2. 插件实现示例
+### 2. 插件类型定义
 
-#### 2.1 文本清理插件
-```python
-class TextCleaner(TextProcessorPlugin):
-    """文本清理插件"""
-    
-    def get_input_type(self) -> type:
-        return str
-    
-    def get_output_type(self) -> type:
-        return str
-    
-    def process(self, input_data: str) -> str:
-        """执行文本清理"""
-        # 现有的文本清理逻辑
-        cleaned_text, stats = self._clean_text(input_data)
-        
-        # 记录统计信息
-        if hasattr(self, 'debug_output'):
-            self.debug_output.show_step("文本清理", cleaned_text, stats)
-        
-        return cleaned_text
-    
-    def _clean_text(self, text: str) -> tuple[str, dict]:
-        """实际的文本清理逻辑"""
-        # 这里实现现有的 TextCleaner 逻辑
-        pass
+#### 2.1 核心插件类型
+- **TextCleaner**: 文本清理插件 (str → str)
+- **PunctuationAdder**: 标点恢复插件 (str → str)  
+- **TextToSentences**: 句子分割插件 (str → list)
+- **SentenceSplitter**: 句子拆分插件 (list → list)
+
+#### 2.2 插件接口规范
+所有插件必须实现以下接口：
+- `get_input_type()`: 定义输入数据类型
+- `get_output_type()`: 定义输出数据类型
+- `process(input_data)`: 执行数据处理逻辑
+- `is_enabled()`: 检查插件是否启用
+
+#### 2.3 数据类型流转
 ```
-
-#### 2.2 标点恢复插件
-```python
-class PunctuationAdder(TextProcessorPlugin):
-    """标点恢复插件"""
-    
-    def __init__(self, config: Dict[str, Any]):
-        super().__init__(config)
-        self.model = None
-    
-    def get_input_type(self) -> type:
-        return str
-    
-    def get_output_type(self) -> type:
-        return str
-    
-    def process(self, input_data: str) -> str:
-        """执行标点恢复"""
-        if self.model is None:
-            self.model = self._load_model()
-        
-        punctuated_text = self.model.restore_punctuation(input_data)
-        
-        # 记录统计信息
-        if hasattr(self, 'debug_output'):
-            stats = {
-                "text_length": len(input_data),
-                "punctuation_count": self._count_punctuation(punctuated_text),
-                "processing_time": self._get_processing_time()
-            }
-            self.debug_output.show_step("标点恢复", punctuated_text, stats)
-        
-        return punctuated_text
-    
-    def _load_model(self):
-        """加载标点恢复模型"""
-        # 使用 ModelManager 加载模型
-        pass
-```
-
-#### 2.3 句子分割插件
-```python
-class TextToSentences(TextProcessorPlugin):
-    """句子分割插件"""
-    
-    def get_input_type(self) -> type:
-        return str
-    
-    def get_output_type(self) -> type:
-        return list
-    
-    def process(self, input_data: str) -> List[str]:
-        """执行句子分割"""
-        sentences = self._split_sentences(input_data)
-        
-        # 记录统计信息
-        if hasattr(self, 'debug_output'):
-            stats = {
-                "sentence_count": len(sentences),
-                "avg_sentence_length": sum(len(s) for s in sentences) / len(sentences) if sentences else 0,
-                "max_sentence_length": max(len(s) for s in sentences) if sentences else 0
-            }
-            self.debug_output.show_step("句子分割", sentences, stats)
-        
-        return sentences
-    
-    def _split_sentences(self, text: str) -> List[str]:
-        """实际的句子分割逻辑"""
-        # 这里实现现有的 text_to_sentences 逻辑
-        pass
-```
-
-#### 2.4 句子拆分插件
-```python
-class SentenceSplitter(TextProcessorPlugin):
-    """句子拆分插件"""
-    
-    def get_input_type(self) -> type:
-        return list
-    
-    def get_output_type(self) -> type:
-        return list
-    
-    def process(self, input_data: List[str]) -> List[str]:
-        """执行句子拆分"""
-        split_sentences = self._split_long_sentences(input_data)
-        
-        # 记录统计信息
-        if hasattr(self, 'debug_output'):
-            stats = {
-                "original_sentences": len(input_data),
-                "split_sentences": len(split_sentences),
-                "split_ratio": (len(split_sentences) - len(input_data)) / len(input_data) * 100 if input_data else 0
-            }
-            self.debug_output.show_step("句子拆分", split_sentences, stats)
-        
-        return split_sentences
-    
-    def _split_long_sentences(self, sentences: List[str]) -> List[str]:
-        """实际的句子拆分逻辑"""
-        # 这里实现现有的 sentence_splitter 逻辑
-        pass
+输入文本 (str) 
+    ↓ TextCleaner
+清理文本 (str)
+    ↓ PunctuationAdder  
+标点文本 (str)
+    ↓ TextToSentences
+句子列表 (list)
+    ↓ SentenceSplitter
+最终结果 (list)
 ```
 
 ## ⚙️ 配置系统
 
 ### 1. 配置文件结构
 ```toml
-# 插件化配置结构
+# 插件化配置结构 - 使用完整的命名空间引用
 [plugins]
 # 插件执行顺序
-order = ["text_cleaning", "punctuation_adder", "text_to_sentences", "sentence_splitter"]
+order = [
+    "builtin/text_cleaning",
+    "builtin/punctuation_adder", 
+    "builtin/text_to_sentences",
+    "builtin/sentence_splitter"
+]
 
 # 文本清理插件
-[plugins.text_cleaning]
+[plugins."builtin/text_cleaning"]
 enabled = true
 # 保留现有配置
 
 # 标点恢复插件
-[plugins.punctuation_adder]
+[plugins."builtin/punctuation_adder"]
 enabled = true
 model_name = "oliverguhr/fullstop-punctuation-multilang-large"
 local_models_dir = "models/"
 
 # 句子分割插件
-[plugins.text_to_sentences]
+[plugins."builtin/text_to_sentences"]
 enabled = true
 # 无额外配置
 
 # 句子拆分插件
-[plugins.sentence_splitter]
+[plugins."builtin/sentence_splitter"]
 enabled = true
 min_recursive_length = 70
 max_depth = 8
 
 # 未来可扩展的插件示例
-[plugins.future_plugin]
+[plugins."community/future_plugin"]
 enabled = false
 # 新功能配置
 ```
@@ -387,57 +289,23 @@ class ConfigValidator:
         return True
 ```
 
-## 🔧 使用示例
+## 🔧 架构使用说明
 
-### 1. 基本使用
-```python
-# 加载配置
-config = load_config("config.toml")
+### 1. 基本使用流程
+1. 加载配置文件
+2. 创建 TextProcessor 实例
+3. 自动加载配置的插件链
+4. 执行文本处理
 
-# 创建处理器
-processor = TextProcessor(config)
+### 2. 动态调整能力
+- 支持运行时添加/移除插件
+- 支持动态启用/禁用插件
+- 支持调整插件执行顺序
 
-# 处理文本
-result = processor.process("Hello world this is a test")
-
-# 获取插件链
-chain = processor.get_plugin_chain()
-print(f"Processing chain: {' → '.join(chain)}")
-```
-
-### 2. 动态调整
-```python
-# 动态添加插件
-new_plugin = GrammarChecker({"enabled": True})
-processor.add_plugin(new_plugin, position=2)
-
-# 禁用特定插件
-plugin = processor.get_plugin_by_name("punctuation_adder")
-if plugin:
-    plugin.config["enabled"] = False
-
-# 重新处理
-result = processor.process("New text to process")
-```
-
-### 3. 自定义插件
-```python
-class CustomPlugin(TextProcessorPlugin):
-    """自定义插件示例"""
-    
-    def get_input_type(self) -> type:
-        return str
-    
-    def get_output_type(self) -> type:
-        return str
-    
-    def process(self, input_data: str) -> str:
-        # 自定义处理逻辑
-        return input_data.upper()
-
-# 注册自定义插件
-processor._create_plugin = lambda name, config: CustomPlugin(config) if name == "custom" else None
-```
+### 3. 扩展机制
+- 通过继承 TextProcessorPlugin 创建新插件
+- 通过配置系统注册新插件
+- 支持插件依赖管理
 
 ## 🚀 扩展性设计
 
@@ -460,44 +328,17 @@ processor._create_plugin = lambda name, config: CustomPlugin(config) if name == 
 - **ConsistencyChecker**: 一致性检查插件
 - **ReadabilityAnalyzer**: 可读性分析插件
 
-### 2. 插件开发指南
+### 2. 插件扩展机制
 
-#### 实现新插件
-```python
-class NewFeaturePlugin(TextProcessorPlugin):
-    """新功能插件示例"""
-    
-    def get_input_type(self) -> type:
-        return str  # 或 list, dict 等
-    
-    def get_output_type(self) -> type:
-        return str  # 或 list, dict 等
-    
-    def process(self, input_data: Any) -> Any:
-        # 实现具体功能
-        return processed_data
-```
+#### 插件注册系统
+- 通过插件映射表注册新插件
+- 支持动态插件发现和加载
+- 提供插件依赖解析机制
 
-#### 注册插件
-```python
-# 在 TextProcessor 中添加新插件
-plugin_map = {
-    "text_cleaning": TextCleaner,
-    "punctuation_adder": PunctuationAdder,
-    "text_to_sentences": TextToSentences,
-    "sentence_splitter": SentenceSplitter,
-    "new_feature": NewFeaturePlugin,  # 新增
-}
-```
-
-#### 配置插件
-```toml
-[plugins.new_feature]
-enabled = true
-# 插件特定配置
-param1 = "value1"
-param2 = 42
-```
+#### 配置驱动
+- 通过配置文件控制插件启用/禁用
+- 支持插件特定参数配置
+- 提供配置验证和默认值机制
 
 ## 📊 架构优势
 
@@ -536,7 +377,7 @@ param2 = 42
 ### 阶段3: 高级特性
 - 实现插件热插拔
 - 添加插件版本管理
-- 实现插件市场机制
+- 实现插件管理机制
 
 ## ⚠️ 注意事项
 
