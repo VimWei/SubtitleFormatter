@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.3.5] - 2025-10-25
+
+- feat(docs): adopt platform-first refactor strategy with comprehensive planning
+- feat(docs): add plugin GUI design document
+
 ## [1.3.4] - 2025-10-25
 
 - feat(docs): introduce plugin architecture design document
