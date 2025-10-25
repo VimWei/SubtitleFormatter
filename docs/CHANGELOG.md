@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.3.6] - 2025-10-25
+
+- feat: implement plugin infrastructure foundation
+
 ## [1.3.5] - 2025-10-25
 
 - feat(docs): adopt platform-first refactor strategy with comprehensive planning
