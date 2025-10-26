@@ -115,7 +115,7 @@ class PluginManagementPanel(QWidget):
         self.remove_plugin_btn.clicked.connect(self.remove_plugin_from_chain)
         self.remove_plugin_btn.setEnabled(False)
 
-        self.clear_chain_btn = QPushButton("Clear Chain")
+        self.clear_chain_btn = QPushButton("Clear All")
         self.clear_chain_btn.clicked.connect(self.clear_plugin_chain)
 
         chain_buttons.addWidget(self.move_up_btn)
