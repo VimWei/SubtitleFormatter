@@ -1,6 +1,6 @@
 [project]
 name = "subtitleformatter"
-version = "1.3.9"
+version = "1.3.10"
 description = "An intelligent subtitle processing tool that uses NLP models to clean, segment, and format text for better readability"
 readme = "README.md"
 authors = [

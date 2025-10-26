@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.3.10] - 2025-10-26
+
+- refactor: Enhance plugin registration with full namespacing
+- feat: Add draft plugin-based GUI interface
+- Refactor plugin scanning and fix examples/simple_uppercase
+
 ## [1.3.9] - 2025-10-26
 
 - Update .gitignore to remove .coverage file from tests
