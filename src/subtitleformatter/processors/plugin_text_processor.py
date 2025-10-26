@@ -101,15 +101,10 @@ class PluginTextProcessor:
         # Initialize plugin registry
         self.plugin_registry = PluginRegistry()
 
-        # Add plugin directories
-        plugin_dirs = [
-            Path("plugins/builtin"),
-            Path("plugins/examples"),
-        ]
-
-        for plugin_dir in plugin_dirs:
-            if plugin_dir.exists():
-                self.plugin_registry.add_plugin_dir(plugin_dir)
+        # Add plugin directory - automatically scan all subdirectories
+        plugin_dir = Path("plugins")
+        if plugin_dir.exists():
+            self.plugin_registry.add_plugin_dir(plugin_dir)
 
         # Scan for plugins
         self.plugin_registry.scan_plugins()

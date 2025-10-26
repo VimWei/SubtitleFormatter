@@ -6,7 +6,7 @@
 
 from typing import Any, Dict, List, Optional, Union
 
-from src.subtitleformatter.plugins.base import TextProcessorPlugin
+from subtitleformatter.plugins.base import TextProcessorPlugin
 
 
 class SimpleUppercasePlugin(TextProcessorPlugin):

@@ -1,22 +1,24 @@
 {
-    "name": "simple_uppercase",
+    "name": "examples/simple_uppercase",
     "version": "1.0.0",
     "description": "将文本转换为大写字母的简单插件",
     "author": "SubtitleFormatter Team",
     "class_name": "SimpleUppercasePlugin",
     "dependencies": [],
     "config_schema": {
-        "required": ["enabled"],
-        "optional": {
-            "preserve_spaces": true
+        "type": "object",
+        "properties": {
+            "enabled": {
+                "type": "boolean",
+                "default": true,
+                "description": "是否启用大写转换功能"
+            },
+            "preserve_spaces": {
+                "type": "boolean",
+                "default": true,
+                "description": "是否保留空格字符"
+            }
         },
-        "field_types": {
-            "enabled": "bool",
-            "preserve_spaces": "bool"
-        },
-        "default_values": {
-            "enabled": true,
-            "preserve_spaces": true
-        }
+        "additionalProperties": false
     }
 }

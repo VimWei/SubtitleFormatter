@@ -12,7 +12,8 @@ import json
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Type
 
-from .plugin_base import PluginError, TextProcessorPlugin
+from .plugin_base import PluginError
+from subtitleformatter.plugins.base.plugin_base import TextProcessorPlugin
 
 
 class PluginRegistry:
@@ -83,6 +84,10 @@ class PluginRegistry:
                     self._register_plugin(item)
                 except Exception as e:
                     print(f"Warning: Failed to register plugin in {item}: {e}")
+            else:
+                # If this directory doesn't contain a plugin, recursively scan its subdirectories
+                # This allows for nested plugin organization like plugins/category/subcategory/plugin
+                self._scan_directory(item)
 
     def _register_plugin(self, plugin_path: Path) -> None:
         """
@@ -109,17 +114,27 @@ class PluginRegistry:
             raise PluginError(f"Plugin name conflict: {plugin_name}")
 
         # Load plugin class
-        plugin_class = self._load_plugin_class(plugin_path, metadata["class_name"])
+        try:
+            plugin_class = self._load_plugin_class(plugin_path, metadata["class_name"])
+        except Exception as e:
+            print(f"Warning: Failed to load plugin class for {plugin_name}: {e}")
+            return
 
         # Validate plugin class
-        if not issubclass(plugin_class, TextProcessorPlugin):
-            raise PluginError(f"Plugin class must inherit from TextProcessorPlugin: {plugin_name}")
+        try:
+            if not issubclass(plugin_class, TextProcessorPlugin):
+                print(f"Warning: Failed to register plugin in {plugin_path}: Plugin class must inherit from TextProcessorPlugin: {plugin_name}")
+                return
+        except Exception as e:
+            print(f"Warning: Failed to validate plugin class for {plugin_name}: {e}")
+            return
 
         # Register plugin
         self._plugins[plugin_name] = plugin_class
         self._plugin_metadata[plugin_name] = metadata
 
-        print(f"Registered plugin: {plugin_name} v{metadata['version']}")
+        # Plugin registration is logged at debug level to avoid duplicate logging
+        # The main scanning result will be logged by the caller
 
     def _load_plugin_class(self, plugin_path: Path, class_name: str) -> Type[TextProcessorPlugin]:
         """
@@ -143,6 +158,11 @@ class PluginRegistry:
         plugin_parent = plugin_path.parent
         if str(plugin_parent) not in sys.path:
             sys.path.insert(0, str(plugin_parent))
+        
+        # Add project root to Python path for subtitleformatter imports
+        project_root = Path(__file__).parent.parent.parent.parent
+        if str(project_root) not in sys.path:
+            sys.path.insert(0, str(project_root))
 
         try:
             # Create module name from path
@@ -311,7 +331,26 @@ class PluginRegistry:
         missing = []
 
         for dep in dependencies:
+            # Check if it's a plugin dependency
             if not self.is_plugin_available(dep):
-                missing.append(dep)
+                # Check if it's a Python package dependency
+                if not self._is_python_package_available(dep):
+                    missing.append(dep)
 
         return missing
+    
+    def _is_python_package_available(self, package_name: str) -> bool:
+        """
+        Check if a Python package is available for import.
+        
+        Args:
+            package_name: Package name to check
+            
+        Returns:
+            True if package can be imported, False otherwise
+        """
+        try:
+            __import__(package_name)
+            return True
+        except ImportError:
+            return False
