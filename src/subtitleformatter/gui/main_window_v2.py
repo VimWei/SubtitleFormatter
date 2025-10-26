@@ -22,22 +22,22 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QPushButton,
     QScrollArea,
+    QSizePolicy,
     QSplitter,
     QStatusBar,
     QVBoxLayout,
     QWidget,
-    QSizePolicy,
 )
 
+from subtitleformatter.plugins import PluginLifecycleManager, PluginRegistry
 from subtitleformatter.utils.unified_logger import logger
 from subtitleformatter.version import get_app_title
-from subtitleformatter.plugins import PluginRegistry, PluginLifecycleManager
 
+from .components.file_processing_panel import FileProcessingPanel
 from .components.log_panel import LogPanel
 from .components.plugin_chain_visualizer import PluginChainVisualizer
-from .components.plugin_management_panel import PluginManagementPanel
 from .components.plugin_config_panel import PluginConfigPanel
-from .components.file_processing_panel import FileProcessingPanel
+from .components.plugin_management_panel import PluginManagementPanel
 from .components.status_bar import StatusBar
 from .styles.theme_loader import ThemeLoader
 
@@ -45,240 +45,238 @@ from .styles.theme_loader import ThemeLoader
 class MainWindowV2(QMainWindow):
     """
     插件化架构主窗口 - 完全重构版本
-    
+
     设计特点:
     - 最大化窗口布局，充分利用屏幕空间
     - 插件管理为核心，直观的插件链配置
     - 动态UI更新，根据插件状态实时调整界面
     - 保留优秀的LogPanel等组件
     """
-    
+
     def __init__(self, project_root: Path):
         super().__init__()
         self.project_root = project_root
         self.setWindowTitle(get_app_title())
-        
+
         # 设置窗口图标
         icon_path = project_root / "src" / "subtitleformatter" / "gui" / "assets" / "app_icon.ico"
         if icon_path.exists():
             self.setWindowIcon(QIcon(str(icon_path)))
-        
+
         # 初始化插件系统
         self.plugin_registry = PluginRegistry()
         self.plugin_lifecycle = None
         self.loaded_plugins: Dict[str, any] = {}
-        
+
         # 设置最大化窗口
         self.setWindowState(Qt.WindowMaximized)
         self.setMinimumSize(1200, 800)
-        
+
         # 创建主界面
         self.setup_ui()
-        
+
         # 应用主题样式
         self.apply_modern_styling()
-        
+
         # 初始化插件系统
         self.initialize_plugin_system()
-        
+
         # 设置信号连接
         self.setup_signals()
-        
+
         # 设置统一日志系统的GUI回调
         logger.set_gui_callback(self.log_panel.append_log)
-    
+
     def setup_ui(self):
         """设置主界面布局"""
         # 创建中央部件
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
-        
+
         # 主布局 - 水平分割
         main_layout = QHBoxLayout(central_widget)
         main_layout.setContentsMargins(8, 8, 8, 8)
         main_layout.setSpacing(8)
-        
+
         # 创建主水平分割器
         main_splitter = QSplitter(Qt.Horizontal)
-        
+
         # 左侧：插件管理和流程区域
         left_panel = self.create_left_panel()
         main_splitter.addWidget(left_panel)
-        
+
         # 右侧：处理面板和日志区域
         right_panel = self.create_right_panel()
         main_splitter.addWidget(right_panel)
-        
+
         # 设置主分割器比例
         main_splitter.setSizes([600, 600])
         main_splitter.setStretchFactor(0, 0)  # 左侧固定
         main_splitter.setStretchFactor(1, 1)  # 右侧可伸缩
-        
+
         main_layout.addWidget(main_splitter)
-        
+
         # 创建状态栏
         self.status_bar = StatusBar()
         self.setStatusBar(self.status_bar)
-    
+
     def create_left_panel(self) -> QWidget:
         """创建左侧插件管理和流程面板"""
         panel = QWidget()
         layout = QVBoxLayout(panel)
         layout.setContentsMargins(8, 8, 8, 8)
         layout.setSpacing(8)
-        
+
         # 创建左侧垂直分割器
         left_splitter = QSplitter(Qt.Vertical)
-        
+
         # 顶部：插件管理和配置的水平分割
         top_splitter = QSplitter(Qt.Horizontal)
-        
+
         # 插件管理面板
         self.plugin_management = PluginManagementPanel(self)
         top_splitter.addWidget(self.plugin_management)
-        
+
         # 插件配置面板
         self.plugin_config = PluginConfigPanel(self)
         top_splitter.addWidget(self.plugin_config)
-        
+
         # 设置顶部分割器比例
         top_splitter.setSizes([300, 300])
         top_splitter.setStretchFactor(0, 0)  # 左侧固定
         top_splitter.setStretchFactor(1, 0)  # 右侧固定
-        
+
         left_splitter.addWidget(top_splitter)
-        
+
         # 底部：处理流程面板
         self.plugin_chain_visualizer = PluginChainVisualizer(self)
         left_splitter.addWidget(self.plugin_chain_visualizer)
-        
+
         # 设置左侧分割器比例
         left_splitter.setSizes([500, 200])
         left_splitter.setStretchFactor(0, 1)  # 顶部可伸缩
         left_splitter.setStretchFactor(1, 0)  # 底部固定
-        
+
         layout.addWidget(left_splitter)
-        
+
         return panel
-    
-    
+
     def create_right_panel(self) -> QWidget:
         """创建右侧处理面板和日志面板"""
         panel = QWidget()
         layout = QVBoxLayout(panel)
         layout.setContentsMargins(8, 8, 8, 8)
         layout.setSpacing(8)
-        
+
         # 创建垂直分割器
         right_splitter = QSplitter(Qt.Vertical)
-        
+
         # 文件处理面板
         self.file_processing = FileProcessingPanel(self)
         right_splitter.addWidget(self.file_processing)
-        
+
         # 日志面板
         self.log_panel = LogPanel()
         right_splitter.addWidget(self.log_panel)
-        
+
         # 设置分割器比例
         right_splitter.setSizes([400, 200])
         right_splitter.setStretchFactor(0, 1)  # 处理面板可伸缩
         right_splitter.setStretchFactor(1, 0)  # 日志面板固定
-        
+
         layout.addWidget(right_splitter)
-        
+
         return panel
-    
-    
+
     def initialize_plugin_system(self):
         """初始化插件系统"""
         try:
             logger.info(f"Initializing plugin system in {self.project_root}")
-            
+
             # 添加插件目录 - 自动扫描所有子目录
             plugin_dir = self.project_root / "plugins"
             if plugin_dir.exists():
                 self.plugin_registry.add_plugin_dir(plugin_dir)
                 logger.info(f"Added plugin directory: {plugin_dir}")
-            
+
             # 扫描插件
             logger.info("Scanning plugins...")
             self.plugin_registry.scan_plugins()
-            
+
             # 检查扫描结果
             plugin_names = self.plugin_registry.list_plugins()
             logger.info(f"After scanning, found {len(plugin_names)} plugins: {plugin_names}")
-            
+
             # 创建生命周期管理器
             self.plugin_lifecycle = PluginLifecycleManager(self.plugin_registry)
-            
+
             # 设置插件配置面板的注册表
             self.plugin_config.set_plugin_registry(self.plugin_registry)
-            
+
             # 更新插件管理界面
             self.update_plugin_management_ui()
-            
+
             logger.info("Plugin system initialized successfully")
             self.status_bar.set_message("Plugin system ready")
-            
+
         except Exception as e:
             logger.error(f"Failed to initialize plugin system: {e}")
             self.status_bar.set_message(f"Plugin system error: {e}")
-    
+
     def update_plugin_management_ui(self):
         """更新插件管理界面"""
         if not self.plugin_registry:
             logger.warning("Plugin registry not available")
             return
-        
+
         # 获取可用插件
         plugin_names = self.plugin_registry.list_plugins()
         logger.info(f"Found {len(plugin_names)} plugins: {plugin_names}")
-        
+
         available_plugins = {}
         for name in plugin_names:
             try:
                 available_plugins[name] = self.plugin_registry.get_plugin_metadata(name)
             except Exception as e:
                 logger.warning(f"Failed to get metadata for plugin {name}: {e}")
-        
+
         logger.info(f"Updating plugin management UI with {len(available_plugins)} plugins")
-        
+
         # 更新插件管理面板
         self.plugin_management.update_available_plugins(available_plugins)
-        
+
         # 插件链可视化应该只显示用户配置的插件链，而不是所有可用插件
         # 初始时插件链为空，用户需要手动添加插件到链中
-    
+
     def setup_signals(self):
         """设置信号连接"""
         # 插件管理信号
-        if hasattr(self.plugin_management, 'pluginSelected'):
+        if hasattr(self.plugin_management, "pluginSelected"):
             self.plugin_management.pluginSelected.connect(self.on_plugin_selected)
-        
-        if hasattr(self.plugin_management, 'pluginChainChanged'):
+
+        if hasattr(self.plugin_management, "pluginChainChanged"):
             self.plugin_management.pluginChainChanged.connect(self.on_plugin_chain_changed)
-        
+
         # 文件处理信号
-        if hasattr(self.file_processing, 'formatRequested'):
+        if hasattr(self.file_processing, "formatRequested"):
             self.file_processing.formatRequested.connect(self.on_format_requested)
-        
+
         # 插件配置信号
-        if hasattr(self.plugin_config, 'configChanged'):
+        if hasattr(self.plugin_config, "configChanged"):
             self.plugin_config.configChanged.connect(self.on_plugin_config_changed)
-    
+
     def on_plugin_selected(self, plugin_name: str):
         """处理插件选择事件"""
         try:
             # 更新插件配置面板
             self.plugin_config.load_plugin_config(plugin_name)
-            
+
             # 更新状态栏
             self.status_bar.set_message(f"Selected plugin: {plugin_name}")
-            
+
         except Exception as e:
             logger.error(f"Failed to select plugin {plugin_name}: {e}")
-    
+
     def on_plugin_chain_changed(self, plugin_chain: List[str]):
         """处理插件链变更事件"""
         try:
@@ -287,66 +285,68 @@ class MainWindowV2(QMainWindow):
             if self.plugin_registry:
                 for plugin_name in plugin_chain:
                     try:
-                        plugin_metadata[plugin_name] = self.plugin_registry.get_plugin_metadata(plugin_name)
+                        plugin_metadata[plugin_name] = self.plugin_registry.get_plugin_metadata(
+                            plugin_name
+                        )
                     except Exception as e:
                         logger.warning(f"Failed to get metadata for plugin {plugin_name}: {e}")
-            
+
             # 更新插件链可视化
             self.plugin_chain_visualizer.update_plugin_chain(plugin_chain, plugin_metadata)
-            
+
             # 更新状态栏
             self.status_bar.set_message(f"Plugin chain updated: {len(plugin_chain)} plugins")
-            
+
         except Exception as e:
             logger.error(f"Failed to update plugin chain: {e}")
-    
+
     def on_format_requested(self):
         """处理格式化请求"""
         try:
             # 获取文件处理配置
             config = self.file_processing.get_processing_config()
-            
+
             # 获取插件链配置
             plugin_config = self.plugin_management.get_plugin_chain_config()
-            
+
             # 合并配置
             full_config = {**config, **plugin_config}
-            
+
             # 启动处理线程
             self.start_processing_thread(full_config)
-            
+
         except Exception as e:
             logger.error(f"Failed to start processing: {e}")
             QMessageBox.critical(self, "Processing Error", f"Failed to start processing: {e}")
-    
+
     def on_plugin_config_changed(self, plugin_name: str, config: Dict):
         """处理插件配置变更事件"""
         try:
             # 更新插件配置
             if plugin_name in self.loaded_plugins:
                 self.loaded_plugins[plugin_name].config.update(config)
-            
+
             logger.info(f"Plugin {plugin_name} configuration updated")
             self.status_bar.set_message(f"Plugin {plugin_name} config updated")
-            
+
         except Exception as e:
             logger.error(f"Failed to update plugin config: {e}")
-    
+
     def start_processing_thread(self, config: Dict):
         """启动处理线程"""
         self.processing_thread = ProcessingThread(config, self.plugin_lifecycle)
-        
+
         # 连接信号
         self.processing_thread.progress.connect(self.file_processing.update_progress)
         self.processing_thread.log.connect(self.log_panel.append_log)
         self.processing_thread.finished.connect(self.on_processing_finished)
-        
+
         # 启动线程
         self.processing_thread.start()
-        
+
         # 更新状态
         self.status_bar.set_message("Processing started...")
-    
+
     def on_processing_finished(self, success: bool, message: str):
         """处理完成回调"""
         if success:
@@ -356,7 +356,7 @@ class MainWindowV2(QMainWindow):
             self.status_bar.set_message("Processing failed")
             logger.error(" " + message)
             QMessageBox.critical(self, "Processing Error", message)
-    
+
     def apply_modern_styling(self):
         """应用现代化样式"""
         try:
@@ -371,37 +371,42 @@ class MainWindowV2(QMainWindow):
 
 class ProcessingThread(QThread):
     """处理线程"""
+
     progress = Signal(int, str)
     log = Signal(str)
     finished = Signal(bool, str)
-    
+
     def __init__(self, config: Dict, plugin_lifecycle: PluginLifecycleManager):
         super().__init__()
         self.config = config
         self.plugin_lifecycle = plugin_lifecycle
-    
+
     def run(self):
         """运行处理逻辑"""
         try:
             self.log.emit("Starting text processing...")
-            
+
             # 检查是否使用插件系统
             if self.config.get("plugins") and self.config.get("plugins", {}).get("order"):
                 # 使用插件系统
-                from subtitleformatter.processors.plugin_text_processor import PluginTextProcessor
+                from subtitleformatter.processors.plugin_text_processor import (
+                    PluginTextProcessor,
+                )
+
                 processor = PluginTextProcessor(self.config)
                 self.log.emit("Using plugin-based processing system")
             else:
                 # 使用传统处理器
                 from subtitleformatter.processors.text_processor import TextProcessor
+
                 processor = TextProcessor(self.config)
                 self.log.emit("Using legacy processing system")
-            
+
             # 执行处理
             processor.process()
-            
+
             self.finished.emit(True, "Processing completed successfully")
-            
+
         except Exception as e:
             self.finished.emit(False, f"Processing failed: {e}")
 
@@ -409,14 +414,14 @@ class ProcessingThread(QThread):
 def run_gui_v2() -> None:
     """运行新的GUI"""
     import sys
-    
+
     app = QApplication(sys.argv)
-    
+
     root = Path(__file__).resolve().parents[3]
     icon_path = root / "src" / "subtitleformatter" / "gui" / "assets" / "app_icon.ico"
     if icon_path.exists():
         app.setWindowIcon(QIcon(str(icon_path)))
-    
+
     w = MainWindowV2(root)
     w.show()
     sys.exit(app.exec())

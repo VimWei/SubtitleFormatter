@@ -12,8 +12,9 @@ import json
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Type
 
-from .plugin_base import PluginError
 from subtitleformatter.plugins.base.plugin_base import TextProcessorPlugin
+
+from .plugin_base import PluginError
 
 
 class PluginRegistry:
@@ -109,9 +110,14 @@ class PluginRegistry:
 
         plugin_name = metadata["name"]
 
-        # Check for name conflicts
-        if plugin_name in self._plugins:
-            raise PluginError(f"Plugin name conflict: {plugin_name}")
+        # Generate full plugin name using relative path for namespacing
+        # This ensures unique plugin names across different directories
+        relative_path = plugin_path.relative_to(plugin_path.parents[1])  # Remove plugins/ prefix
+        full_plugin_name = str(relative_path).replace("\\", "/")
+
+        # Use the full plugin name as the key, but keep the original name in metadata
+        if full_plugin_name in self._plugins:
+            raise PluginError(f"Plugin name conflict: {full_plugin_name}")
 
         # Load plugin class
         try:
@@ -123,15 +129,22 @@ class PluginRegistry:
         # Validate plugin class
         try:
             if not issubclass(plugin_class, TextProcessorPlugin):
-                print(f"Warning: Failed to register plugin in {plugin_path}: Plugin class must inherit from TextProcessorPlugin: {plugin_name}")
+                print(
+                    f"Warning: Failed to register plugin in {plugin_path}: Plugin class must inherit from TextProcessorPlugin: {plugin_name}"
+                )
                 return
         except Exception as e:
             print(f"Warning: Failed to validate plugin class for {plugin_name}: {e}")
             return
 
-        # Register plugin
-        self._plugins[plugin_name] = plugin_class
-        self._plugin_metadata[plugin_name] = metadata
+        # Register plugin with full name as key, but keep original name in metadata
+        self._plugins[full_plugin_name] = plugin_class
+        # Store metadata with original name preserved
+        metadata_copy = metadata.copy()
+        metadata_copy["full_name"] = full_plugin_name  # Add full name for reference
+        # Ensure the original name is preserved
+        metadata_copy["name"] = plugin_name  # Keep original name
+        self._plugin_metadata[full_plugin_name] = metadata_copy
 
         # Plugin registration is logged at debug level to avoid duplicate logging
         # The main scanning result will be logged by the caller
@@ -158,7 +171,7 @@ class PluginRegistry:
         plugin_parent = plugin_path.parent
         if str(plugin_parent) not in sys.path:
             sys.path.insert(0, str(plugin_parent))
-        
+
         # Add project root to Python path for subtitleformatter imports
         project_root = Path(__file__).parent.parent.parent.parent
         if str(project_root) not in sys.path:
@@ -338,14 +351,14 @@ class PluginRegistry:
                     missing.append(dep)
 
         return missing
-    
+
     def _is_python_package_available(self, package_name: str) -> bool:
         """
         Check if a Python package is available for import.
-        
+
         Args:
             package_name: Package name to check
-            
+
         Returns:
             True if package can be imported, False otherwise
         """

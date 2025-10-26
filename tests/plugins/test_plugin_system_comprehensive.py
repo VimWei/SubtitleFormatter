@@ -194,11 +194,11 @@ class TestPluginSystemIntegration:
 
         # 验证发现了示例插件
         plugins = registry.list_plugins()
-        assert "simple_uppercase" in plugins
+        assert "examples/simple_uppercase" in plugins
 
         # 验证插件信息
-        plugin_info = registry.get_plugin_info("simple_uppercase")
-        assert plugin_info["name"] == "simple_uppercase"
+        plugin_info = registry.get_plugin_info("examples/simple_uppercase")
+        assert plugin_info["name"] == "examples/simple_uppercase"  # 完整的命名空间名称
         assert plugin_info["version"] == "1.0.0"
 
     def test_plugin_lifecycle_management(self):
@@ -208,7 +208,7 @@ class TestPluginSystemIntegration:
         registry.scan_plugins()
 
         # 创建插件实例
-        plugin = registry.create_plugin_instance("simple_uppercase", {"enabled": True})
+        plugin = registry.create_plugin_instance("examples/simple_uppercase", {"enabled": True})
 
         # 测试初始化
         assert not plugin.is_initialized()

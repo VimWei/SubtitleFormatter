@@ -12,8 +12,8 @@ from pathlib import Path
 project_root = Path(__file__).resolve().parent
 sys.path.insert(0, str(project_root / "src"))
 
-from PySide6.QtWidgets import QApplication
 from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QApplication
 
 from subtitleformatter.gui.main_window_v2 import MainWindowV2
 
@@ -24,17 +24,17 @@ def main():
     app = QApplication(sys.argv)
     app.setApplicationName("SubtitleFormatter V2")
     app.setApplicationVersion("2.0.0")
-    
+
     # 设置应用程序属性（移除已弃用的属性）
     # app.setAttribute(Qt.AA_EnableHighDpiScaling, True)  # 已弃用
     # app.setAttribute(Qt.AA_UseHighDpiPixmaps, True)  # 已弃用
-    
+
     # 创建主窗口
     window = MainWindowV2(project_root)
-    
+
     # 显示窗口
     window.show()
-    
+
     # 运行应用程序
     sys.exit(app.exec())
 

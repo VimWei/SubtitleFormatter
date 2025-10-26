@@ -91,9 +91,9 @@ class MyPlugin(TextProcessorPlugin):
 
             # 验证用户能够成功添加插件
             assert len(plugins) == 1
-            assert "my_plugin" in plugins
-            metadata = registry.get_plugin_metadata("my_plugin")
-            assert metadata["name"] == "my_plugin"
+            assert "plugins/my_plugin" in plugins
+            metadata = registry.get_plugin_metadata("plugins/my_plugin")
+            assert metadata["name"] == "my_plugin"  # metadata中的原始名称
             assert metadata["version"] == "1.0.0"
 
     def test_user_can_configure_plugin_behavior(self):
