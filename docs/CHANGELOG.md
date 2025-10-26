@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.3.11] - 2025-10-27
+
+- refactor: Rename button in PluginManagementPanel for clarity
+- feat: Add configuration management design document
+- fix: Correct cursor movement in LogPanel copy function
+- chore: .vbs use test_gui_v2.py
+- refactor: Remove unused configuration options from FileProcessingPanel
+- fix: Update PluginConfigPanel to remove hardcoded group title
+
 ## [1.3.10] - 2025-10-26
 
 - refactor: Enhance plugin registration with full namespacing
