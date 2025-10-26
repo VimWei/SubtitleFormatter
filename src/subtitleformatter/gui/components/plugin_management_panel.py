@@ -68,7 +68,9 @@ class PluginManagementPanel(QWidget):
 
         # 添加标题到框内
         available_title = QLabel("Available Plugins")
-        available_title.setStyleSheet("font-weight: bold; font-size: 14px; color: #333; margin: 4px;")
+        available_title.setStyleSheet(
+            "font-weight: bold; font-size: 14px; color: #333; margin: 4px;"
+        )
         available_layout.addWidget(available_title)
 
         self.available_list = QListWidget()
