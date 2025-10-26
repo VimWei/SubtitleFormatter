@@ -263,40 +263,44 @@ class TestPerformance:
     def test_plugin_configuration_performance(self):
         """性能测试：插件配置性能"""
         # 测试插件配置管理的性能
+        import tempfile
+        from pathlib import Path
 
-        config_manager = PluginConfigManager()
+        with tempfile.TemporaryDirectory() as temp_dir:
+            config_dir = Path(temp_dir)
+            config_manager = PluginConfigManager(config_dir)
 
-        # 测试保存大量配置的性能
-        start_time = time.time()
+            # 测试保存大量配置的性能
+            start_time = time.time()
 
-        for i in range(1000):
-            config = {
-                "enabled": True,
-                "priority": i,
-                "name": f"plugin_{i}",
-                "custom_setting": f"设置{i}",
-            }
-            config_manager.set_plugin_config(f"plugin_{i}", config)
-            config_manager.save_plugin_config(f"plugin_{i}")
+            for i in range(1000):
+                config = {
+                    "enabled": True,
+                    "priority": i,
+                    "name": f"plugin_{i}",
+                    "custom_setting": f"设置{i}",
+                }
+                config_manager.set_plugin_config(f"plugin_{i}", config)
+                config_manager.save_plugin_config(f"plugin_{i}")
 
-        end_time = time.time()
-        save_time = end_time - start_time
+            end_time = time.time()
+            save_time = end_time - start_time
 
-        # 验证保存时间在合理范围内
-        assert save_time < 2.0  # 小于2秒
+            # 验证保存时间在合理范围内
+            assert save_time < 2.0  # 小于2秒
 
-        # 测试加载配置的性能
-        start_time = time.time()
+            # 测试加载配置的性能
+            start_time = time.time()
 
-        for i in range(1000):
-            config = config_manager.get_plugin_config(f"plugin_{i}")
-            assert config["name"] == f"plugin_{i}"
+            for i in range(1000):
+                config = config_manager.get_plugin_config(f"plugin_{i}")
+                assert config["name"] == f"plugin_{i}"
 
-        end_time = time.time()
-        load_time = end_time - start_time
+            end_time = time.time()
+            load_time = end_time - start_time
 
-        # 验证加载时间在合理范围内
-        assert load_time < 1.0  # 小于1秒
+            # 验证加载时间在合理范围内
+            assert load_time < 1.0  # 小于1秒
 
     def test_plugin_lifecycle_performance(self):
         """性能测试：插件生命周期性能"""

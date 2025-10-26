@@ -35,4 +35,4 @@ class LogPanel(QWidget):
     def _copy(self) -> None:
         self.editor.selectAll()
         self.editor.copy()
-        self.editor.moveCursor(self.editor.textCursor().End)
+        self.editor.moveCursor(self.editor.textCursor().MoveOperation.End)
