@@ -176,7 +176,7 @@ class PluginConfigPanel(QWidget):
 
     def add_plugin_info(self, metadata: Dict[str, Any]):
         """添加插件信息"""
-        info_group = QGroupBox("Plugin Information")
+        info_group = QGroupBox()
         info_layout = QFormLayout(info_group)
 
         info_layout.addRow("Name:", QLabel(metadata.get("name", "Unknown")))
