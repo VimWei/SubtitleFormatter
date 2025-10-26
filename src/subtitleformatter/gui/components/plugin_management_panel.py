@@ -63,8 +63,13 @@ class PluginManagementPanel(QWidget):
         splitter = QSplitter(Qt.Vertical)
 
         # 可用插件组
-        available_group = QGroupBox("Available Plugins")
+        available_group = QGroupBox()
         available_layout = QVBoxLayout(available_group)
+
+        # 添加标题到框内
+        available_title = QLabel("Available Plugins")
+        available_title.setStyleSheet("font-weight: bold; font-size: 14px; color: #333; margin: 4px;")
+        available_layout.addWidget(available_title)
 
         self.available_list = QListWidget()
         self.available_list.itemClicked.connect(self.on_plugin_selected)
@@ -82,8 +87,13 @@ class PluginManagementPanel(QWidget):
         splitter.addWidget(available_group)
 
         # 插件链组
-        chain_group = QGroupBox("Plugin Chain")
+        chain_group = QGroupBox()
         chain_layout = QVBoxLayout(chain_group)
+
+        # 添加标题到框内
+        chain_title = QLabel("Plugin Chain")
+        chain_title.setStyleSheet("font-weight: bold; font-size: 14px; color: #333; margin: 4px;")
+        chain_layout.addWidget(chain_title)
 
         self.chain_list = QListWidget()
         self.chain_list.itemClicked.connect(self.on_chain_item_selected)

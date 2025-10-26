@@ -95,26 +95,6 @@ class FileProcessingPanel(QWidget):
         self.debug_mode_check.setChecked(False)
         options_layout.addRow("", self.debug_mode_check)
 
-        # 语言设置
-        self.language_combo = QComboBox()
-        self.language_combo.addItems(["auto", "en", "zh"])
-        self.language_combo.setCurrentText("en")
-        options_layout.addRow("Language:", self.language_combo)
-
-        # 模型大小
-        self.model_size_combo = QComboBox()
-        self.model_size_combo.addItem("small", "sm")
-        self.model_size_combo.addItem("medium", "md")
-        self.model_size_combo.addItem("large", "lg")
-        self.model_size_combo.setCurrentText("medium")
-        options_layout.addRow("Model size:", self.model_size_combo)
-
-        # 最大宽度
-        self.max_width_spin = QSpinBox()
-        self.max_width_spin.setRange(20, 200)
-        self.max_width_spin.setValue(78)
-        options_layout.addRow("Max width:", self.max_width_spin)
-
         layout.addWidget(options_group)
 
         # 处理控制组
@@ -260,9 +240,6 @@ class FileProcessingPanel(QWidget):
             "output_file": self.output_file_edit.text().strip(),
             "add_timestamp": self.add_timestamp_check.isChecked(),
             "debug_enabled": self.debug_mode_check.isChecked(),
-            "language": self.language_combo.currentText(),
-            "model_size": self.model_size_combo.currentData(),
-            "max_width": self.max_width_spin.value(),
         }
 
     def set_processing_config(self, config: Dict[str, Any]):
@@ -278,14 +255,3 @@ class FileProcessingPanel(QWidget):
 
         if "debug_enabled" in config:
             self.debug_mode_check.setChecked(config["debug_enabled"])
-
-        if "language" in config:
-            self.language_combo.setCurrentText(config["language"])
-
-        if "model_size" in config:
-            index = self.model_size_combo.findData(config["model_size"])
-            if index >= 0:
-                self.model_size_combo.setCurrentIndex(index)
-
-        if "max_width" in config:
-            self.max_width_spin.setValue(config["max_width"])
