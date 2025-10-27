@@ -23,6 +23,7 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QProgressBar,
     QPushButton,
+    QSizePolicy,
     QSpinBox,
     QVBoxLayout,
     QWidget,
@@ -58,6 +59,9 @@ class FileProcessingPanel(QWidget):
 
     def setup_ui(self):
         """设置界面"""
+        # 设置大小策略，使面板紧凑显示，只占用必要的高度
+        self.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Minimum)
+        
         layout = QVBoxLayout(self)
         layout.setContentsMargins(8, 8, 8, 8)
         layout.setSpacing(8)
@@ -176,8 +180,8 @@ class FileProcessingPanel(QWidget):
 
         layout.addWidget(control_group)
 
-        # 添加弹性空间
-        layout.addStretch()
+        # 移除 addStretch() 以消除底部空白，让面板只占用必要的高度
+        # layout.addStretch()
 
         self.setLayout(layout)
 

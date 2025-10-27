@@ -201,8 +201,8 @@ class MainWindowV2(QMainWindow):
 
         # 设置分割器比例
         right_splitter.setSizes([400, 200])
-        right_splitter.setStretchFactor(0, 1)  # 处理面板可伸缩
-        right_splitter.setStretchFactor(1, 0)  # 日志面板固定
+        right_splitter.setStretchFactor(0, 0)  # 处理面板不主动伸缩
+        right_splitter.setStretchFactor(1, 1)  # 日志面板自动伸缩填充空间
 
         layout.addWidget(right_splitter)
 
