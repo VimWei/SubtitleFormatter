@@ -8,7 +8,7 @@ class LogPanel(QWidget):
         super().__init__(parent)
 
         root = QVBoxLayout(self)
-        root.setContentsMargins(8, 8, 8, 8)  # 与其他组件保持一致
+        root.setContentsMargins(4, 4, 4, 4)  # 与其他组件保持一致
         root.setSpacing(8)
 
         self.editor = QTextEdit(self)

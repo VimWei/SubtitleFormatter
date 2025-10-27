@@ -51,7 +51,7 @@ class PluginManagementPanel(QWidget):
     def setup_ui(self):
         """设置界面"""
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(8, 8, 8, 8)
+        layout.setContentsMargins(4, 4, 4, 4)
         layout.setSpacing(8)
 
         # 标题
@@ -120,6 +120,13 @@ class PluginManagementPanel(QWidget):
         self.clear_chain_btn = QPushButton("Clear All")
         self.clear_chain_btn.clicked.connect(self.clear_plugin_chain)
 
+        # 设置按钮的左右 padding 为原来的一半
+        chain_button_style = "QPushButton { padding-left: 5px; padding-right: 5px; }"
+        self.move_up_btn.setStyleSheet(chain_button_style)
+        self.move_down_btn.setStyleSheet(chain_button_style)
+        self.remove_plugin_btn.setStyleSheet(chain_button_style)
+        self.clear_chain_btn.setStyleSheet(chain_button_style)
+
         chain_buttons.addWidget(self.move_up_btn)
         chain_buttons.addWidget(self.move_down_btn)
         chain_buttons.addWidget(self.remove_plugin_btn)
@@ -133,6 +140,10 @@ class PluginManagementPanel(QWidget):
         
         self.export_chain_btn = QPushButton("Export Chain")
         self.export_chain_btn.clicked.connect(self.export_plugin_chain)
+        
+        # 设置配置按钮的左右 padding
+        self.import_chain_btn.setStyleSheet(chain_button_style)
+        self.export_chain_btn.setStyleSheet(chain_button_style)
         
         chain_config_buttons.addWidget(self.import_chain_btn)
         chain_config_buttons.addWidget(self.export_chain_btn)

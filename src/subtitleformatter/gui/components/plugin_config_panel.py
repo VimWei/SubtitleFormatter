@@ -60,7 +60,7 @@ class PluginConfigPanel(QWidget):
     def setup_ui(self):
         """设置界面"""
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(8, 8, 8, 8)
+        layout.setContentsMargins(4, 4, 4, 4)
         layout.setSpacing(8)
 
         # 标题
@@ -77,7 +77,7 @@ class PluginConfigPanel(QWidget):
         # 配置内容区域
         self.config_content = QWidget()
         self.config_layout = QVBoxLayout(self.config_content)
-        self.config_layout.setContentsMargins(8, 8, 8, 8)
+        self.config_layout.setContentsMargins(4, 4, 4, 4)
         self.config_layout.setSpacing(12)
         # 设置布局策略，不拉伸子控件
         self.config_layout.setAlignment(Qt.AlignTop)

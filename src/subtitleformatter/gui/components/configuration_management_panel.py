@@ -40,7 +40,7 @@ class ConfigurationManagementPanel(QWidget):
     def setup_ui(self):
         """设置界面"""
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(8, 8, 8, 8)
+        layout.setContentsMargins(4, 4, 4, 4)
         layout.setSpacing(8)
 
         # 配置管理组

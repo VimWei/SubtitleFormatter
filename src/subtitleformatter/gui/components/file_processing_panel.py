@@ -62,7 +62,7 @@ class FileProcessingPanel(QWidget):
         self.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Minimum)
         
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(8, 8, 8, 8)
+        layout.setContentsMargins(4, 4, 4, 4)
         layout.setSpacing(12)
 
         # 文件选择部分 - 直接使用 FormLayout

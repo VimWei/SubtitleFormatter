@@ -106,7 +106,7 @@ class MainWindowV2(QMainWindow):
 
         # 主布局 - 水平分割
         main_layout = QHBoxLayout(central_widget)
-        main_layout.setContentsMargins(8, 8, 8, 8)
+        main_layout.setContentsMargins(4, 4, 4, 4)
         main_layout.setSpacing(8)
 
         # 创建主水平分割器
@@ -131,7 +131,7 @@ class MainWindowV2(QMainWindow):
         """创建左侧插件管理和流程面板"""
         panel = QWidget()
         layout = QVBoxLayout(panel)
-        layout.setContentsMargins(8, 8, 8, 8)
+        layout.setContentsMargins(4, 4, 4, 4)
         layout.setSpacing(8)
 
         # 创建左侧垂直分割器
@@ -172,7 +172,7 @@ class MainWindowV2(QMainWindow):
         """创建右侧处理面板和日志面板"""
         panel = QWidget()
         layout = QVBoxLayout(panel)
-        layout.setContentsMargins(8, 8, 8, 8)
+        layout.setContentsMargins(4, 4, 4, 4)
         layout.setSpacing(8)
 
         # 创建垂直分割器

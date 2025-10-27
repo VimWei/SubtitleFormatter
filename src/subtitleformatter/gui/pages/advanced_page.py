@@ -19,7 +19,7 @@ class AdvancedPage(QWidget):
         super().__init__(parent)
 
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(8, 8, 8, 8)
+        layout.setContentsMargins(4, 4, 4, 4)
 
         # User Data Path row (replicates MdxScraper style)
         data_row = QHBoxLayout()
