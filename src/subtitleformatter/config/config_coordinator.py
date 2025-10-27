@@ -72,8 +72,9 @@ class ConfigCoordinator:
             self.unified_manager.save()
             logger.info("Saved unified configuration")
 
-            # Note: Plugin configs are saved immediately when changed
-            # Plugin chain configs are saved when explicitly saved by user
+            # Note: 
+            # - Plugin configs are saved immediately when changed
+            # - Plugin chain configs are saved on exit automatically
 
         except Exception as e:
             logger.error(f"Failed to save configuration: {e}")
@@ -159,54 +160,3 @@ class ConfigCoordinator:
         """Get current plugin chain configuration."""
         chain_ref = self.unified_manager.get_plugin_chain_reference()
         return self.chain_manager.load_chain(chain_ref)
-
-    def collect_complete_config(self) -> Dict[str, Any]:
-        """
-        Collect complete configuration including all plugin configs.
-
-        Returns:
-            Complete configuration dictionary ready for export
-        """
-        # Get unified config
-        unified = self.unified_manager.get_config()
-
-        # Get plugin chain config
-        chain_ref = self.unified_manager.get_plugin_chain_reference()
-        chain_config = self.chain_manager.load_chain(chain_ref)
-
-        # Get all plugin configs for plugins in chain
-        plugin_names = chain_config.get("plugins", {}).get("order", [])
-        all_plugin_configs = self.plugin_manager.get_all_plugin_configs(plugin_names)
-
-        # Merge plugin configs into chain config
-        complete_chain_config = chain_config.copy()
-        complete_chain_config["plugin_configs"] = all_plugin_configs
-
-        return {
-            "unified": unified,
-            "plugin_chain": complete_chain_config
-        }
-
-    def apply_config_to_system(self, config: Dict[str, Any]):
-        """
-        Apply configuration to the system (for import operations).
-
-        Args:
-            config: Configuration dictionary to apply
-        """
-        # Update unified manager
-        if "unified" in config:
-            self.unified_manager.set_config(config["unified"])
-
-        # Update chain manager
-        if "plugin_chain" in config:
-            chain_config = config["plugin_chain"]
-            # The chain config will be loaded when needed
-            pass
-
-        logger.info("Applied configuration to system")
-
-    def backup_current(self) -> Path:
-        """Create backup of current configuration."""
-        return self.unified_manager.backup_current_config()
-

@@ -10,7 +10,6 @@ Manages the unified configuration including:
 
 from __future__ import annotations
 
-import shutil
 from pathlib import Path
 from typing import Any, Dict, Optional
 
@@ -195,26 +194,4 @@ class UnifiedConfigManager:
                         pass
 
         return config
-
-    def backup_current_config(self) -> Path:
-        """Create a backup of current configuration."""
-        import datetime
-
-        backup_dir = self.configs_dir / "backups"
-        backup_dir.mkdir(parents=True, exist_ok=True)
-
-        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-        backup_path = backup_dir / f"config_backup_{timestamp}.toml"
-
-        if self.latest_config_path.exists():
-            shutil.copy2(self.latest_config_path, backup_path)
-            logger.info(f"Created backup at {backup_path}")
-        else:
-            # Save current config if it doesn't exist
-            self.save()
-            if self.latest_config_path.exists():
-                shutil.copy2(self.latest_config_path, backup_path)
-                logger.info(f"Created backup at {backup_path}")
-
-        return backup_path
 
