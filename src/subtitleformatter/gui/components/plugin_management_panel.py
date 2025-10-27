@@ -120,8 +120,8 @@ class PluginManagementPanel(QWidget):
         self.clear_chain_btn = QPushButton("Clear All")
         self.clear_chain_btn.clicked.connect(self.clear_plugin_chain)
 
-        # 设置按钮的左右 padding 为原来的一半
-        chain_button_style = "QPushButton { padding-left: 5px; padding-right: 5px; }"
+        # 设置按钮的左右 padding 为原来的一半 5px，保持上下 padding 不变 4px 
+        chain_button_style = "QPushButton { padding: 4px 5px; }"
         self.move_up_btn.setStyleSheet(chain_button_style)
         self.move_down_btn.setStyleSheet(chain_button_style)
         self.remove_plugin_btn.setStyleSheet(chain_button_style)
