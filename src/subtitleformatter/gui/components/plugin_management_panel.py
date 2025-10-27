@@ -10,14 +10,11 @@ from typing import Any, Dict, List, Optional
 
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
-    QFrame,
-    QGroupBox,
     QHBoxLayout,
     QLabel,
     QListWidget,
     QListWidgetItem,
     QPushButton,
-    QScrollArea,
     QSizePolicy,
     QSplitter,
     QVBoxLayout,
@@ -51,29 +48,24 @@ class PluginManagementPanel(QWidget):
     def setup_ui(self):
         """设置界面"""
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(4, 4, 4, 4)
+        layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(8)
-
-        # 标题
-        title = QLabel("Plugin Management")
-        title.setStyleSheet("font-weight: bold; font-size: 16px; color: #2196F3;")
-        layout.addWidget(title)
 
         # 创建垂直分割器
         splitter = QSplitter(Qt.Vertical)
 
-        # 可用插件组
-        available_group = QGroupBox()
+        # 可用插件组 - 改为普通 Widget，去除组框
+        available_group = QWidget()
         available_layout = QVBoxLayout(available_group)
+        available_layout.setContentsMargins(4, 6, 4, 6)
 
         # 添加标题到框内
         available_title = QLabel("Available Plugins")
-        available_title.setStyleSheet(
-            "font-weight: bold; font-size: 14px; color: #333; margin: 4px;"
-        )
+        available_title.setStyleSheet("font-weight: bold; font-size: 16px; color: #2196F3;")
         available_layout.addWidget(available_title)
 
         self.available_list = QListWidget()
+        self.available_list.setStyleSheet("QListWidget { padding: 5px; } QListWidget::item { padding: 3px; }")
         self.available_list.itemClicked.connect(self.on_plugin_selected)
         available_layout.addWidget(self.available_list)
 
@@ -88,16 +80,18 @@ class PluginManagementPanel(QWidget):
 
         splitter.addWidget(available_group)
 
-        # 插件链组
-        chain_group = QGroupBox()
+        # 插件链组 - 改为普通 Widget，去除组框
+        chain_group = QWidget()
         chain_layout = QVBoxLayout(chain_group)
+        chain_layout.setContentsMargins(4, 4, 4, 4)
 
         # 添加标题到框内
         chain_title = QLabel("Plugin Chain")
-        chain_title.setStyleSheet("font-weight: bold; font-size: 14px; color: #333; margin: 4px;")
+        chain_title.setStyleSheet("font-weight: bold; font-size: 16px; color: #2196F3;")
         chain_layout.addWidget(chain_title)
 
         self.chain_list = QListWidget()
+        self.chain_list.setStyleSheet("QListWidget { padding: 5px; } QListWidget::item { padding: 3px; }")
         self.chain_list.itemClicked.connect(self.on_chain_item_selected)
         self.chain_list.setDragDropMode(QListWidget.InternalMove)
         self.chain_list.model().rowsMoved.connect(self.on_chain_reordered)
@@ -120,8 +114,8 @@ class PluginManagementPanel(QWidget):
         self.clear_chain_btn = QPushButton("Clear All")
         self.clear_chain_btn.clicked.connect(self.clear_plugin_chain)
 
-        # 设置按钮的左右 padding 为原来的一半 5px，保持上下 padding 不变 4px 
-        chain_button_style = "QPushButton { padding: 4px 5px; }"
+        # 设置按钮的 padding 上下 3px，左右 5px
+        chain_button_style = "QPushButton { padding: 3px 5px; }"
         self.move_up_btn.setStyleSheet(chain_button_style)
         self.move_down_btn.setStyleSheet(chain_button_style)
         self.remove_plugin_btn.setStyleSheet(chain_button_style)
