@@ -48,7 +48,7 @@ class ConfigurationManagementPanel(QWidget):
         config_group.setStyleSheet("""
             QGroupBox {
                 font-weight: bold;
-                font-size: 14px;
+                font-size: 16px;
                 color: #2196F3;
                 border: 2px solid #2196F3;
                 border-radius: 5px;
@@ -73,86 +73,22 @@ class ConfigurationManagementPanel(QWidget):
         self.restore_last_btn = QPushButton("Restore Last")
         self.restore_last_btn.clicked.connect(self.restore_last_configuration)
         self.restore_last_btn.setMinimumHeight(40)
-        self.restore_last_btn.setStyleSheet("""
-            QPushButton {
-                font-size: 14px;
-                font-weight: bold;
-                padding: 8px 16px;
-                background-color: #f5f5f5;
-                border: 2px solid #ddd;
-                border-radius: 5px;
-            }
-            QPushButton:hover {
-                background-color: #e0e0e0;
-                border-color: #bbb;
-            }
-            QPushButton:pressed {
-                background-color: #d0d0d0;
-            }
-        """)
+        self.restore_last_btn.setStyleSheet("font-size: 14px; font-weight: 500; padding: 8px 16px;")
         
         self.restore_default_btn = QPushButton("Restore Default")
         self.restore_default_btn.clicked.connect(self.restore_default_configuration)
         self.restore_default_btn.setMinimumHeight(40)
-        self.restore_default_btn.setStyleSheet("""
-            QPushButton {
-                font-size: 14px;
-                font-weight: bold;
-                padding: 8px 16px;
-                background-color: #f5f5f5;
-                border: 2px solid #ddd;
-                border-radius: 5px;
-            }
-            QPushButton:hover {
-                background-color: #e0e0e0;
-                border-color: #bbb;
-            }
-            QPushButton:pressed {
-                background-color: #d0d0d0;
-            }
-        """)
+        self.restore_default_btn.setStyleSheet("font-size: 14px; font-weight: 500; padding: 8px 16px;")
         
         self.import_config_btn = QPushButton("Import Config")
         self.import_config_btn.clicked.connect(self.import_configuration)
         self.import_config_btn.setMinimumHeight(40)
-        self.import_config_btn.setStyleSheet("""
-            QPushButton {
-                font-size: 14px;
-                font-weight: bold;
-                padding: 8px 16px;
-                background-color: #f5f5f5;
-                border: 2px solid #ddd;
-                border-radius: 5px;
-            }
-            QPushButton:hover {
-                background-color: #e0e0e0;
-                border-color: #bbb;
-            }
-            QPushButton:pressed {
-                background-color: #d0d0d0;
-            }
-        """)
+        self.import_config_btn.setStyleSheet("font-size: 14px; font-weight: 500; padding: 8px 16px;")
         
         self.export_config_btn = QPushButton("Export Config")
         self.export_config_btn.clicked.connect(self.export_configuration)
         self.export_config_btn.setMinimumHeight(40)
-        self.export_config_btn.setStyleSheet("""
-            QPushButton {
-                font-size: 14px;
-                font-weight: bold;
-                padding: 8px 16px;
-                background-color: #f5f5f5;
-                border: 2px solid #ddd;
-                border-radius: 5px;
-            }
-            QPushButton:hover {
-                background-color: #e0e0e0;
-                border-color: #bbb;
-            }
-            QPushButton:pressed {
-                background-color: #d0d0d0;
-            }
-        """)
+        self.export_config_btn.setStyleSheet("font-size: 14px; font-weight: 500; padding: 8px 16px;")
         
         config_row.addWidget(self.restore_last_btn)
         config_row.addWidget(self.restore_default_btn)
