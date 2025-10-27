@@ -43,16 +43,16 @@ class PunctuationAdderPlugin(TextProcessorPlugin):
         "optional": {
             "enabled": bool,
             "model_name": str,
-            "capitalize_sentences": bool,
-            "split_sentences": bool,
             "replace_dashes": bool,
+            "split_sentences": bool,
+            "capitalize_sentences": bool,
         },
         "field_types": {
             "enabled": bool,
             "model_name": str,
-            "capitalize_sentences": bool,
-            "split_sentences": bool,
             "replace_dashes": bool,
+            "split_sentences": bool,
+            "capitalize_sentences": bool,
         },
     }
 

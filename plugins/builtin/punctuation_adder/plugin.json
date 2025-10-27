@@ -20,20 +20,20 @@
                 "default": "oliverguhr/fullstop-punctuation-multilang-large",
                 "description": "使用的标点恢复模型名称"
             },
-            "capitalize_sentences": {
-                "type": "boolean",
-                "default": true,
-                "description": "是否将句子首字母大写"
-            },
-            "split_sentences": {
-                "type": "boolean",
-                "default": true,
-                "description": "是否将文本分割为句子"
-            },
             "replace_dashes": {
                 "type": "boolean",
                 "default": true,
                 "description": "是否将破折号替换为逗号"
+            },
+            "split_sentences": {
+                "type": "boolean",
+                "default": false,
+                "description": "是否将文本分割为句子"
+            },
+            "capitalize_sentences": {
+                "type": "boolean",
+                "default": false,
+                "description": "是否将句子首字母大写"
             }
         },
         "additionalProperties": false
