@@ -16,15 +16,25 @@ class UnifiedLogger:
     - 支持简洁模式和详细模式
     - 提供类似print的简单使用方式
     - 自动添加时间戳和日志级别
+    - 支持日志级别过滤
 
     注意：DebugOutput类现在只负责文件保存，不处理终端输出
     """
+
+    # 日志级别优先级
+    LOG_LEVELS = {
+        "DEBUG": 0,
+        "INFO": 1,
+        "WARNING": 2,
+        "ERROR": 3,
+    }
 
     def __init__(self):
         self.gui_log_callback: Optional[Callable[[str], None]] = None
         self.terminal_enabled = True
         self.gui_enabled = True
         self.debug_mode = False  # 控制详细日志输出
+        self.log_level = "INFO"  # 默认日志级别
 
     def set_gui_callback(self, callback: Callable[[str], None]) -> None:
         """设置GUI日志回调函数"""
@@ -42,6 +52,32 @@ class UnifiedLogger:
         """设置调试模式，控制详细日志输出"""
         self.debug_mode = enabled
 
+    def set_log_level(self, level: str = "INFO") -> None:
+        """
+        设置日志级别
+        
+        Args:
+            level: 日志级别 (DEBUG, INFO, WARNING, ERROR)
+        """
+        if level.upper() in self.LOG_LEVELS:
+            self.log_level = level.upper()
+        else:
+            self.log_level = "INFO"
+
+    def should_log(self, level: str) -> bool:
+        """
+        判断指定级别的日志是否应该输出
+        
+        Args:
+            level: 日志级别
+            
+        Returns:
+            是否应该输出
+        """
+        current_level = self.LOG_LEVELS.get(self.log_level, 1)
+        msg_level = self.LOG_LEVELS.get(level.upper(), 1)
+        return msg_level >= current_level
+
     def log(self, message: str, level: str = "INFO") -> None:
         """
         统一的日志输出方法
@@ -50,6 +86,10 @@ class UnifiedLogger:
             message: 日志消息
             level: 日志级别 (INFO, WARNING, ERROR, DEBUG)
         """
+        # 根据日志级别过滤
+        if not self.should_log(level):
+            return
+
         timestamp = datetime.now().strftime("%H:%M:%S")
         formatted_message = f"[{timestamp}] {level}: {message}"
 
@@ -172,3 +212,8 @@ def log_debug_info(message: str) -> None:
 def log_debug_step(step_name: str, message: str = "") -> None:
     """便捷的调试步骤函数"""
     logger.debug_step(step_name, message)
+
+
+def set_log_level(level: str) -> None:
+    """设置全局日志级别"""
+    logger.set_log_level(level)

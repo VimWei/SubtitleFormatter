@@ -405,6 +405,10 @@ class MainWindowV2(QMainWindow):
         try:
             config = self.config_coordinator.load_all_config()
             
+            # 设置日志级别
+            log_level = config.get("unified", {}).get("logging", {}).get("level", "INFO")
+            logger.set_log_level(log_level)
+            
             # 更新文件处理配置
             file_config = config.get("unified", {}).get("file_processing", {})
             self.file_processing.set_processing_config(file_config)

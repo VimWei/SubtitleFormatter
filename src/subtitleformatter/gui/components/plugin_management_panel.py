@@ -307,7 +307,7 @@ class PluginManagementPanel(QWidget):
 
     def import_plugin_chain(self):
         """导入插件链配置"""
-        from PySide6.QtWidgets import QFileDialog, QMessageBox
+        from PySide6.QtWidgets import QFileDialog
         from pathlib import Path
         
         # 设置默认目录为 data/configs/plugin_chains
@@ -330,23 +330,20 @@ class PluginManagementPanel(QWidget):
                     self.update_chain_display()
                     self.update_available_plugins(self.available_plugins)
                     self.pluginChainChanged.emit(self.plugin_chain)
-                    
-                    QMessageBox.information(self, "Success", "Plugin chain imported successfully!")
                     logger.info(f"Imported plugin chain from {file_path}")
                 else:
-                    QMessageBox.warning(self, "Warning", "Invalid plugin chain file format")
+                    logger.error("Invalid plugin chain file format")
                     
             except Exception as e:
-                QMessageBox.critical(self, "Error", f"Failed to import plugin chain: {e}")
                 logger.error(f"Failed to import plugin chain: {e}")
 
     def export_plugin_chain(self):
         """导出插件链配置"""
-        from PySide6.QtWidgets import QFileDialog, QMessageBox
+        from PySide6.QtWidgets import QFileDialog
         from pathlib import Path
         
         if not self.plugin_chain:
-            QMessageBox.warning(self, "Warning", "Plugin chain is empty")
+            logger.warning("Plugin chain is empty")
             return
         
         # 设置默认目录为 data/configs/plugin_chains
@@ -369,9 +366,5 @@ class PluginManagementPanel(QWidget):
                     self.plugin_chain, plugin_configs, Path(file_path)
                 )
                 
-                QMessageBox.information(self, "Success", "Plugin chain exported successfully!")
-                logger.info(f"Exported plugin chain to {file_path}")
-                
             except Exception as e:
-                QMessageBox.critical(self, "Error", f"Failed to export plugin chain: {e}")
                 logger.error(f"Failed to export plugin chain: {e}")

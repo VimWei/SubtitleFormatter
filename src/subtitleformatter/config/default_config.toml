@@ -27,6 +27,14 @@ enabled = false
 # 调试文件输出目录
 temp_dir = "data/debug"
 
+[logging]
+# 日志级别: DEBUG, INFO, WARNING, ERROR
+# DEBUG: 显示所有日志（包括调试信息）
+# INFO: 显示普通信息和警告错误（推荐）
+# WARNING: 只显示警告和错误
+# ERROR: 只显示错误
+level = "INFO"
+
 
 [output]
 # Whether to prefix output filename with timestamp when auto-suggesting

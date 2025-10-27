@@ -13,7 +13,6 @@ from PySide6.QtWidgets import (
     QFileDialog,
     QGroupBox,
     QHBoxLayout,
-    QMessageBox,
     QPushButton,
     QVBoxLayout,
     QWidget,
@@ -176,7 +175,7 @@ class ConfigurationManagementPanel(QWidget):
     def import_configuration(self):
         """导入配置文件"""
         if not self.config_coordinator:
-            QMessageBox.warning(self, "Error", "Configuration coordinator not set")
+            logger.error("Configuration coordinator not set")
             return
             
         # 设置默认目录为 data/configs
@@ -191,17 +190,15 @@ class ConfigurationManagementPanel(QWidget):
         if file_path:
             try:
                 config = self.config_coordinator.import_unified_config(Path(file_path))
-                QMessageBox.information(self, "Success", "Configuration imported successfully!")
                 logger.info(f"Imported configuration from {file_path}")
                 
             except Exception as e:
-                QMessageBox.critical(self, "Error", f"Failed to import configuration: {e}")
                 logger.error(f"Failed to import configuration: {e}")
 
     def export_configuration(self):
         """导出配置文件"""
         if not self.config_coordinator:
-            QMessageBox.warning(self, "Error", "Configuration coordinator not set")
+            logger.error("Configuration coordinator not set")
             return
             
         # 设置默认目录为 data/configs
@@ -216,39 +213,33 @@ class ConfigurationManagementPanel(QWidget):
         if file_path:
             try:
                 self.config_coordinator.export_unified_config(Path(file_path))
-                QMessageBox.information(self, "Success", "Configuration exported successfully!")
                 logger.info(f"Exported configuration to {file_path}")
                 
             except Exception as e:
-                QMessageBox.critical(self, "Error", f"Failed to export configuration: {e}")
                 logger.error(f"Failed to export configuration: {e}")
 
     def restore_last_configuration(self):
         """恢复到上次保存的配置"""
         if not self.config_coordinator:
-            QMessageBox.warning(self, "Error", "Configuration coordinator not set")
+            logger.error("Configuration coordinator not set")
             return
             
         try:
             config = self.config_coordinator.restore_last_config()
-            QMessageBox.information(self, "Success", "Configuration restored to last saved state!")
             logger.info("Restored configuration to last saved state")
             
         except Exception as e:
-            QMessageBox.critical(self, "Error", f"Failed to restore configuration: {e}")
             logger.error(f"Failed to restore configuration: {e}")
 
     def restore_default_configuration(self):
         """恢复默认配置"""
         if not self.config_coordinator:
-            QMessageBox.warning(self, "Error", "Configuration coordinator not set")
+            logger.error("Configuration coordinator not set")
             return
             
         try:
             config = self.config_coordinator.restore_default_config()
-            QMessageBox.information(self, "Success", "Configuration restored to default!")
             logger.info("Restored configuration to default")
             
         except Exception as e:
-            QMessageBox.critical(self, "Error", f"Failed to restore default configuration: {e}")
             logger.error(f"Failed to restore default configuration: {e}")

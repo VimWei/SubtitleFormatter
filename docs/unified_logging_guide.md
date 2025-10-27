@@ -109,6 +109,162 @@ logger.set_debug_mode(True)   # 启用详细模式
 logger.set_debug_mode(False)  # 启用简洁模式
 ```
 
+## 日志级别配置
+
+### 概述
+
+统一日志系统支持可配置的日志级别，允许您根据需要过滤日志输出。
+
+### 配置方法
+
+日志级别配置位于 `data/configs/config_latest.toml` 文件中的 `[logging]` 部分：
+
+```toml
+[logging]
+# 日志级别: DEBUG, INFO, WARNING, ERROR
+# DEBUG: 显示所有日志（包括调试信息）
+# INFO: 显示普通信息和警告错误（推荐）
+# WARNING: 只显示警告和错误
+# ERROR: 只显示错误
+level = "INFO"
+```
+
+### 日志级别说明
+
+#### DEBUG（调试级别）
+- **显示内容**: 所有日志（包括 DEBUG、INFO、WARNING、ERROR）
+- **使用场景**: 开发调试、排查问题
+- **特点**: 最详细的日志输出
+- **示例**: 会显示 "Loaded plugin chain from..." 这样的 DEBUG 日志
+
+```toml
+[logging]
+level = "DEBUG"
+```
+
+#### INFO（信息级别，推荐）
+- **显示内容**: INFO、WARNING、ERROR
+- **使用场景**: 日常使用（默认）
+- **特点**: 显示重要的操作和信息
+- **隐藏**: DEBUG 级别的详细信息
+
+```toml
+[logging]
+level = "INFO"
+```
+
+#### WARNING（警告级别）
+- **显示内容**: WARNING、ERROR
+- **使用场景**: 只关注警告和错误
+- **特点**: 更简洁的输出
+- **隐藏**: DEBUG 和 INFO 信息
+
+```toml
+[logging]
+level = "WARNING"
+```
+
+#### ERROR（错误级别）
+- **显示内容**: 只显示 ERROR
+- **使用场景**: 仅关注严重问题
+- **特点**: 最简洁的输出
+- **隐藏**: DEBUG、INFO、WARNING
+
+```toml
+[logging]
+level = "ERROR"
+```
+
+### 使用示例
+
+#### 查看详细日志（调试模式）
+
+如果您想看到所有日志，包括内部的调试信息：
+
+1. 打开 `data/configs/config_latest.toml`
+2. 修改 `[logging]` 部分：
+
+```toml
+[logging]
+level = "DEBUG"
+```
+
+3. 重启应用程序
+
+现在您会看到所有日志，包括 DEBUG 级别的详细信息。
+
+#### 简化日志输出
+
+如果您只想看到错误信息：
+
+1. 打开 `data/configs/config_latest.toml`
+2. 修改 `[logging]` 部分：
+
+```toml
+[logging]
+level = "ERROR"
+```
+
+3. 重启应用程序
+
+现在只会显示错误信息，所有其他日志都会被过滤掉。
+
+### 编程接口
+
+#### 设置日志级别
+
+```python
+from subtitleformatter.utils.unified_logger import set_log_level
+
+# 设置日志级别
+set_log_level("DEBUG")   # 显示所有日志
+set_log_level("INFO")    # 显示 INFO 及以上
+set_log_level("WARNING") # 只显示警告和错误
+set_log_level("ERROR")   # 只显示错误
+```
+
+#### 运行时修改日志级别
+
+```python
+from subtitleformatter.utils.unified_logger import logger
+
+# 设置特定日志级别
+logger.set_log_level("DEBUG")
+```
+
+### 日志级别优先级
+
+```
+DEBUG (0) < INFO (1) < WARNING (2) < ERROR (3)
+```
+
+日志会显示 **等于或高于** 设置的级别的所有日志。
+
+例如：
+- 设置 `level = "INFO"`：会显示 INFO、WARNING、ERROR
+- 设置 `level = "WARNING"`：只显示 WARNING、ERROR
+- 设置 `level = "ERROR"`：只显示 ERROR
+
+### 常见问题
+
+#### Q: 为什么我看不到 "Loaded plugin chain from..." 这样的日志？
+
+A: 这些是 DEBUG 级别的日志。如果您设置的是 INFO 级别，这些日志会被过滤掉。将日志级别设置为 DEBUG 即可看到。
+
+#### Q: 如何知道我当前的日志级别？
+
+A: 日志级别会显示在每一条日志的前面，例如：
+- `[18:37:28] DEBUG: ...`
+- `[18:37:28] INFO: ...`
+
+#### Q: 修改配置后需要重启吗？
+
+A: 是的，需要重启应用程序才能生效。日志级别在应用程序启动时从配置文件读取。
+
+#### Q: 可以在代码中动态修改日志级别吗？
+
+A: 可以，使用 `logger.set_log_level("DEBUG")` 等方法可以在运行时修改日志级别。
+
 ## 高级用法
 
 ### 直接使用logger实例
@@ -216,6 +372,17 @@ logger.set_gui_callback(self.log_panel.append_log)
 - **详细模式**：适合调试分析，输出丰富
 - **自动切换**：根据配置自动选择模式
 
+## 总结
+
+通过统一日志系统，您可以：
+- ✅ 减少日志噪音，只关注重要信息
+- ✅ 在调试时看到详细信息
+- ✅ 在生产环境中隐藏敏感调试信息
+- ✅ 根据需要灵活调整日志详细程度
+- ✅ 像使用`print`一样简单易用
+- ✅ 统一输出到终端和GUI
+- ✅ 自动格式化和时间戳
+
 ## 注意事项
 
 - 在GUI应用中，日志会自动显示在日志面板中
@@ -223,4 +390,6 @@ logger.set_gui_callback(self.log_panel.append_log)
 - 日志级别包括：INFO、WARNING、ERROR、DEBUG
 - 时间戳格式为：HH:MM:SS
 - 调试模式通过配置文件控制：`[debug] enabled = true/false`
+- 日志级别通过配置文件控制：`[logging] level = "INFO"`
+- 修改配置后需要重启应用程序才能生效
 - 调试文件仍然正常生成，不受统一日志系统影响
