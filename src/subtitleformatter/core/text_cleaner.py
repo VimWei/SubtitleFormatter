@@ -2,10 +2,18 @@ import re
 
 
 class TextCleaner:
-    """基础文本清理类，用于统一空白字符、换行符、标点符号并清理多余空行"""
+    """
+    基础文本清理类，用于统一空白字符、换行符、标点符号并清理多余空行
+    
+    ⚠️ 已弃用：此功能已迁移到插件系统
+    请使用 plugins/builtin/text_cleaning 插件替代
+    保留此类仅为向后兼容旧的 TextProcessor
+    
+    For new code, use PluginTextProcessor with text_cleaning plugin instead.
+    """
 
     def __init__(self):
-        """初始化文本清理器"""
+        """初始化文本清理器（已弃用 - 使用插件系统）"""
         # 定义所有需要处理的空白字符
         self.whitespace_chars = {
             "\u0020",  # 普通空格

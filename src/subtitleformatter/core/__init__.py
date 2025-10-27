@@ -1,14 +1,23 @@
 """
 Core text processing modules.
 
-This package contains the core text processing functionality:
-- TextCleaner: Basic text cleaning and normalization (kept for backward compatibility)
-- SentenceHandler: Intelligent sentence segmentation (deprecated - use plugins instead)
-- FillerRemover: Filler word and repetition removal (deprecated - use plugins instead)
-- LineBreaker: Smart line breaking based on grammar (deprecated - use plugins instead)
+⚠️ DEPRECATION NOTICE:
+All core functionality has been migrated to the plugin system.
+These modules are kept ONLY for backward compatibility with the old TextProcessor.
 
-Note: Most functionality has been migrated to the plugin system.
-Only TextCleaner is kept for backward compatibility.
+Migration Guide:
+- TextCleaner → Use plugins/builtin/text_cleaning
+- SentenceHandler → Use plugins/builtin/sentence_splitting  
+- FillerRemover → Use plugins/builtin/filler_removal
+- LineBreaker → Use plugins/builtin/line_breaking
+
+For new code, use PluginTextProcessor with the appropriate plugins.
+
+OLD MODULES (KEPT FOR COMPATIBILITY):
+- TextCleaner: Basic text cleaning (deprecated - use text_cleaning plugin)
+- SentenceHandler: Sentence segmentation (deprecated - use plugins)
+- FillerRemover: Filler removal (deprecated - use plugins)
+- LineBreaker: Line breaking (deprecated - use plugins)
 """
 
 from .text_cleaner import TextCleaner
