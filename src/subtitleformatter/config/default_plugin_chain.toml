@@ -2,7 +2,7 @@
 
 [plugins]
 # Plugin execution order
-order = ["builtin/punctuation_adder", "builtin/sentence_splitter"]
+order = ["builtin/punctuation_adder", "builtin/text_to_sentences", "builtin/sentence_splitter"]
 
 # Plugin-specific configurations
 [plugin_configs."builtin/punctuation_adder"]
@@ -11,6 +11,27 @@ model_name = "oliverguhr/fullstop-punctuation-multilang-large"
 replace_dashes = true
 split_sentences = false
 capitalize_sentences = false
+
+[plugin_configs."builtin/text_to_sentences"]
+enabled = true
+sentence_endings = [
+    ".",
+    "!",
+    "?",
+]
+abbreviation_patterns = [
+    "Mr.",
+    "Mrs.",
+    "Dr.",
+    "Prof.",
+    "Inc.",
+    "Ltd.",
+    "Co.",
+    "Corp.",
+]
+normalize_whitespace = true
+remove_empty_sentences = true
+filter_ellipsis_only = false
 
 [plugin_configs."builtin/sentence_splitter"]
 enabled = true

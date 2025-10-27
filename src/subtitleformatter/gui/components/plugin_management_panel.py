@@ -36,6 +36,7 @@ class PluginManagementPanel(QWidget):
     """
 
     pluginSelected = Signal(str)
+    pluginChainSelected = Signal(str)  # 新增：插件链中的插件选择信号
     pluginChainChanged = Signal(list)
     pluginEnabled = Signal(str, bool)
 
@@ -239,8 +240,8 @@ class PluginManagementPanel(QWidget):
         self.move_down_btn.setEnabled(current_index < len(self.plugin_chain) - 1)
         self.remove_plugin_btn.setEnabled(True)
 
-        # 发送信号
-        self.pluginSelected.emit(plugin_name)
+        # 发送插件链选择信号
+        self.pluginChainSelected.emit(plugin_name)
 
     def on_chain_current_changed(self, current_row: int):
         """处理插件链列表当前行变化（键盘导航）"""
@@ -254,8 +255,8 @@ class PluginManagementPanel(QWidget):
                 self.move_down_btn.setEnabled(current_row < len(self.plugin_chain) - 1)
                 self.remove_plugin_btn.setEnabled(True)
                 
-                # 发送信号
-                self.pluginSelected.emit(plugin_name)
+                # 发送插件链选择信号
+                self.pluginChainSelected.emit(plugin_name)
 
     def on_chain_reordered(self):
         """处理链重排序"""

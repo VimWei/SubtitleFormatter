@@ -161,8 +161,17 @@ class ConfigurationManagementPanel(QWidget):
             return
             
         try:
-            config = self.config_coordinator.restore_last_config()
+            # 恢复插件链配置从快照
+            chain_config = self.config_coordinator.restore_chain_from_snapshot()
+            
+            # 恢复统一配置
+            unified_config = self.config_coordinator.restore_last_config()
+            
             logger.info("Restored configuration to last saved state")
+            
+            # 通知主窗口更新界面
+            if hasattr(self.parent(), 'on_configuration_restored'):
+                self.parent().on_configuration_restored(unified_config, chain_config)
             
         except Exception as e:
             logger.error(f"Failed to restore configuration: {e}")

@@ -65,9 +65,6 @@ class MainWindowV2(QMainWindow):
 
         # 初始化配置管理系统
         self.config_coordinator = ConfigCoordinator(project_root)
-        
-        # 保存当前加载的链配置中的 plugin_configs
-        self.current_chain_plugin_configs: Dict[str, Dict[str, Any]] = {}
 
         # 初始化插件系统
         self.plugin_registry = PluginRegistry()
@@ -87,9 +84,6 @@ class MainWindowV2(QMainWindow):
         # 初始化插件系统
         self.initialize_plugin_system()
 
-        # 设置插件注册表到配置管理器
-        self.config_coordinator.set_plugin_registry(self.plugin_registry)
-
         # 设置信号连接（必须在配置加载之前）
         self.setup_signals()
 
@@ -100,6 +94,7 @@ class MainWindowV2(QMainWindow):
         self.file_processing.set_config_coordinator(self.config_coordinator)
         self.plugin_management.set_config_coordinator(self.config_coordinator)
         self.config_management.set_config_coordinator(self.config_coordinator)
+        self.plugin_config.set_config_coordinator(self.config_coordinator)
 
         # 设置统一日志系统的GUI回调
         logger.set_gui_callback(self.log_panel.append_log)
@@ -272,6 +267,9 @@ class MainWindowV2(QMainWindow):
         if hasattr(self.plugin_management, "pluginSelected"):
             self.plugin_management.pluginSelected.connect(self.on_plugin_selected)
 
+        if hasattr(self.plugin_management, "pluginChainSelected"):
+            self.plugin_management.pluginChainSelected.connect(self.on_plugin_chain_selected)
+
         if hasattr(self.plugin_management, "pluginChainChanged"):
             self.plugin_management.pluginChainChanged.connect(self.on_plugin_chain_changed)
 
@@ -289,11 +287,39 @@ class MainWindowV2(QMainWindow):
     def on_plugin_selected(self, plugin_name: str):
         """处理插件选择事件"""
         try:
-            # 更新插件配置面板
-            self.plugin_config.load_plugin_config(plugin_name)
+            # 更新插件配置面板，标记为来自可用插件列表（非插件链）
+            self.plugin_config.load_plugin_config(plugin_name, is_from_chain=False)
 
         except Exception as e:
             logger.error(f"Failed to select plugin {plugin_name}: {e}")
+
+    def on_plugin_chain_selected(self, plugin_name: str):
+        """处理插件链中的插件选择事件"""
+        try:
+            # 更新插件配置面板，标记为来自插件链选择
+            self.plugin_config.load_plugin_config(plugin_name, is_from_chain=True)
+
+        except Exception as e:
+            logger.error(f"Failed to select plugin from chain {plugin_name}: {e}")
+
+    def on_configuration_restored(self, unified_config: Dict[str, Any], chain_config: Dict[str, Any]):
+        """处理配置恢复事件"""
+        try:
+            # 更新文件处理配置
+            file_config = unified_config.get("file_processing", {})
+            self.file_processing.set_processing_config(file_config)
+            
+            # 更新插件链配置
+            plugin_order = chain_config.get("plugins", {}).get("order", [])
+            self.plugin_management.update_plugin_chain(plugin_order)
+            
+            # 重新创建快照
+            self.config_coordinator.create_chain_snapshot()
+            
+            logger.info("Configuration restored and UI updated")
+            
+        except Exception as e:
+            logger.error(f"Failed to update UI after configuration restore: {e}")
 
     def on_plugin_chain_changed(self, plugin_chain: List[str]):
         """处理插件链变更事件"""
@@ -342,13 +368,6 @@ class MainWindowV2(QMainWindow):
             # 更新插件配置
             if plugin_name in self.loaded_plugins:
                 self.loaded_plugins[plugin_name].config.update(config)
-
-            # 立即保存插件配置到文件
-            if hasattr(self, 'config_coordinator'):
-                saved_path = self.config_coordinator.save_plugin_config(plugin_name, config)
-                logger.info(f"Plugin {plugin_name} configuration saved to {saved_path}")
-            else:
-                logger.warning("Config coordinator not available for saving plugin config")
 
             logger.info(f"Plugin {plugin_name} configuration updated")
 
@@ -399,6 +418,9 @@ class MainWindowV2(QMainWindow):
             file_config = config.get("unified", {}).get("file_processing", {})
             self.file_processing.set_processing_config(file_config)
             
+            # 创建插件链配置快照用于 Restore Last 功能
+            self.config_coordinator.create_chain_snapshot()
+            
             # 确保可用插件已经设置
             if not hasattr(self.plugin_management, 'available_plugins') or not self.plugin_management.available_plugins:
                 # 重新获取可用插件
@@ -413,22 +435,12 @@ class MainWindowV2(QMainWindow):
             
             # 更新插件链配置
             chain_config = config.get("plugin_chain", {})
-            logger.info(f"Chain config: {chain_config}")
+            logger.debug(f"Chain config: {chain_config}")
             if "plugins" in chain_config and "order" in chain_config["plugins"]:
-                chain_order = chain_config["plugins"]["order"]
-                logger.info(f"Loading plugin chain with order: {chain_order}")
-                
-                # 保存 plugin_configs（如果有）
-                if "plugin_configs" in chain_config:
-                    self.current_chain_plugin_configs = chain_config["plugin_configs"]
-                    logger.info(f"Loaded plugin configs: {list(self.current_chain_plugin_configs.keys())}")
-                else:
-                    logger.info("No plugin_configs in chain config")
-                
+                logger.debug(f"Loading plugin chain with order: {chain_config['plugins']['order']}")
                 self.plugin_management.load_plugin_chain_config(chain_config)
-                logger.info(f"After load_plugin_chain_config, plugin_chain is: {self.plugin_management.plugin_chain}")
             else:
-                logger.warning(f"No valid plugin chain configuration found. Chain config: {chain_config}")
+                logger.warning("No valid plugin chain configuration found")
             
             logger.info("Configuration loaded successfully")
             
@@ -445,31 +457,15 @@ class MainWindowV2(QMainWindow):
             # 保存插件链配置到 latest 文件
             chain_config = self.plugin_management.get_plugin_chain_config()
             if chain_config.get("plugins", {}).get("order"):
-                # 获取完整的插件配置：优先从内存中的 plugin_configs，如果没有则从配置文件获取
-                plugin_order = chain_config["plugins"]["order"]
-                
-                # 先从内存中获取保存的 plugin_configs
-                plugin_configs = self.current_chain_plugin_configs.copy()
-                
-                # 补充缺失的插件配置
-                for plugin_name in plugin_order:
-                    if plugin_name not in plugin_configs or not plugin_configs[plugin_name]:
-                        # 如果链中没有或者为空，则从配置文件获取（包括默认配置）
-                        loaded_config = self.config_coordinator.get_all_plugin_configs([plugin_name])[plugin_name]
-                        plugin_configs[plugin_name] = loaded_config
-                        logger.debug(f"Loaded config for {plugin_name}: {loaded_config}")
-                
-                logger.debug(f"Saving plugin chain with order: {plugin_order}, configs: {list(plugin_configs.keys())}")
-                
+                plugin_configs = self.config_coordinator.get_all_plugin_configs(
+                    chain_config["plugins"]["order"]
+                )
                 # 保存到 chain_latest.toml，不生成新文件
-                chain_file = self.config_coordinator.save_plugin_chain(
-                    plugin_order,
+                self.config_coordinator.save_plugin_chain(
+                    chain_config["plugins"]["order"],
                     plugin_configs,
                     "chain_latest.toml"
                 )
-                
-                # 更新内存中的配置
-                self.current_chain_plugin_configs = plugin_configs
             
             # 保存所有配置
             self.config_coordinator.save_all_config()
@@ -483,6 +479,14 @@ class MainWindowV2(QMainWindow):
         """处理窗口关闭事件"""
         # 保存配置
         self.save_configuration()
+        
+        # 如果有未保存的插件链配置变更，自动保存
+        if hasattr(self, 'config_coordinator') and self.config_coordinator.has_unsaved_chain_changes():
+            try:
+                self.config_coordinator.save_working_chain_config()
+                logger.info("Auto-saved plugin chain configuration on exit")
+            except Exception as e:
+                logger.error(f"Failed to auto-save plugin chain configuration: {e}")
         
         # 停止插件生命周期
         if self.plugin_lifecycle:

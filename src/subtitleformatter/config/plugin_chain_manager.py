@@ -18,6 +18,7 @@ import tomli_w  # type: ignore
 import tomllib  # type: ignore
 
 from ..utils.unified_logger import logger
+from .config_state import ConfigState
 
 
 class PluginChainManager:
@@ -46,6 +47,9 @@ class PluginChainManager:
 
         self.current_chain_file: Optional[Path] = None
         self.current_chain_config: Dict[str, Any] = {}
+        
+        # Configuration state management
+        self.config_state = ConfigState()
     
     def _ensure_default_chain_exists(self):
         """Ensure default plugin chain file exists in user directory."""
@@ -96,7 +100,13 @@ class PluginChainManager:
             return self._load_default_chain()
 
         self.current_chain_file = chain_file
-        return self._load_chain_from_file(chain_file)
+        config = self._load_chain_from_file(chain_file)
+        
+        # Update configuration state
+        chain_path_str = str(chain_file.relative_to(self.plugin_chains_dir))
+        self.config_state.load_from_saved(config, chain_path_str)
+        
+        return config
 
     def _load_default_chain(self) -> Dict[str, Any]:
         """Load default plugin chain."""
@@ -252,4 +262,104 @@ class PluginChainManager:
         except ValueError:
             # File is outside plugin_chains_dir, return absolute path
             return str(self.current_chain_file.relative_to(self.configs_dir))
+
+    def update_plugin_config_in_working(self, plugin_name: str, config: Dict[str, Any]):
+        """
+        Update plugin configuration in working configuration.
+        
+        Args:
+            plugin_name: Name of the plugin
+            config: Plugin configuration to update
+        """
+        working_config = self.config_state.get_working_config()
+        
+        # Ensure plugin_configs section exists
+        if "plugin_configs" not in working_config:
+            working_config["plugin_configs"] = {}
+        
+        # Update plugin configuration
+        working_config["plugin_configs"][plugin_name] = config.copy()
+        
+        # Update working configuration
+        self.config_state.update_working_config(working_config)
+        
+        logger.debug(f"Updated plugin {plugin_name} config in working configuration")
+    
+    def get_working_config(self) -> Dict[str, Any]:
+        """Get current working configuration."""
+        return self.config_state.get_working_config()
+    
+    def save_working_config(self, save_to: Optional[str] = None) -> Path:
+        """
+        Save working configuration to file.
+        
+        Args:
+            save_to: Optional file name to save chain (None for current file)
+        
+        Returns:
+            Path to saved chain file
+        """
+        working_config = self.config_state.get_working_config()
+        
+        if save_to is None:
+            # Save to current file
+            if self.current_chain_file:
+                chain_file = self.current_chain_file
+            else:
+                # Save to latest chain file
+                chain_file = self.plugin_chains_dir / "chain_latest.toml"
+        else:
+            chain_file = self.plugin_chains_dir / save_to
+        
+        try:
+            chain_file.parent.mkdir(parents=True, exist_ok=True)
+            with chain_file.open("wb") as f:
+                tomli_w.dump(working_config, f)
+            
+            # Update configuration state
+            chain_path_str = str(chain_file.relative_to(self.plugin_chains_dir))
+            self.config_state.save_working_config(chain_path_str)
+            
+            self.current_chain_file = chain_file
+            self.current_chain_config = working_config
+            
+            logger.info(f"Saved working configuration to {chain_file}")
+            return chain_file
+            
+        except Exception as e:
+            logger.error(f"Failed to save working configuration to {chain_file}: {e}")
+            raise
+    
+    def create_snapshot(self):
+        """Create a snapshot of current saved configuration for restore functionality."""
+        self.config_state.create_snapshot()
+        logger.debug("Created configuration snapshot")
+    
+    def restore_from_snapshot(self) -> Dict[str, Any]:
+        """Restore configuration from snapshot."""
+        self.config_state.restore_from_snapshot()
+        
+        # Update current chain config
+        self.current_chain_config = self.config_state.get_saved_config()
+        
+        logger.info("Restored configuration from snapshot")
+        return self.current_chain_config
+    
+    def has_unsaved_changes(self) -> bool:
+        """Check if there are unsaved changes."""
+        return self.config_state.has_unsaved_changes()
+    
+    def get_plugin_config_from_working(self, plugin_name: str) -> Dict[str, Any]:
+        """
+        Get plugin configuration from working configuration.
+        
+        Args:
+            plugin_name: Name of the plugin
+            
+        Returns:
+            Plugin configuration from working config, or empty dict if not found
+        """
+        working_config = self.config_state.get_working_config()
+        plugin_configs = working_config.get("plugin_configs", {})
+        return plugin_configs.get(plugin_name, {})
 

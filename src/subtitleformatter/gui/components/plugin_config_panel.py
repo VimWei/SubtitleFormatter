@@ -51,6 +51,8 @@ class PluginConfigPanel(QWidget):
         self.current_plugin: Optional[str] = None
         self.plugin_registry: Optional[PluginRegistry] = None
         self.parameter_widgets: Dict[str, QWidget] = {}
+        self.config_coordinator = None  # 配置协调器引用
+        self.is_from_chain = False  # 标记是否来自插件链选择
         
         # 设置最小宽度以确保良好的用户体验
         self.setMinimumWidth(300)
@@ -99,13 +101,23 @@ class PluginConfigPanel(QWidget):
         # 设置布局
         self.setLayout(layout)
 
+    def set_config_coordinator(self, coordinator):
+        """设置配置协调器"""
+        self.config_coordinator = coordinator
+
     def set_plugin_registry(self, registry: PluginRegistry):
         """设置插件注册表"""
         self.plugin_registry = registry
 
-    def load_plugin_config(self, plugin_name: str):
-        """加载插件配置"""
+    def load_plugin_config(self, plugin_name: str, is_from_chain: bool = False):
+        """加载插件配置
+        
+        Args:
+            plugin_name: 插件名称
+            is_from_chain: 是否来自插件链选择
+        """
         self.current_plugin = plugin_name
+        self.is_from_chain = is_from_chain
         self.clear_config_ui()
 
         if not self.plugin_registry:
@@ -160,9 +172,14 @@ class PluginConfigPanel(QWidget):
         # 添加插件信息
         self.add_plugin_info(metadata)
 
+        # 获取正确的插件配置
+        plugin_config = self._get_plugin_config_with_priority(self.current_plugin)
+
         # 为每个属性创建配置控件
         for prop_name, prop_config in properties.items():
-            self.create_parameter_widget(prop_name, prop_config)
+            # 使用正确的配置值而不是默认值
+            config_value = plugin_config.get(prop_name, prop_config.get("default", ""))
+            self.create_parameter_widget(prop_name, prop_config, config_value)
 
     def add_plugin_info(self, metadata: Dict[str, Any]):
         """添加插件信息"""
@@ -181,14 +198,85 @@ class PluginConfigPanel(QWidget):
 
         self.config_layout.addWidget(info_group)
 
-    def create_parameter_widget(self, param_name: str, param_config: Dict[str, Any]):
+    def _get_plugin_config_with_priority(self, plugin_name: str) -> Dict[str, Any]:
+        """
+        根据优先级获取插件配置
+        
+        优先级顺序：
+        1. Plugin Chain 配置 (如果插件链已保存且来自插件链选择)
+        2. 插件自定义配置
+        3. 插件默认配置
+        """
+        if not self.config_coordinator:
+            logger.warning("Config coordinator not available, using default config")
+            return self._get_default_config_from_schema(plugin_name)
+        
+        try:
+            # 1. 如果来自插件链选择，尝试获取插件链工作配置
+            if self.is_from_chain:
+                working_config = self.config_coordinator.chain_manager.get_plugin_config_from_working(plugin_name)
+                if working_config:
+                    logger.debug(f"Using plugin chain working config for {plugin_name}")
+                    return working_config
+                
+                # 如果工作配置中没有，尝试获取已保存的插件链配置
+                chain_config = self.config_coordinator.get_plugin_chain_config()
+                plugin_configs = chain_config.get("plugin_configs", {})
+                if plugin_name in plugin_configs:
+                    logger.debug(f"Using plugin chain saved config for {plugin_name}")
+                    return plugin_configs[plugin_name]
+            
+            # 2. 尝试获取插件自定义配置
+            if self.config_coordinator.plugin_manager.config_exists(plugin_name):
+                custom_config = self.config_coordinator.load_plugin_config(plugin_name)
+                logger.debug(f"Using custom config for {plugin_name}")
+                return custom_config
+            
+            # 3. 使用插件默认配置
+            default_config = self._get_default_config_from_schema(plugin_name)
+            logger.debug(f"Using default config for {plugin_name}")
+            return default_config
+            
+        except Exception as e:
+            logger.error(f"Failed to get plugin config for {plugin_name}: {e}")
+            return self._get_default_config_from_schema(plugin_name)
+    
+    def _get_default_config_from_schema(self, plugin_name: str) -> Dict[str, Any]:
+        """从插件元数据获取默认配置"""
+        if not self.plugin_registry:
+            return {}
+        
+        try:
+            metadata = self.plugin_registry.get_plugin_metadata(plugin_name)
+            if not metadata:
+                return {}
+            
+            config_schema = metadata.get("config_schema")
+            if not config_schema:
+                return {}
+            
+            properties = config_schema.get("properties", {})
+            default_config = {}
+            
+            for prop_name, prop_config in properties.items():
+                if "default" in prop_config:
+                    default_config[prop_name] = prop_config["default"]
+            
+            return default_config
+            
+        except Exception as e:
+            logger.error(f"Failed to get default config from schema for {plugin_name}: {e}")
+            return {}
+
+    def create_parameter_widget(self, param_name: str, param_config: Dict[str, Any], config_value: Any = None):
         """创建参数控件"""
         param_type = param_config.get("type", "string")
-        default_value = param_config.get("default", "")
+        # 使用传入的配置值，如果没有则使用默认值
+        actual_value = config_value if config_value is not None else param_config.get("default", "")
         description = param_config.get("description", "")
 
         # 创建控件
-        widget = self.create_control_by_type(param_type, param_config, default_value, param_name)
+        widget = self.create_control_by_type(param_type, param_config, actual_value, param_name)
         if widget:
             # 为每个配置项创建容器，添加适当的间隔
             item_container = QWidget()
@@ -253,6 +341,23 @@ class PluginConfigPanel(QWidget):
         """参数变化时的处理"""
         if self.current_plugin:
             config = self.get_current_config()
+            
+            # 根据来源决定保存方式
+            if self.is_from_chain:
+                # 来自插件链选择，保存到插件链工作配置
+                if self.config_coordinator:
+                    self.config_coordinator.save_plugin_config_to_chain(self.current_plugin, config)
+                    logger.debug(f"Saved plugin {self.current_plugin} config to chain working configuration")
+                else:
+                    logger.warning("Config coordinator not available for saving to chain")
+            else:
+                # 来自可用插件列表，保存到插件自定义配置
+                if self.config_coordinator:
+                    self.config_coordinator.save_plugin_config(self.current_plugin, config)
+                    logger.debug(f"Saved plugin {self.current_plugin} config to custom configuration")
+                else:
+                    logger.warning("Config coordinator not available for saving custom config")
+            
             self.configChanged.emit(self.current_plugin, config)
 
     def create_control_by_type(

@@ -22,13 +22,12 @@ from .unified_config_manager import UnifiedConfigManager
 class ConfigCoordinator:
     """Coordinates all configuration management."""
 
-    def __init__(self, project_root: Path, plugin_registry=None):
+    def __init__(self, project_root: Path):
         """
         Initialize config coordinator.
 
         Args:
             project_root: Project root directory
-            plugin_registry: Optional plugin registry instance
         """
         self.project_root = project_root
         self.configs_dir = project_root / "data" / "configs"
@@ -36,11 +35,7 @@ class ConfigCoordinator:
         # Initialize managers
         self.unified_manager = UnifiedConfigManager(project_root, self.configs_dir)
         self.chain_manager = PluginChainManager(project_root, self.configs_dir)
-        self.plugin_manager = PluginConfigManager(project_root, self.configs_dir, plugin_registry)
-    
-    def set_plugin_registry(self, plugin_registry):
-        """Set plugin registry for plugin config manager."""
-        self.plugin_manager.plugin_registry = plugin_registry
+        self.plugin_manager = PluginConfigManager(project_root, self.configs_dir)
 
     def load_all_config(self) -> Dict[str, Any]:
         """
@@ -148,6 +143,50 @@ class ConfigCoordinator:
     def save_plugin_config(self, plugin_name: str, config: Dict[str, Any]) -> Path:
         """Save plugin configuration immediately."""
         return self.plugin_manager.save_plugin_config(plugin_name, config)
+    
+    def save_plugin_config_to_chain(self, plugin_name: str, config: Dict[str, Any]):
+        """
+        Save plugin configuration to plugin chain working configuration.
+        
+        Args:
+            plugin_name: Name of the plugin
+            config: Plugin configuration to save
+        """
+        self.chain_manager.update_plugin_config_in_working(plugin_name, config)
+        logger.debug(f"Updated plugin {plugin_name} config in chain working configuration")
+    
+    def save_working_chain_config(self, save_to: Optional[str] = None) -> Path:
+        """
+        Save working plugin chain configuration.
+        
+        Args:
+            save_to: Optional file name to save chain (None for current file)
+        
+        Returns:
+            Path to saved chain file
+        """
+        chain_file = self.chain_manager.save_working_config(save_to)
+        
+        # Update unified config with new chain reference if saving to new file
+        if save_to:
+            chain_ref = str(chain_file.relative_to(self.chain_manager.plugin_chains_dir))
+            self.unified_manager.set_plugin_chain_reference(chain_ref)
+            self.unified_manager.save()
+        
+        logger.info(f"Saved working plugin chain configuration")
+        return chain_file
+    
+    def create_chain_snapshot(self):
+        """Create a snapshot of current plugin chain configuration for restore functionality."""
+        self.chain_manager.create_snapshot()
+    
+    def restore_chain_from_snapshot(self) -> Dict[str, Any]:
+        """Restore plugin chain configuration from snapshot."""
+        return self.chain_manager.restore_from_snapshot()
+    
+    def has_unsaved_chain_changes(self) -> bool:
+        """Check if there are unsaved changes in plugin chain configuration."""
+        return self.chain_manager.has_unsaved_changes()
 
     def get_all_plugin_configs(self, plugin_names: List[str]) -> Dict[str, Dict[str, Any]]:
         """Get configurations for multiple plugins."""
