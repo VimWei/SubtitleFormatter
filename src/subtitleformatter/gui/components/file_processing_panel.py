@@ -30,6 +30,11 @@ from PySide6.QtWidgets import (
 
 from subtitleformatter.utils.unified_logger import logger
 
+# 避免循环导入
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from .plugin_chain_visualizer import PluginChainVisualizer
+
 
 class FileProcessingPanel(QWidget):
     """
@@ -47,6 +52,8 @@ class FileProcessingPanel(QWidget):
 
     def __init__(self, parent: Optional[QWidget] = None):
         super().__init__(parent)
+        self.plugin_chain_visualizer = None
+        self.flow_group = None  # 保存流程组的引用
         self.setup_ui()
 
     def setup_ui(self):
@@ -96,6 +103,15 @@ class FileProcessingPanel(QWidget):
         options_layout.addRow("", self.debug_mode_check)
 
         layout.addWidget(options_group)
+
+        # 处理流程可视化组
+        self.flow_group = QGroupBox("Processing Flow")
+        flow_layout = QVBoxLayout(self.flow_group)
+        
+        # 延迟创建PluginChainVisualizer以避免循环导入
+        flow_layout.addWidget(QLabel("Processing flow will be initialized..."))
+        
+        layout.addWidget(self.flow_group)
 
         # 处理控制组
         control_group = QGroupBox("Processing Control")
@@ -159,36 +175,6 @@ class FileProcessingPanel(QWidget):
         control_layout.addWidget(self.status_label)
 
         layout.addWidget(control_group)
-
-        # 配置管理组
-        config_group = QGroupBox("Configuration Management")
-        config_layout = QVBoxLayout(config_group)
-
-        # 配置按钮行1
-        config_row1 = QHBoxLayout()
-        self.import_config_btn = QPushButton("Import Config")
-        self.import_config_btn.clicked.connect(self.import_configuration)
-        
-        self.export_config_btn = QPushButton("Export Config")
-        self.export_config_btn.clicked.connect(self.export_configuration)
-        
-        config_row1.addWidget(self.import_config_btn)
-        config_row1.addWidget(self.export_config_btn)
-
-        # 配置按钮行2
-        config_row2 = QHBoxLayout()
-        self.restore_last_btn = QPushButton("Restore Last")
-        self.restore_last_btn.clicked.connect(self.restore_last_configuration)
-        
-        self.restore_default_btn = QPushButton("Restore Default")
-        self.restore_default_btn.clicked.connect(self.restore_default_configuration)
-        
-        config_row2.addWidget(self.restore_last_btn)
-        config_row2.addWidget(self.restore_default_btn)
-
-        config_layout.addLayout(config_row1)
-        config_layout.addLayout(config_row2)
-        layout.addWidget(config_group)
 
         # 添加弹性空间
         layout.addStretch()
@@ -290,88 +276,17 @@ class FileProcessingPanel(QWidget):
         """设置配置协调器"""
         self.config_coordinator = coordinator
 
-    def import_configuration(self):
-        """导入配置文件"""
-        from pathlib import Path
-        
-        # 设置默认目录为 data/configs
-        default_dir = Path("data/configs")
-        if not default_dir.exists():
-            default_dir.mkdir(parents=True, exist_ok=True)
-        
-        file_path, _ = QFileDialog.getOpenFileName(
-            self, "Import Configuration", str(default_dir), "TOML Files (*.toml);;All Files (*)"
-        )
-        
-        if file_path:
-            try:
-                from pathlib import Path
-                config = self.config_coordinator.import_unified_config(Path(file_path))
-                
-                # 更新文件处理配置
-                file_config = config.get("file_processing", {})
-                self.set_processing_config(file_config)
-                
-                QMessageBox.information(self, "Success", "Configuration imported successfully!")
-                logger.info(f"Imported configuration from {file_path}")
-                
-            except Exception as e:
-                QMessageBox.critical(self, "Error", f"Failed to import configuration: {e}")
-                logger.error(f"Failed to import configuration: {e}")
-
-    def export_configuration(self):
-        """导出配置文件"""
-        from pathlib import Path
-        
-        # 设置默认目录为 data/configs
-        default_dir = Path("data/configs")
-        if not default_dir.exists():
-            default_dir.mkdir(parents=True, exist_ok=True)
-        
-        file_path, _ = QFileDialog.getSaveFileName(
-            self, "Export Configuration", str(default_dir), "TOML Files (*.toml);;All Files (*)"
-        )
-        
-        if file_path:
-            try:
-                from pathlib import Path
-                self.config_coordinator.export_unified_config(Path(file_path))
-                
-                QMessageBox.information(self, "Success", "Configuration exported successfully!")
-                logger.info(f"Exported configuration to {file_path}")
-                
-            except Exception as e:
-                QMessageBox.critical(self, "Error", f"Failed to export configuration: {e}")
-                logger.error(f"Failed to export configuration: {e}")
-
-    def restore_last_configuration(self):
-        """恢复到上次保存的配置"""
-        try:
-            config = self.config_coordinator.restore_last_config()
-            
-            # 更新文件处理配置
-            file_config = config.get("file_processing", {})
-            self.set_processing_config(file_config)
-            
-            QMessageBox.information(self, "Success", "Configuration restored to last saved state!")
-            logger.info("Restored configuration to last saved state")
-            
-        except Exception as e:
-            QMessageBox.critical(self, "Error", f"Failed to restore configuration: {e}")
-            logger.error(f"Failed to restore configuration: {e}")
-
-    def restore_default_configuration(self):
-        """恢复默认配置"""
-        try:
-            config = self.config_coordinator.restore_default_config()
-            
-            # 更新文件处理配置
-            file_config = config.get("file_processing", {})
-            self.set_processing_config(file_config)
-            
-            QMessageBox.information(self, "Success", "Configuration restored to default!")
-            logger.info("Restored configuration to default")
-            
-        except Exception as e:
-            QMessageBox.critical(self, "Error", f"Failed to restore default configuration: {e}")
-            logger.error(f"Failed to restore default configuration: {e}")
+    def set_plugin_chain_visualizer(self, visualizer):
+        """设置插件链可视化组件"""
+        self.plugin_chain_visualizer = visualizer
+        # 将可视化组件添加到流程组中
+        if self.flow_group:
+            flow_layout = self.flow_group.layout()
+            # 清除占位标签
+            for i in reversed(range(flow_layout.count())):
+                child = flow_layout.itemAt(i).widget()
+                if isinstance(child, QLabel):
+                    flow_layout.removeWidget(child)
+                    child.deleteLater()
+            # 添加可视化组件
+            flow_layout.addWidget(visualizer)

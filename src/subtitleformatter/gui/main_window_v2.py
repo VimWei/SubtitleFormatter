@@ -34,6 +34,7 @@ from subtitleformatter.plugins import PluginLifecycleManager, PluginRegistry
 from subtitleformatter.utils.unified_logger import logger
 from subtitleformatter.version import get_app_title
 
+from .components.configuration_management_panel import ConfigurationManagementPanel
 from .components.file_processing_panel import FileProcessingPanel
 from .components.log_panel import LogPanel
 from .components.plugin_chain_visualizer import PluginChainVisualizer
@@ -94,6 +95,7 @@ class MainWindowV2(QMainWindow):
         # 设置配置协调器到各个面板
         self.file_processing.set_config_coordinator(self.config_coordinator)
         self.plugin_management.set_config_coordinator(self.config_coordinator)
+        self.config_management.set_config_coordinator(self.config_coordinator)
 
         # 设置统一日志系统的GUI回调
         logger.set_gui_callback(self.log_panel.append_log)
@@ -141,32 +143,32 @@ class MainWindowV2(QMainWindow):
         # 创建左侧垂直分割器
         left_splitter = QSplitter(Qt.Vertical)
 
-        # 顶部：插件管理和配置的水平分割
-        top_splitter = QSplitter(Qt.Horizontal)
+        # 顶部：配置管理面板
+        self.config_management = ConfigurationManagementPanel(self)
+        left_splitter.addWidget(self.config_management)
+
+        # 底部：插件管理和配置的水平分割
+        bottom_splitter = QSplitter(Qt.Horizontal)
 
         # 插件管理面板
         self.plugin_management = PluginManagementPanel(self)
-        top_splitter.addWidget(self.plugin_management)
+        bottom_splitter.addWidget(self.plugin_management)
 
         # 插件配置面板
         self.plugin_config = PluginConfigPanel(self)
-        top_splitter.addWidget(self.plugin_config)
+        bottom_splitter.addWidget(self.plugin_config)
 
-        # 设置顶部分割器比例
-        top_splitter.setSizes([300, 400])  # 增加插件配置面板的初始宽度
-        top_splitter.setStretchFactor(0, 0)  # 左侧固定
-        top_splitter.setStretchFactor(1, 0)  # 右侧固定
+        # 设置底部分割器比例
+        bottom_splitter.setSizes([300, 400])  # 增加插件配置面板的初始宽度
+        bottom_splitter.setStretchFactor(0, 0)  # 左侧固定
+        bottom_splitter.setStretchFactor(1, 0)  # 右侧固定
 
-        left_splitter.addWidget(top_splitter)
+        left_splitter.addWidget(bottom_splitter)
 
-        # 底部：处理流程面板
-        self.plugin_chain_visualizer = PluginChainVisualizer(self)
-        left_splitter.addWidget(self.plugin_chain_visualizer)
-
-        # 设置左侧分割器比例
-        left_splitter.setSizes([500, 200])
-        left_splitter.setStretchFactor(0, 1)  # 顶部可伸缩
-        left_splitter.setStretchFactor(1, 0)  # 底部固定
+        # 设置左侧分割器比例 - 让插件区域自动适应配置管理区域的高度
+        left_splitter.setSizes([1, 1])  # 初始比例1:1
+        left_splitter.setStretchFactor(0, 0)  # 顶部固定（配置管理区域）
+        left_splitter.setStretchFactor(1, 1)  # 底部可伸缩（插件区域）
 
         layout.addWidget(left_splitter)
 
@@ -184,6 +186,13 @@ class MainWindowV2(QMainWindow):
 
         # 文件处理面板
         self.file_processing = FileProcessingPanel(self)
+        
+        # 创建插件链可视化组件
+        self.plugin_chain_visualizer = PluginChainVisualizer(self)
+        
+        # 将可视化组件设置到文件处理面板
+        self.file_processing.set_plugin_chain_visualizer(self.plugin_chain_visualizer)
+        
         right_splitter.addWidget(self.file_processing)
 
         # 日志面板
