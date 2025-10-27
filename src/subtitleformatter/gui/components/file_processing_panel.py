@@ -16,7 +16,6 @@ from PySide6.QtWidgets import (
     QFileDialog,
     QFormLayout,
     QFrame,
-    QGroupBox,
     QHBoxLayout,
     QLabel,
     QLineEdit,
@@ -64,11 +63,11 @@ class FileProcessingPanel(QWidget):
         
         layout = QVBoxLayout(self)
         layout.setContentsMargins(8, 8, 8, 8)
-        layout.setSpacing(8)
+        layout.setSpacing(12)
 
-        # 文件选择组
-        file_group = QGroupBox("File Selection")
-        file_layout = QFormLayout(file_group)
+        # 文件选择部分 - 直接使用 FormLayout
+        file_layout = QFormLayout()
+        file_layout.setSpacing(8)
 
         # 输入文件
         input_layout = QHBoxLayout()
@@ -90,37 +89,30 @@ class FileProcessingPanel(QWidget):
         output_layout.addWidget(self.output_file_btn)
         file_layout.addRow("Output file:", output_layout)
 
-        layout.addWidget(file_group)
+        layout.addLayout(file_layout)
 
-        # 处理选项组
-        options_group = QGroupBox("Processing Options")
-        options_layout = QFormLayout(options_group)
-
+        # 处理选项部分 - 直接使用垂直布局
         # 添加时间戳
         self.add_timestamp_check = QCheckBox("Add timestamp to filename")
         self.add_timestamp_check.setChecked(True)
-        options_layout.addRow("", self.add_timestamp_check)
+        layout.addWidget(self.add_timestamp_check)
 
         # 调试模式
         self.debug_mode_check = QCheckBox("Enable debug mode")
         self.debug_mode_check.setChecked(False)
-        options_layout.addRow("", self.debug_mode_check)
+        layout.addWidget(self.debug_mode_check)
 
-        layout.addWidget(options_group)
-
-        # 处理流程可视化组
-        self.flow_group = QGroupBox("Processing Flow")
+        # 处理流程可视化部分 - 直接使用垂直布局
+        self.flow_group = QWidget()
         flow_layout = QVBoxLayout(self.flow_group)
+        flow_layout.setContentsMargins(0, 0, 0, 0)
         
         # 延迟创建PluginChainVisualizer以避免循环导入
         flow_layout.addWidget(QLabel("Processing flow will be initialized..."))
         
         layout.addWidget(self.flow_group)
 
-        # 处理控制组
-        control_group = QGroupBox("Processing Control")
-        control_layout = QVBoxLayout(control_group)
-
+        # 处理控制部分 - 直接使用垂直布局
         # 处理按钮
         self.format_btn = QPushButton("Start Processing")
         self.format_btn.setStyleSheet(
@@ -148,8 +140,7 @@ class FileProcessingPanel(QWidget):
         )
         self.format_btn.setMinimumHeight(50)
         self.format_btn.clicked.connect(self.start_processing)
-
-        control_layout.addWidget(self.format_btn)
+        layout.addWidget(self.format_btn)
 
         # 进度条
         self.progress_bar = QProgressBar()
@@ -170,15 +161,13 @@ class FileProcessingPanel(QWidget):
             }
         """
         )
-        control_layout.addWidget(self.progress_bar)
+        layout.addWidget(self.progress_bar)
 
         # 状态标签
         self.status_label = QLabel("Ready to process")
         self.status_label.setStyleSheet("color: #666; font-size: 12px;")
         self.status_label.setAlignment(Qt.AlignCenter)
-        control_layout.addWidget(self.status_label)
-
-        layout.addWidget(control_group)
+        layout.addWidget(self.status_label)
 
         # 移除 addStretch() 以消除底部空白，让面板只占用必要的高度
         # layout.addStretch()
