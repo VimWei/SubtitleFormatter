@@ -298,7 +298,7 @@ class PluginManagementPanel(QWidget):
         if "plugins" in config and "order" in config["plugins"]:
             self.plugin_chain = config["plugins"]["order"].copy()
             self.update_chain_display()
-            self.update_available_plugins(self.available_plugins)
+            # 不需要重新更新可用插件，因为available_plugins已经设置过了
             self.pluginChainChanged.emit(self.plugin_chain)
 
     def set_config_coordinator(self, coordinator):
@@ -308,9 +308,15 @@ class PluginManagementPanel(QWidget):
     def import_plugin_chain(self):
         """导入插件链配置"""
         from PySide6.QtWidgets import QFileDialog, QMessageBox
+        from pathlib import Path
+        
+        # 设置默认目录为 data/configs/plugin_chains
+        default_dir = Path("data/configs/plugin_chains")
+        if not default_dir.exists():
+            default_dir.mkdir(parents=True, exist_ok=True)
         
         file_path, _ = QFileDialog.getOpenFileName(
-            self, "Import Plugin Chain", "", "TOML Files (*.toml);;All Files (*)"
+            self, "Import Plugin Chain", str(default_dir), "TOML Files (*.toml);;All Files (*)"
         )
         
         if file_path:
@@ -337,13 +343,19 @@ class PluginManagementPanel(QWidget):
     def export_plugin_chain(self):
         """导出插件链配置"""
         from PySide6.QtWidgets import QFileDialog, QMessageBox
+        from pathlib import Path
         
         if not self.plugin_chain:
             QMessageBox.warning(self, "Warning", "Plugin chain is empty")
             return
+        
+        # 设置默认目录为 data/configs/plugin_chains
+        default_dir = Path("data/configs/plugin_chains")
+        if not default_dir.exists():
+            default_dir.mkdir(parents=True, exist_ok=True)
             
         file_path, _ = QFileDialog.getSaveFileName(
-            self, "Export Plugin Chain", "", "TOML Files (*.toml);;All Files (*)"
+            self, "Export Plugin Chain", str(default_dir), "TOML Files (*.toml);;All Files (*)"
         )
         
         if file_path:

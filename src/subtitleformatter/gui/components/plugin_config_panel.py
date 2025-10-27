@@ -51,6 +51,10 @@ class PluginConfigPanel(QWidget):
         self.current_plugin: Optional[str] = None
         self.plugin_registry: Optional[PluginRegistry] = None
         self.parameter_widgets: Dict[str, QWidget] = {}
+        
+        # 设置最小宽度以确保良好的用户体验
+        self.setMinimumWidth(300)
+        
         self.setup_ui()
 
     def setup_ui(self):
@@ -84,21 +88,11 @@ class PluginConfigPanel(QWidget):
         # 操作按钮
         button_layout = QHBoxLayout()
 
-        self.apply_btn = QPushButton("Apply Configuration")
-        self.apply_btn.clicked.connect(self.apply_configuration)
-        self.apply_btn.setEnabled(False)
-
         self.reset_btn = QPushButton("Reset to Defaults")
         self.reset_btn.clicked.connect(self.reset_to_defaults)
         self.reset_btn.setEnabled(False)
 
-        self.export_btn = QPushButton("Export Config")
-        self.export_btn.clicked.connect(self.export_configuration)
-        self.export_btn.setEnabled(False)
-
-        button_layout.addWidget(self.apply_btn)
         button_layout.addWidget(self.reset_btn)
-        button_layout.addWidget(self.export_btn)
 
         layout.addLayout(button_layout)
 
@@ -135,9 +129,7 @@ class PluginConfigPanel(QWidget):
             self.generate_config_ui(config_schema, metadata)
 
             # 启用按钮
-            self.apply_btn.setEnabled(True)
             self.reset_btn.setEnabled(True)
-            self.export_btn.setEnabled(True)
 
         except Exception as e:
             logger.error(f"❌ Failed to load plugin config for {plugin_name}: {e}")
@@ -155,9 +147,7 @@ class PluginConfigPanel(QWidget):
                 child.widget().deleteLater()
 
         # 禁用按钮
-        self.apply_btn.setEnabled(False)
         self.reset_btn.setEnabled(False)
-        self.export_btn.setEnabled(False)
 
     def generate_config_ui(self, config_schema: Dict[str, Any], metadata: Dict[str, Any]):
         """生成配置界面"""
@@ -241,6 +231,29 @@ class PluginConfigPanel(QWidget):
             self.config_layout.addWidget(spacer)
 
             self.parameter_widgets[param_name] = widget
+            
+            # 连接信号，参数变化时自动发出configChanged信号
+            self._connect_parameter_signal(widget, param_type)
+
+    def _connect_parameter_signal(self, widget, param_type: str):
+        """连接参数控件的信号"""
+        if param_type == "boolean":
+            widget.toggled.connect(self._on_parameter_changed)
+        elif param_type in ["integer", "number"]:
+            widget.valueChanged.connect(self._on_parameter_changed)
+        elif param_type == "string":
+            if hasattr(widget, 'currentTextChanged'):  # QComboBox
+                widget.currentTextChanged.connect(self._on_parameter_changed)
+            else:  # QLineEdit
+                widget.textChanged.connect(self._on_parameter_changed)
+        elif param_type == "array":
+            widget.textChanged.connect(self._on_parameter_changed)
+
+    def _on_parameter_changed(self):
+        """参数变化时的处理"""
+        if self.current_plugin:
+            config = self.get_current_config()
+            self.configChanged.emit(self.current_plugin, config)
 
     def create_control_by_type(
         self, param_type: str, param_config: Dict[str, Any], default_value: Any, param_name: str
@@ -340,18 +353,6 @@ class PluginConfigPanel(QWidget):
 
         return config
 
-    def apply_configuration(self):
-        """应用配置"""
-        if not self.current_plugin:
-            return
-
-        try:
-            config = self.get_current_config()
-            self.configChanged.emit(self.current_plugin, config)
-            logger.info(f"Applied configuration for plugin '{self.current_plugin}'")
-        except Exception as e:
-            logger.error(f"Failed to apply configuration: {e}")
-
     def reset_to_defaults(self):
         """重置为默认值"""
         if not self.current_plugin or not self.plugin_registry:
@@ -363,22 +364,6 @@ class PluginConfigPanel(QWidget):
             logger.info(f"Reset configuration for plugin '{self.current_plugin}' to defaults")
         except Exception as e:
             logger.error(f"Failed to reset configuration: {e}")
-
-    def export_configuration(self):
-        """导出配置"""
-        if not self.current_plugin:
-            return
-
-        try:
-            config = self.get_current_config()
-            config_json = json.dumps(config, indent=2)
-
-            # 这里可以添加文件保存对话框
-            logger.info(
-                f"Exported configuration for plugin '{self.current_plugin}':\n{config_json}"
-            )
-        except Exception as e:
-            logger.error(f"Failed to export configuration: {e}")
 
     def show_no_registry_message(self):
         """显示无注册表消息"""

@@ -32,7 +32,12 @@ class PluginRegistry:
         Args:
             plugin_dirs: List of directories to scan for plugins
         """
-        self.plugin_dirs = plugin_dirs or []
+        if plugin_dirs is None:
+            self.plugin_dirs = []
+        elif isinstance(plugin_dirs, Path):
+            self.plugin_dirs = [plugin_dirs]
+        else:
+            self.plugin_dirs = list(plugin_dirs)
         self._plugins: Dict[str, Type[TextProcessorPlugin]] = {}
         self._plugin_metadata: Dict[str, Dict[str, Any]] = {}
         self._scanned = False

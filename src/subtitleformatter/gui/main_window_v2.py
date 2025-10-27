@@ -85,11 +85,11 @@ class MainWindowV2(QMainWindow):
         # 初始化插件系统
         self.initialize_plugin_system()
 
+        # 设置信号连接（必须在配置加载之前）
+        self.setup_signals()
+
         # 加载配置
         self.load_configuration()
-
-        # 设置信号连接
-        self.setup_signals()
 
         # 设置配置协调器到各个面板
         self.file_processing.set_config_coordinator(self.config_coordinator)
@@ -121,7 +121,7 @@ class MainWindowV2(QMainWindow):
         main_splitter.addWidget(right_panel)
 
         # 设置主分割器比例
-        main_splitter.setSizes([600, 600])
+        main_splitter.setSizes([750, 600])
         main_splitter.setStretchFactor(0, 0)  # 左侧固定
         main_splitter.setStretchFactor(1, 1)  # 右侧可伸缩
 
@@ -153,7 +153,7 @@ class MainWindowV2(QMainWindow):
         top_splitter.addWidget(self.plugin_config)
 
         # 设置顶部分割器比例
-        top_splitter.setSizes([300, 300])
+        top_splitter.setSizes([300, 400])  # 增加插件配置面板的初始宽度
         top_splitter.setStretchFactor(0, 0)  # 左侧固定
         top_splitter.setStretchFactor(1, 0)  # 右侧固定
 
@@ -275,6 +275,9 @@ class MainWindowV2(QMainWindow):
         # 插件配置信号
         if hasattr(self.plugin_config, "configChanged"):
             self.plugin_config.configChanged.connect(self.on_plugin_config_changed)
+            logger.debug("Plugin config signal connected successfully")
+        else:
+            logger.warning("Plugin config panel does not have configChanged signal")
 
     def on_plugin_selected(self, plugin_name: str):
         """处理插件选择事件"""
@@ -333,9 +336,18 @@ class MainWindowV2(QMainWindow):
     def on_plugin_config_changed(self, plugin_name: str, config: Dict):
         """处理插件配置变更事件"""
         try:
+            logger.debug(f"Plugin config changed signal received: {plugin_name}")
+            
             # 更新插件配置
             if plugin_name in self.loaded_plugins:
                 self.loaded_plugins[plugin_name].config.update(config)
+
+            # 立即保存插件配置到文件
+            if hasattr(self, 'config_coordinator'):
+                saved_path = self.config_coordinator.save_plugin_config(plugin_name, config)
+                logger.info(f"Plugin {plugin_name} configuration saved to {saved_path}")
+            else:
+                logger.warning("Config coordinator not available for saving plugin config")
 
             logger.info(f"Plugin {plugin_name} configuration updated")
             self.status_bar.set_message(f"Plugin {plugin_name} config updated")
@@ -388,10 +400,26 @@ class MainWindowV2(QMainWindow):
             file_config = config.get("unified", {}).get("file_processing", {})
             self.file_processing.set_processing_config(file_config)
             
+            # 确保可用插件已经设置
+            if not hasattr(self.plugin_management, 'available_plugins') or not self.plugin_management.available_plugins:
+                # 重新获取可用插件
+                available_plugins = {}
+                for name in self.plugin_registry.list_plugins():
+                    try:
+                        available_plugins[name] = self.plugin_registry.get_plugin_metadata(name)
+                    except Exception as e:
+                        logger.warning(f"Failed to get metadata for plugin {name}: {e}")
+                
+                self.plugin_management.update_available_plugins(available_plugins)
+            
             # 更新插件链配置
             chain_config = config.get("plugin_chain", {})
+            logger.debug(f"Chain config: {chain_config}")
             if "plugins" in chain_config and "order" in chain_config["plugins"]:
+                logger.debug(f"Loading plugin chain with order: {chain_config['plugins']['order']}")
                 self.plugin_management.load_plugin_chain_config(chain_config)
+            else:
+                logger.warning("No valid plugin chain configuration found")
             
             logger.info("Configuration loaded successfully")
             

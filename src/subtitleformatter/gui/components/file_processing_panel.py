@@ -292,8 +292,15 @@ class FileProcessingPanel(QWidget):
 
     def import_configuration(self):
         """导入配置文件"""
+        from pathlib import Path
+        
+        # 设置默认目录为 data/configs
+        default_dir = Path("data/configs")
+        if not default_dir.exists():
+            default_dir.mkdir(parents=True, exist_ok=True)
+        
         file_path, _ = QFileDialog.getOpenFileName(
-            self, "Import Configuration", "", "TOML Files (*.toml);;All Files (*)"
+            self, "Import Configuration", str(default_dir), "TOML Files (*.toml);;All Files (*)"
         )
         
         if file_path:
@@ -314,8 +321,15 @@ class FileProcessingPanel(QWidget):
 
     def export_configuration(self):
         """导出配置文件"""
+        from pathlib import Path
+        
+        # 设置默认目录为 data/configs
+        default_dir = Path("data/configs")
+        if not default_dir.exists():
+            default_dir.mkdir(parents=True, exist_ok=True)
+        
         file_path, _ = QFileDialog.getSaveFileName(
-            self, "Export Configuration", "", "TOML Files (*.toml);;All Files (*)"
+            self, "Export Configuration", str(default_dir), "TOML Files (*.toml);;All Files (*)"
         )
         
         if file_path:
