@@ -22,12 +22,13 @@ from .unified_config_manager import UnifiedConfigManager
 class ConfigCoordinator:
     """Coordinates all configuration management."""
 
-    def __init__(self, project_root: Path):
+    def __init__(self, project_root: Path, plugin_registry=None):
         """
         Initialize config coordinator.
 
         Args:
             project_root: Project root directory
+            plugin_registry: Optional plugin registry instance
         """
         self.project_root = project_root
         self.configs_dir = project_root / "data" / "configs"
@@ -35,7 +36,11 @@ class ConfigCoordinator:
         # Initialize managers
         self.unified_manager = UnifiedConfigManager(project_root, self.configs_dir)
         self.chain_manager = PluginChainManager(project_root, self.configs_dir)
-        self.plugin_manager = PluginConfigManager(project_root, self.configs_dir)
+        self.plugin_manager = PluginConfigManager(project_root, self.configs_dir, plugin_registry)
+    
+    def set_plugin_registry(self, plugin_registry):
+        """Set plugin registry for plugin config manager."""
+        self.plugin_manager.plugin_registry = plugin_registry
 
     def load_all_config(self) -> Dict[str, Any]:
         """

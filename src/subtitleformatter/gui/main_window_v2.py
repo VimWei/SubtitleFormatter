@@ -65,6 +65,9 @@ class MainWindowV2(QMainWindow):
 
         # 初始化配置管理系统
         self.config_coordinator = ConfigCoordinator(project_root)
+        
+        # 保存当前加载的链配置中的 plugin_configs
+        self.current_chain_plugin_configs: Dict[str, Dict[str, Any]] = {}
 
         # 初始化插件系统
         self.plugin_registry = PluginRegistry()
@@ -83,6 +86,9 @@ class MainWindowV2(QMainWindow):
 
         # 初始化插件系统
         self.initialize_plugin_system()
+
+        # 设置插件注册表到配置管理器
+        self.config_coordinator.set_plugin_registry(self.plugin_registry)
 
         # 设置信号连接（必须在配置加载之前）
         self.setup_signals()
@@ -407,12 +413,22 @@ class MainWindowV2(QMainWindow):
             
             # 更新插件链配置
             chain_config = config.get("plugin_chain", {})
-            logger.debug(f"Chain config: {chain_config}")
+            logger.info(f"Chain config: {chain_config}")
             if "plugins" in chain_config and "order" in chain_config["plugins"]:
-                logger.debug(f"Loading plugin chain with order: {chain_config['plugins']['order']}")
+                chain_order = chain_config["plugins"]["order"]
+                logger.info(f"Loading plugin chain with order: {chain_order}")
+                
+                # 保存 plugin_configs（如果有）
+                if "plugin_configs" in chain_config:
+                    self.current_chain_plugin_configs = chain_config["plugin_configs"]
+                    logger.info(f"Loaded plugin configs: {list(self.current_chain_plugin_configs.keys())}")
+                else:
+                    logger.info("No plugin_configs in chain config")
+                
                 self.plugin_management.load_plugin_chain_config(chain_config)
+                logger.info(f"After load_plugin_chain_config, plugin_chain is: {self.plugin_management.plugin_chain}")
             else:
-                logger.warning("No valid plugin chain configuration found")
+                logger.warning(f"No valid plugin chain configuration found. Chain config: {chain_config}")
             
             logger.info("Configuration loaded successfully")
             
@@ -429,15 +445,31 @@ class MainWindowV2(QMainWindow):
             # 保存插件链配置到 latest 文件
             chain_config = self.plugin_management.get_plugin_chain_config()
             if chain_config.get("plugins", {}).get("order"):
-                plugin_configs = self.config_coordinator.get_all_plugin_configs(
-                    chain_config["plugins"]["order"]
-                )
+                # 获取完整的插件配置：优先从内存中的 plugin_configs，如果没有则从配置文件获取
+                plugin_order = chain_config["plugins"]["order"]
+                
+                # 先从内存中获取保存的 plugin_configs
+                plugin_configs = self.current_chain_plugin_configs.copy()
+                
+                # 补充缺失的插件配置
+                for plugin_name in plugin_order:
+                    if plugin_name not in plugin_configs or not plugin_configs[plugin_name]:
+                        # 如果链中没有或者为空，则从配置文件获取（包括默认配置）
+                        loaded_config = self.config_coordinator.get_all_plugin_configs([plugin_name])[plugin_name]
+                        plugin_configs[plugin_name] = loaded_config
+                        logger.debug(f"Loaded config for {plugin_name}: {loaded_config}")
+                
+                logger.debug(f"Saving plugin chain with order: {plugin_order}, configs: {list(plugin_configs.keys())}")
+                
                 # 保存到 chain_latest.toml，不生成新文件
-                self.config_coordinator.save_plugin_chain(
-                    chain_config["plugins"]["order"],
+                chain_file = self.config_coordinator.save_plugin_chain(
+                    plugin_order,
                     plugin_configs,
                     "chain_latest.toml"
                 )
+                
+                # 更新内存中的配置
+                self.current_chain_plugin_configs = plugin_configs
             
             # 保存所有配置
             self.config_coordinator.save_all_config()

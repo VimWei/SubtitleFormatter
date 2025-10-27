@@ -41,8 +41,22 @@ class PluginChainManager:
         self.plugin_chains_dir.mkdir(parents=True, exist_ok=True)
         self.plugins_dir.mkdir(parents=True, exist_ok=True)
 
+        # Initialize default chain file if needed
+        self._ensure_default_chain_exists()
+
         self.current_chain_file: Optional[Path] = None
         self.current_chain_config: Dict[str, Any] = {}
+    
+    def _ensure_default_chain_exists(self):
+        """Ensure default plugin chain file exists in user directory."""
+        default_user_path = self.plugin_chains_dir / "default_plugin_chain.toml"
+        if not default_user_path.exists() and self.default_chain_path.exists():
+            try:
+                import shutil
+                shutil.copy2(self.default_chain_path, default_user_path)
+                logger.info(f"Initialized default plugin chain at {default_user_path}")
+            except Exception as e:
+                logger.error(f"Failed to initialize default chain: {e}")
 
     def load_chain(self, chain_path: Optional[str] = None) -> Dict[str, Any]:
         """
@@ -60,27 +74,53 @@ class PluginChainManager:
 
         # Try to load from plugin_chains_dir
         chain_file = self.plugin_chains_dir / chain_path
+        
+        # If file doesn't exist, try to copy from default
         if not chain_file.exists():
-            # If not found, try relative to configs_dir
-            chain_file = self.configs_dir / chain_path
-            if not chain_file.exists():
-                logger.warning(f"Plugin chain file not found: {chain_path}, falling back to default")
+            logger.info(f"Plugin chain file not found: {chain_file}, attempting to copy default chain")
+            # Try to copy default chain
+            if self._copy_default_chain_to_user_dir(chain_path):
+                chain_file = self.plugin_chains_dir / chain_path
+                if chain_file.exists():
+                    logger.info(f"Successfully copied and found default chain at {chain_file}")
+                else:
+                    logger.warning(f"Failed to create chain file, falling back to default")
+                    return self._load_default_chain()
+            else:
+                logger.warning(f"Failed to copy default chain, falling back to default")
                 return self._load_default_chain()
+
+        # Verify file exists before loading
+        if not chain_file.exists():
+            logger.warning(f"Chain file does not exist: {chain_file}, falling back to default")
+            return self._load_default_chain()
 
         self.current_chain_file = chain_file
         return self._load_chain_from_file(chain_file)
 
     def _load_default_chain(self) -> Dict[str, Any]:
         """Load default plugin chain."""
+        # Try to load from user directory first
+        default_user_path = self.plugin_chains_dir / "default_plugin_chain.toml"
+        if default_user_path.exists():
+            try:
+                config = self._load_chain_from_file(default_user_path)
+                logger.info(f"Loaded default plugin chain from {default_user_path}")
+                return config
+            except Exception as e:
+                logger.error(f"Failed to load default chain from user directory: {e}")
+        
+        # Fallback to built-in default
         if self.default_chain_path.exists():
             try:
                 config = self._load_chain_from_file(self.default_chain_path)
-                logger.info(f"Loaded default plugin chain from {self.default_chain_path}")
+                logger.info(f"Loaded default plugin chain from built-in {self.default_chain_path}")
                 return config
             except Exception as e:
-                logger.error(f"Failed to load default chain: {e}")
+                logger.error(f"Failed to load built-in default chain: {e}")
 
         # Return minimal default chain
+        logger.warning("Using minimal default chain as fallback")
         return self._create_default_chain()
 
     def _load_chain_from_file(self, chain_file: Path) -> Dict[str, Any]:
@@ -111,6 +151,29 @@ class PluginChainManager:
             },
             "plugin_configs": {}
         }
+
+    def _copy_default_chain_to_user_dir(self, target_path: str) -> bool:
+        """Copy default chain to user directory."""
+        try:
+            if self.default_chain_path.exists():
+                import shutil
+                target_file = self.plugin_chains_dir / target_path
+                target_file.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(self.default_chain_path, target_file)
+                
+                # Verify copy succeeded
+                if target_file.exists():
+                    logger.info(f"Successfully copied default chain to {target_file}")
+                    return True
+                else:
+                    logger.error(f"Copy appeared to succeed but file not found: {target_file}")
+                    return False
+            else:
+                logger.error(f"Default chain file not found: {self.default_chain_path}")
+                return False
+        except Exception as e:
+            logger.error(f"Failed to copy default chain: {e}")
+            return False
 
     def save_chain(self, order: List[str], plugin_configs: Dict[str, Dict[str, Any]], chain_path: Optional[str] = None) -> Path:
         """

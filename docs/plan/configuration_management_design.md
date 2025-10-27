@@ -66,10 +66,13 @@
 data/configs/
 ├── config_latest.toml              # 当前配置（程序启动时加载）
 ├── plugins/                        # 插件配置目录
-│   ├── text_cleaning.toml
-│   ├── sentence_splitter.toml
-│   └── punctuation_adder.toml
+│   └── builtin/                    # 命名空间目录
+│       ├── text_cleaning.toml
+│       ├── sentence_splitter.toml
+│       └── punctuation_adder.toml
 ├── plugin_chains/                  # 插件链配置目录
+│   ├── default_plugin_chain.toml
+│   ├── chain_latest.toml
 │   ├── basic_chain.toml
 │   ├── advanced_chain.toml
 │   └── custom_*.toml
@@ -153,24 +156,29 @@ current_plugin_chain = "plugin_chains/chain_workflow.toml"
 ```toml
 # 插件链配置文件 (如: data/configs/plugin_chains/chain_workflow.toml)
 [plugins]
-order = ["punctuation_adder", "sentence_splitter"]
+# 插件名称使用完整命名空间格式: namespace/plugin_name
+order = ["builtin/punctuation_adder", "builtin/sentence_splitter"]
 
 # 包含且只包含当前插件链用到的插件的完整配置
-[plugin_configs.punctuation_adder]
+# 注意：当插件名称包含斜杠时，键名需要用引号括起来
+[plugin_configs."builtin/punctuation_adder"]
 enabled = true
 model_name = "oliverguhr/fullstop-punctuation-multilang-large"
 capitalize_sentences = true
 split_sentences = true
 replace_dashes = true
 
-[plugin_configs.sentence_splitter]
+[plugin_configs."builtin/sentence_splitter"]
 enabled = true
 min_recursive_length = 70
 max_depth = 8
 max_degradation_round = 5
 ```
 
-**注意**: 插件链配置文件包含当前链用到的所有插件的完整配置，不包含未使用的插件配置
+**注意**: 
+- 插件链配置文件包含当前链用到的所有插件的完整配置，不包含未使用的插件配置
+- 插件名称使用命名空间格式 `namespace/plugin_name`，例如 `builtin/punctuation_adder`
+- TOML 配置节中，如果键名包含特殊字符（如 `/`），需要用引号括起来：`[plugin_configs."builtin/punctuation_adder"]`
 
 ### 4.3 插件参数配置管理
 
@@ -186,20 +194,24 @@ max_degradation_round = 5
 
 #### 插件参数配置内容
 ```toml
-# 插件自定义配置文件 (如: data/configs/plugins/punctuation_adder.toml)
-[punctuation_adder]
+# 插件自定义配置文件 (如: data/configs/plugins/builtin/punctuation_adder.toml)
+# 注意：使用插件完整命名空间作为配置节键名
+[builtin/punctuation_adder]
 add_periods = true
 add_commas = false
 add_question_marks = true
 
-# 插件自定义配置文件 (如: data/configs/plugins/sentence_splitter.toml)
-[sentence_splitter]
+# 插件自定义配置文件 (如: data/configs/plugins/builtin/sentence_splitter.toml)
+[builtin/sentence_splitter]
 min_recursive_length = 70
 max_depth = 8
 max_degradation_round = 5
 ```
 
-**注意**: 每个插件有独立的配置文件，用户修改参数后立即保存到 `data/configs/plugins/` 目录
+**注意**: 
+- 每个插件有独立的配置文件，用户修改参数后立即保存到 `data/configs/plugins/` 目录
+- 配置文件按命名空间存储为目录结构，例如 `data/configs/plugins/builtin/punctuation_adder.toml`
+- 配置文件内容中的键名使用完整插件名称（包括斜杠）：`[builtin/punctuation_adder]`
 
 #### 设计原则
 - **独立存储**: 每个插件有独立的配置文件，存储在 `data/configs/plugins/` 目录
@@ -303,9 +315,10 @@ Plugin Configuration
 data/configs/
 ├── config_latest.toml          # 统一配置文件
 ├── plugins/                     # 插件配置目录
-│   ├── punctuation_adder.toml # 标点插件配置
-│   ├── sentence_splitter.toml  # 断句插件配置
-│   └── text_cleaning.toml      # 文本清理插件配置
+│   └── builtin/                # 命名空间目录
+│       ├── punctuation_adder.toml        # 标点插件配置
+│       ├── sentence_splitter.toml        # 断句插件配置
+│       └── text_cleaning.toml           # 文本清理插件配置
 ├── plugin_chains/               # 插件链配置目录
 │   ├── chain_latest.toml       # 当前插件链配置
 │   ├── chain_workflow.toml     # 用户保存的插件链

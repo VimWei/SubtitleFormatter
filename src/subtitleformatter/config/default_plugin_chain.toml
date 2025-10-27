@@ -2,17 +2,17 @@
 
 [plugins]
 # Plugin execution order
-order = ["punctuation_adder", "sentence_splitter"]
+order = ["builtin/punctuation_adder", "builtin/sentence_splitter"]
 
 # Plugin-specific configurations
-[plugin_configs.punctuation_adder]
+[plugin_configs."builtin/punctuation_adder"]
 enabled = true
 model_name = "oliverguhr/fullstop-punctuation-multilang-large"
 replace_dashes = true
 split_sentences = false
 capitalize_sentences = false
 
-[plugin_configs.sentence_splitter]
+[plugin_configs."builtin/sentence_splitter"]
 enabled = true
 min_recursive_length = 70
 max_depth = 8
