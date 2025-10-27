@@ -67,6 +67,7 @@ class PluginManagementPanel(QWidget):
         self.available_list = QListWidget()
         self.available_list.setStyleSheet("QListWidget { padding: 5px; } QListWidget::item { padding: 3px; }")
         self.available_list.itemClicked.connect(self.on_plugin_selected)
+        self.available_list.currentRowChanged.connect(self.on_available_current_changed)
         available_layout.addWidget(self.available_list)
 
         # 插件操作按钮
@@ -93,6 +94,7 @@ class PluginManagementPanel(QWidget):
         self.chain_list = QListWidget()
         self.chain_list.setStyleSheet("QListWidget { padding: 5px; } QListWidget::item { padding: 3px; }")
         self.chain_list.itemClicked.connect(self.on_chain_item_selected)
+        self.chain_list.currentRowChanged.connect(self.on_chain_current_changed)
         self.chain_list.setDragDropMode(QListWidget.InternalMove)
         self.chain_list.model().rowsMoved.connect(self.on_chain_reordered)
         chain_layout.addWidget(self.chain_list)
@@ -182,6 +184,19 @@ class PluginManagementPanel(QWidget):
             # 发送信号
             self.pluginSelected.emit(plugin_name)
 
+    def on_available_current_changed(self, current_row: int):
+        """处理可用插件列表当前行变化（键盘导航）"""
+        if current_row >= 0 and current_row < self.available_list.count():
+            item = self.available_list.item(current_row)
+            if item:
+                plugin_name = item.data(Qt.UserRole)
+                if plugin_name in self.available_plugins:
+                    # 更新按钮状态 - 总是启用添加按钮
+                    self.add_plugin_btn.setEnabled(True)
+                    
+                    # 发送信号
+                    self.pluginSelected.emit(plugin_name)
+
     def add_plugin_to_chain(self):
         """添加插件到链中"""
         current_item = self.available_list.currentItem()
@@ -226,6 +241,21 @@ class PluginManagementPanel(QWidget):
 
         # 发送信号
         self.pluginSelected.emit(plugin_name)
+
+    def on_chain_current_changed(self, current_row: int):
+        """处理插件链列表当前行变化（键盘导航）"""
+        if current_row >= 0 and current_row < self.chain_list.count():
+            item = self.chain_list.item(current_row)
+            if item:
+                plugin_name = item.data(Qt.UserRole)
+                
+                # 更新按钮状态
+                self.move_up_btn.setEnabled(current_row > 0)
+                self.move_down_btn.setEnabled(current_row < len(self.plugin_chain) - 1)
+                self.remove_plugin_btn.setEnabled(True)
+                
+                # 发送信号
+                self.pluginSelected.emit(plugin_name)
 
     def on_chain_reordered(self):
         """处理链重排序"""
