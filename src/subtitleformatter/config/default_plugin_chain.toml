@@ -6,10 +6,14 @@ order = ["punctuation_adder", "sentence_splitter"]
 
 # Plugin-specific configurations
 [plugin_configs.punctuation_adder]
-add_periods = true
-add_commas = false
+enabled = true
+model_name = "oliverguhr/fullstop-punctuation-multilang-large"
+replace_dashes = true
+split_sentences = false
+capitalize_sentences = false
 
 [plugin_configs.sentence_splitter]
+enabled = true
 min_recursive_length = 70
 max_depth = 8
-
+max_degradation_round = 5
