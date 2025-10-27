@@ -24,7 +24,6 @@ from PySide6.QtWidgets import (
     QScrollArea,
     QSizePolicy,
     QSplitter,
-    QStatusBar,
     QVBoxLayout,
     QWidget,
 )
@@ -40,7 +39,6 @@ from .components.log_panel import LogPanel
 from .components.plugin_chain_visualizer import PluginChainVisualizer
 from .components.plugin_config_panel import PluginConfigPanel
 from .components.plugin_management_panel import PluginManagementPanel
-from .components.status_bar import StatusBar
 from .styles.theme_loader import ThemeLoader
 
 
@@ -128,10 +126,6 @@ class MainWindowV2(QMainWindow):
         main_splitter.setStretchFactor(1, 1)  # 右侧可伸缩
 
         main_layout.addWidget(main_splitter)
-
-        # 创建状态栏
-        self.status_bar = StatusBar()
-        self.setStatusBar(self.status_bar)
 
     def create_left_panel(self) -> QWidget:
         """创建左侧插件管理和流程面板"""
@@ -237,11 +231,9 @@ class MainWindowV2(QMainWindow):
             self.update_plugin_management_ui()
 
             logger.info("Plugin system initialized successfully")
-            self.status_bar.set_message("Plugin system ready")
 
         except Exception as e:
             logger.error(f"Failed to initialize plugin system: {e}")
-            self.status_bar.set_message(f"Plugin system error: {e}")
 
     def update_plugin_management_ui(self):
         """更新插件管理界面"""
@@ -294,9 +286,6 @@ class MainWindowV2(QMainWindow):
             # 更新插件配置面板
             self.plugin_config.load_plugin_config(plugin_name)
 
-            # 更新状态栏
-            self.status_bar.set_message(f"Selected plugin: {plugin_name}")
-
         except Exception as e:
             logger.error(f"Failed to select plugin {plugin_name}: {e}")
 
@@ -316,9 +305,6 @@ class MainWindowV2(QMainWindow):
 
             # 更新插件链可视化
             self.plugin_chain_visualizer.update_plugin_chain(plugin_chain, plugin_metadata)
-
-            # 更新状态栏
-            self.status_bar.set_message(f"Plugin chain updated: {len(plugin_chain)} plugins")
 
         except Exception as e:
             logger.error(f"Failed to update plugin chain: {e}")
@@ -359,7 +345,6 @@ class MainWindowV2(QMainWindow):
                 logger.warning("Config coordinator not available for saving plugin config")
 
             logger.info(f"Plugin {plugin_name} configuration updated")
-            self.status_bar.set_message(f"Plugin {plugin_name} config updated")
 
         except Exception as e:
             logger.error(f"Failed to update plugin config: {e}")
@@ -376,16 +361,11 @@ class MainWindowV2(QMainWindow):
         # 启动线程
         self.processing_thread.start()
 
-        # 更新状态
-        self.status_bar.set_message("Processing started...")
-
     def on_processing_finished(self, success: bool, message: str):
         """处理完成回调"""
         if success:
-            self.status_bar.set_message("Processing completed successfully")
             logger.info(" " + message)
         else:
-            self.status_bar.set_message("Processing failed")
             logger.error(" " + message)
             QMessageBox.critical(self, "Processing Error", message)
 
