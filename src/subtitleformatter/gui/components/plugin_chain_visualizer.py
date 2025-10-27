@@ -175,7 +175,7 @@ class PluginChainCanvas(QWidget):
 
         # 计算节点尺寸和间距
         node_height = 40
-        spacing = 20
+        spacing = 30  # 适当增加行间距，让拐弯箭头有足够的空间
         arrow_width = 30
         margin = 10
 
@@ -209,7 +209,33 @@ class PluginChainCanvas(QWidget):
         total_height = num_rows * node_height + (num_rows - 1) * spacing
         start_y = (self.height() - total_height) // 2
 
-        # 绘制节点
+        # 第一遍：绘制所有节点
+        for i, plugin_name in enumerate(self.plugin_chain):
+            row = i // nodes_per_row
+            col = i % nodes_per_row
+
+            # 计算当前行的起始X位置
+            row_start_idx = row * nodes_per_row
+            row_end_idx = min(row_start_idx + nodes_per_row, len(self.plugin_chain))
+            row_widths = node_widths[row_start_idx:row_end_idx]
+
+            row_total_width = sum(row_widths)
+            if len(row_widths) > 1:
+                row_total_width += (len(row_widths) - 1) * (spacing + arrow_width)
+
+            start_x = (self.width() - row_total_width) // 2
+
+            # 计算当前节点的位置
+            x = start_x
+            for j in range(col):
+                x += node_widths[row_start_idx + j] + spacing + arrow_width
+
+            y = start_y + row * (node_height + spacing)
+
+            # 绘制插件节点
+            self.draw_plugin_node(painter, x, y, node_widths[i], node_height, plugin_name)
+
+        # 第二遍：绘制所有箭头（在节点之上）
         for i, plugin_name in enumerate(self.plugin_chain):
             row = i // nodes_per_row
             col = i % nodes_per_row
@@ -243,20 +269,29 @@ class PluginChainCanvas(QWidget):
                     y + node_height // 2,
                 )
 
-            # 绘制垂直箭头（除了最后一行，且是每行最后一个节点）
+            # 绘制拐弯箭头（除了最后一行，且是每行最后一个节点）
             if row < num_rows - 1 and col == len(row_widths) - 1:
-                arrow_y = y + node_height + spacing // 2
-                self.draw_arrow(
+                # 计算下一行的第一个节点位置
+                next_row = row + 1
+                next_row_start_idx = next_row * nodes_per_row
+                next_row_end_idx = min(next_row_start_idx + nodes_per_row, len(self.plugin_chain))
+                next_row_widths = node_widths[next_row_start_idx:next_row_end_idx]
+                
+                next_row_total_width = sum(next_row_widths)
+                if len(next_row_widths) > 1:
+                    next_row_total_width += (len(next_row_widths) - 1) * (spacing + arrow_width)
+                
+                next_start_x = (self.width() - next_row_total_width) // 2
+                next_y = start_y + next_row * (node_height + spacing)
+                
+                # 绘制拐弯箭头
+                self.draw_bent_arrow(
                     painter,
-                    x + node_widths[i] // 2,
-                    arrow_y,
-                    x + node_widths[i] // 2,
-                    arrow_y + spacing,
-                    vertical=True,
+                    x + node_widths[i] // 2,  # 当前节点中心X
+                    y + node_height,  # 当前节点底部
+                    next_start_x + next_row_widths[0] // 2,  # 下一行第一个节点中心X
+                    next_y,  # 下一行第一个节点顶部
                 )
-
-            # 绘制插件节点
-            self.draw_plugin_node(painter, x, y, node_widths[i], node_height, plugin_name)
 
     def draw_plugin_node(
         self, painter: QPainter, x: int, y: int, width: int, height: int, plugin_name: str
@@ -373,3 +408,71 @@ class PluginChainCanvas(QWidget):
         # 绘制箭头
         painter.drawLine(end_x, end_y, x1, y1)
         painter.drawLine(end_x, end_y, x2, y2)
+
+    def draw_bent_arrow(
+        self,
+        painter: QPainter,
+        start_x: int,
+        start_y: int,
+        end_x: int,
+        end_y: int,
+    ):
+        """绘制拐弯箭头（从一行的最后一个节点到下一行的第一个节点）
+        
+        箭头路径根据节点位置自适应：向下 -> 水平 -> 向上
+        """
+        painter.setPen(QPen(QColor("#666"), 2))
+
+        # 计算总垂直距离
+        if end_y < start_y:
+            # 目标在上方：向下 -> 水平 -> 向上
+            total_height = start_y - end_y
+            
+            # 第一段向下
+            down_dist = total_height // 3
+            mid_y = start_y + down_dist
+            
+            # 绘制路径
+            painter.drawLine(start_x, start_y, start_x, mid_y)  # 向下
+            painter.drawLine(start_x, mid_y, end_x, mid_y)      # 水平移动
+            painter.drawLine(end_x, mid_y, end_x, end_y)         # 向上连接到终点
+            
+            # 箭头向上 - 使用线段风格，与其他箭头一致
+            arrow_size = 8
+            x1 = end_x - arrow_size // 2
+            y1 = end_y - arrow_size
+            x2 = end_x + arrow_size // 2
+            y2 = end_y - arrow_size
+            painter.drawLine(end_x, end_y, x1, y1)
+            painter.drawLine(end_x, end_y, x2, y2)
+        elif end_y > start_y:
+            # 目标在下方：继续向下 -> 水平 -> 继续向下
+            total_height = end_y - start_y
+            
+            # 第一段向下
+            down_dist = total_height // 2
+            mid_y = start_y + down_dist
+            
+            # 绘制路径
+            painter.drawLine(start_x, start_y, start_x, mid_y)  # 继续向下
+            painter.drawLine(start_x, mid_y, end_x, mid_y)      # 水平移动
+            painter.drawLine(end_x, mid_y, end_x, end_y)         # 继续向下连接到终点
+            
+            # 箭头向下 - 使用线段风格，与其他箭头一致
+            arrow_size = 8
+            x1 = end_x - arrow_size // 2
+            y1 = end_y - arrow_size
+            x2 = end_x + arrow_size // 2
+            y2 = end_y - arrow_size
+            painter.drawLine(end_x, end_y, x1, y1)
+            painter.drawLine(end_x, end_y, x2, y2)
+        else:
+            # 同一水平线，只画水平箭头
+            painter.drawLine(start_x, start_y, end_x - 8, start_y)
+            arrow_size = 8
+            x1 = end_x - arrow_size
+            y1 = start_y - arrow_size // 2
+            x2 = end_x - arrow_size
+            y2 = start_y + arrow_size // 2
+            painter.drawLine(end_x, start_y, x1, y1)
+            painter.drawLine(end_x, start_y, x2, y2)
