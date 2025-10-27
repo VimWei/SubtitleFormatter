@@ -165,9 +165,9 @@ class MainWindowV2(QMainWindow):
 
         left_splitter.addWidget(bottom_splitter)
 
-        # 设置左侧分割器比例 - 让插件区域自动适应配置管理区域的高度
-        left_splitter.setSizes([1, 1])  # 初始比例1:1
-        left_splitter.setStretchFactor(0, 0)  # 顶部固定（配置管理区域）
+        # 设置左侧分割器比例 - 让配置管理面板能够充分利用空间
+        left_splitter.setSizes([150, 1000])  # 配置管理占较小空间，插件区域占更多空间
+        left_splitter.setStretchFactor(0, 1)  # 顶部可伸缩（配置管理区域）- 关键修改！
         left_splitter.setStretchFactor(1, 1)  # 底部可伸缩（插件区域）
 
         layout.addWidget(left_splitter)

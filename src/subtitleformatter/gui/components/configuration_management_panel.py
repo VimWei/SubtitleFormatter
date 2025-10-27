@@ -63,6 +63,9 @@ class ConfigurationManagementPanel(QWidget):
             }
         """)
         config_layout = QVBoxLayout(config_group)
+        
+        # 添加上方弹性空间，让按钮在QGroupBox中垂直居中
+        config_layout.addStretch()
 
         # 配置按钮行 - 四个按钮在一行
         config_row = QHBoxLayout()
@@ -158,10 +161,11 @@ class ConfigurationManagementPanel(QWidget):
         config_row.addWidget(self.export_config_btn)
 
         config_layout.addLayout(config_row)
+        
+        # 添加下方弹性空间，让按钮在QGroupBox中垂直居中
+        config_layout.addStretch()
+        
         layout.addWidget(config_group)
-
-        # 添加弹性空间
-        layout.addStretch()
 
         self.setLayout(layout)
 
