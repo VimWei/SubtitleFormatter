@@ -29,6 +29,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from subtitleformatter.config import ConfigCoordinator
 from subtitleformatter.plugins import PluginLifecycleManager, PluginRegistry
 from subtitleformatter.utils.unified_logger import logger
 from subtitleformatter.version import get_app_title
@@ -63,6 +64,9 @@ class MainWindowV2(QMainWindow):
         if icon_path.exists():
             self.setWindowIcon(QIcon(str(icon_path)))
 
+        # 初始化配置管理系统
+        self.config_coordinator = ConfigCoordinator(project_root)
+
         # 初始化插件系统
         self.plugin_registry = PluginRegistry()
         self.plugin_lifecycle = None
@@ -81,8 +85,15 @@ class MainWindowV2(QMainWindow):
         # 初始化插件系统
         self.initialize_plugin_system()
 
+        # 加载配置
+        self.load_configuration()
+
         # 设置信号连接
         self.setup_signals()
+
+        # 设置配置协调器到各个面板
+        self.file_processing.set_config_coordinator(self.config_coordinator)
+        self.plugin_management.set_config_coordinator(self.config_coordinator)
 
         # 设置统一日志系统的GUI回调
         logger.set_gui_callback(self.log_panel.append_log)
@@ -367,6 +378,64 @@ class MainWindowV2(QMainWindow):
             self.setStyleSheet(theme_loader.load_theme(theme_name))
         except Exception as e:
             logger.warning(f"Failed to apply theme: {e}")
+
+    def load_configuration(self):
+        """加载配置"""
+        try:
+            config = self.config_coordinator.load_all_config()
+            
+            # 更新文件处理配置
+            file_config = config.get("unified", {}).get("file_processing", {})
+            self.file_processing.set_processing_config(file_config)
+            
+            # 更新插件链配置
+            chain_config = config.get("plugin_chain", {})
+            if "plugins" in chain_config and "order" in chain_config["plugins"]:
+                self.plugin_management.load_plugin_chain_config(chain_config)
+            
+            logger.info("Configuration loaded successfully")
+            
+        except Exception as e:
+            logger.error(f"Failed to load configuration: {e}")
+
+    def save_configuration(self):
+        """保存配置"""
+        try:
+            # 保存文件处理配置
+            file_config = self.file_processing.get_processing_config()
+            self.config_coordinator.set_file_processing_config(file_config)
+            
+            # 保存插件链配置到 latest 文件
+            chain_config = self.plugin_management.get_plugin_chain_config()
+            if chain_config.get("plugins", {}).get("order"):
+                plugin_configs = self.config_coordinator.get_all_plugin_configs(
+                    chain_config["plugins"]["order"]
+                )
+                # 保存到 chain_latest.toml，不生成新文件
+                self.config_coordinator.save_plugin_chain(
+                    chain_config["plugins"]["order"],
+                    plugin_configs,
+                    "chain_latest.toml"
+                )
+            
+            # 保存所有配置
+            self.config_coordinator.save_all_config()
+            
+            logger.info("Configuration saved successfully")
+            
+        except Exception as e:
+            logger.error(f"Failed to save configuration: {e}")
+
+    def closeEvent(self, event):
+        """处理窗口关闭事件"""
+        # 保存配置
+        self.save_configuration()
+        
+        # 停止插件生命周期
+        if self.plugin_lifecycle:
+            self.plugin_lifecycle.cleanup_all()
+        
+        event.accept()
 
 
 class ProcessingThread(QThread):

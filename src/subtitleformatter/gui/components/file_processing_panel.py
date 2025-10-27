@@ -160,6 +160,36 @@ class FileProcessingPanel(QWidget):
 
         layout.addWidget(control_group)
 
+        # 配置管理组
+        config_group = QGroupBox("Configuration Management")
+        config_layout = QVBoxLayout(config_group)
+
+        # 配置按钮行1
+        config_row1 = QHBoxLayout()
+        self.import_config_btn = QPushButton("Import Config")
+        self.import_config_btn.clicked.connect(self.import_configuration)
+        
+        self.export_config_btn = QPushButton("Export Config")
+        self.export_config_btn.clicked.connect(self.export_configuration)
+        
+        config_row1.addWidget(self.import_config_btn)
+        config_row1.addWidget(self.export_config_btn)
+
+        # 配置按钮行2
+        config_row2 = QHBoxLayout()
+        self.restore_last_btn = QPushButton("Restore Last")
+        self.restore_last_btn.clicked.connect(self.restore_last_configuration)
+        
+        self.restore_default_btn = QPushButton("Restore Default")
+        self.restore_default_btn.clicked.connect(self.restore_default_configuration)
+        
+        config_row2.addWidget(self.restore_last_btn)
+        config_row2.addWidget(self.restore_default_btn)
+
+        config_layout.addLayout(config_row1)
+        config_layout.addLayout(config_row2)
+        layout.addWidget(config_group)
+
         # 添加弹性空间
         layout.addStretch()
 
@@ -255,3 +285,79 @@ class FileProcessingPanel(QWidget):
 
         if "debug_enabled" in config:
             self.debug_mode_check.setChecked(config["debug_enabled"])
+
+    def set_config_coordinator(self, coordinator):
+        """设置配置协调器"""
+        self.config_coordinator = coordinator
+
+    def import_configuration(self):
+        """导入配置文件"""
+        file_path, _ = QFileDialog.getOpenFileName(
+            self, "Import Configuration", "", "TOML Files (*.toml);;All Files (*)"
+        )
+        
+        if file_path:
+            try:
+                from pathlib import Path
+                config = self.config_coordinator.import_unified_config(Path(file_path))
+                
+                # 更新文件处理配置
+                file_config = config.get("file_processing", {})
+                self.set_processing_config(file_config)
+                
+                QMessageBox.information(self, "Success", "Configuration imported successfully!")
+                logger.info(f"Imported configuration from {file_path}")
+                
+            except Exception as e:
+                QMessageBox.critical(self, "Error", f"Failed to import configuration: {e}")
+                logger.error(f"Failed to import configuration: {e}")
+
+    def export_configuration(self):
+        """导出配置文件"""
+        file_path, _ = QFileDialog.getSaveFileName(
+            self, "Export Configuration", "", "TOML Files (*.toml);;All Files (*)"
+        )
+        
+        if file_path:
+            try:
+                from pathlib import Path
+                self.config_coordinator.export_unified_config(Path(file_path))
+                
+                QMessageBox.information(self, "Success", "Configuration exported successfully!")
+                logger.info(f"Exported configuration to {file_path}")
+                
+            except Exception as e:
+                QMessageBox.critical(self, "Error", f"Failed to export configuration: {e}")
+                logger.error(f"Failed to export configuration: {e}")
+
+    def restore_last_configuration(self):
+        """恢复到上次保存的配置"""
+        try:
+            config = self.config_coordinator.restore_last_config()
+            
+            # 更新文件处理配置
+            file_config = config.get("file_processing", {})
+            self.set_processing_config(file_config)
+            
+            QMessageBox.information(self, "Success", "Configuration restored to last saved state!")
+            logger.info("Restored configuration to last saved state")
+            
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Failed to restore configuration: {e}")
+            logger.error(f"Failed to restore configuration: {e}")
+
+    def restore_default_configuration(self):
+        """恢复默认配置"""
+        try:
+            config = self.config_coordinator.restore_default_config()
+            
+            # 更新文件处理配置
+            file_config = config.get("file_processing", {})
+            self.set_processing_config(file_config)
+            
+            QMessageBox.information(self, "Success", "Configuration restored to default!")
+            logger.info("Restored configuration to default")
+            
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Failed to restore default configuration: {e}")
+            logger.error(f"Failed to restore default configuration: {e}")

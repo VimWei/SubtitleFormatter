@@ -126,6 +126,18 @@ class PluginManagementPanel(QWidget):
         chain_buttons.addWidget(self.clear_chain_btn)
         chain_layout.addLayout(chain_buttons)
 
+        # 插件链配置按钮
+        chain_config_buttons = QHBoxLayout()
+        self.import_chain_btn = QPushButton("Import Chain")
+        self.import_chain_btn.clicked.connect(self.import_plugin_chain)
+        
+        self.export_chain_btn = QPushButton("Export Chain")
+        self.export_chain_btn.clicked.connect(self.export_plugin_chain)
+        
+        chain_config_buttons.addWidget(self.import_chain_btn)
+        chain_config_buttons.addWidget(self.export_chain_btn)
+        chain_layout.addLayout(chain_config_buttons)
+
         splitter.addWidget(chain_group)
 
         # 设置分割器比例
@@ -288,3 +300,66 @@ class PluginManagementPanel(QWidget):
             self.update_chain_display()
             self.update_available_plugins(self.available_plugins)
             self.pluginChainChanged.emit(self.plugin_chain)
+
+    def set_config_coordinator(self, coordinator):
+        """设置配置协调器"""
+        self.config_coordinator = coordinator
+
+    def import_plugin_chain(self):
+        """导入插件链配置"""
+        from PySide6.QtWidgets import QFileDialog, QMessageBox
+        
+        file_path, _ = QFileDialog.getOpenFileName(
+            self, "Import Plugin Chain", "", "TOML Files (*.toml);;All Files (*)"
+        )
+        
+        if file_path:
+            try:
+                from pathlib import Path
+                chain_config = self.config_coordinator.import_plugin_chain(Path(file_path))
+                
+                # 更新插件链
+                if "plugins" in chain_config and "order" in chain_config["plugins"]:
+                    self.plugin_chain = chain_config["plugins"]["order"].copy()
+                    self.update_chain_display()
+                    self.update_available_plugins(self.available_plugins)
+                    self.pluginChainChanged.emit(self.plugin_chain)
+                    
+                    QMessageBox.information(self, "Success", "Plugin chain imported successfully!")
+                    logger.info(f"Imported plugin chain from {file_path}")
+                else:
+                    QMessageBox.warning(self, "Warning", "Invalid plugin chain file format")
+                    
+            except Exception as e:
+                QMessageBox.critical(self, "Error", f"Failed to import plugin chain: {e}")
+                logger.error(f"Failed to import plugin chain: {e}")
+
+    def export_plugin_chain(self):
+        """导出插件链配置"""
+        from PySide6.QtWidgets import QFileDialog, QMessageBox
+        
+        if not self.plugin_chain:
+            QMessageBox.warning(self, "Warning", "Plugin chain is empty")
+            return
+            
+        file_path, _ = QFileDialog.getSaveFileName(
+            self, "Export Plugin Chain", "", "TOML Files (*.toml);;All Files (*)"
+        )
+        
+        if file_path:
+            try:
+                from pathlib import Path
+                
+                # 获取当前插件链中所有插件的配置
+                plugin_configs = self.config_coordinator.get_all_plugin_configs(self.plugin_chain)
+                
+                self.config_coordinator.export_plugin_chain(
+                    self.plugin_chain, plugin_configs, Path(file_path)
+                )
+                
+                QMessageBox.information(self, "Success", "Plugin chain exported successfully!")
+                logger.info(f"Exported plugin chain to {file_path}")
+                
+            except Exception as e:
+                QMessageBox.critical(self, "Error", f"Failed to export plugin chain: {e}")
+                logger.error(f"Failed to export plugin chain: {e}")

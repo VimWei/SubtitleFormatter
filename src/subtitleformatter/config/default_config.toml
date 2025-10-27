@@ -34,44 +34,5 @@ add_timestamp = true
 
 # 插件系统配置
 [plugins]
-# 插件执行顺序
-order = [
-    "builtin/text_cleaning",
-    "builtin/punctuation_adder", 
-    "builtin/text_to_sentences",
-    "builtin/sentence_splitter"
-]
-
-# 文本清理插件
-[plugins."builtin/text_cleaning"]
-enabled = true
-normalize_punctuation = true
-normalize_numbers = true
-normalize_whitespace = true
-clean_empty_lines = true
-add_spaces_around_punctuation = true
-remove_bom = true
-
-# 标点恢复插件
-[plugins."builtin/punctuation_adder"]
-enabled = true
-model_name = "oliverguhr/fullstop-punctuation-multilang-large"
-capitalize_sentences = true
-split_sentences = true
-replace_dashes = true
-
-# 文本转句子插件
-[plugins."builtin/text_to_sentences"]
-enabled = true
-sentence_endings = [".", "!", "?"]
-abbreviation_patterns = ["Mr.", "Mrs.", "Dr.", "Prof.", "Inc.", "Ltd.", "Co.", "Corp."]
-normalize_whitespace = true
-remove_empty_sentences = true
-filter_ellipsis_only = false
-
-# 句子拆分插件
-[plugins."builtin/sentence_splitter"]
-enabled = true
-min_recursive_length = 70
-max_depth = 8
-max_degradation_round = 5
+# 引用默认插件链配置
+current_plugin_chain = "default_plugin_chain.toml"

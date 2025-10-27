@@ -1,0 +1,15 @@
+# Default Plugin Chain Configuration
+
+[plugins]
+# Plugin execution order
+order = ["punctuation_adder", "sentence_splitter"]
+
+# Plugin-specific configurations
+[plugin_configs.punctuation_adder]
+add_periods = true
+add_commas = false
+
+[plugin_configs.sentence_splitter]
+min_recursive_length = 70
+max_depth = 8
+
