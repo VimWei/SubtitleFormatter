@@ -66,14 +66,14 @@ class MainWindowV2(QMainWindow):
         # 初始化配置管理系统
         self.config_coordinator = ConfigCoordinator(project_root)
 
-        # 初始化插件系统
+        # 准备插件系统字段（仅创建对象，不扫描/加载）
         self.plugin_registry = PluginRegistry()
         self.plugin_lifecycle = None
         self.loaded_plugins: Dict[str, any] = {}
 
         # 设置最大化窗口
         self.setWindowState(Qt.WindowMaximized)
-        self.setMinimumSize(1200, 800)
+        self.setMinimumSize(1200, 600)
 
         # 创建主界面
         self.setup_ui()
@@ -84,7 +84,7 @@ class MainWindowV2(QMainWindow):
         # 应用主题样式
         self.apply_modern_styling()
 
-        # 初始化插件系统
+        # 扫描并加载插件（需要 UI/日志面板已就绪）
         self.initialize_plugin_system()
 
         # 设置信号连接（必须在配置加载之前）
@@ -99,9 +99,7 @@ class MainWindowV2(QMainWindow):
         self.config_management.set_config_coordinator(self.config_coordinator)
         self.plugin_config.set_config_coordinator(self.config_coordinator)
 
-        # 设置统一日志系统的GUI回调
-        # 已提前绑定，无需再次设置
-
+    
     def setup_ui(self):
         """设置主界面布局"""
         # 创建中央部件
@@ -116,7 +114,7 @@ class MainWindowV2(QMainWindow):
         # 创建主水平分割器
         main_splitter = QSplitter(Qt.Horizontal)
 
-        # 左侧：插件管理和流程区域
+        # 左侧：配置管理和插件管理区域
         left_panel = self.create_left_panel()
         main_splitter.addWidget(left_panel)
 
@@ -125,14 +123,14 @@ class MainWindowV2(QMainWindow):
         main_splitter.addWidget(right_panel)
 
         # 设置主分割器比例
-        main_splitter.setSizes([750, 600])
+        main_splitter.setSizes([700, 500])
         main_splitter.setStretchFactor(0, 0)  # 左侧固定
         main_splitter.setStretchFactor(1, 1)  # 右侧可伸缩
 
         main_layout.addWidget(main_splitter)
 
     def create_left_panel(self) -> QWidget:
-        """创建左侧插件管理和流程面板"""
+        """创建左侧配置管理和插件管理面板"""
         panel = QWidget()
         layout = QVBoxLayout(panel)
         layout.setContentsMargins(4, 4, 4, 4)
@@ -145,7 +143,7 @@ class MainWindowV2(QMainWindow):
         self.config_management = ConfigurationManagementPanel(self)
         left_splitter.addWidget(self.config_management)
 
-        # 底部：插件管理和配置的水平分割
+        # 底部：插件管理和插件配置的水平分割
         bottom_splitter = QSplitter(Qt.Horizontal)
 
         # 插件管理面板
@@ -163,9 +161,9 @@ class MainWindowV2(QMainWindow):
 
         left_splitter.addWidget(bottom_splitter)
 
-        # 设置左侧分割器比例 - 让配置管理面板能够充分利用空间
-        left_splitter.setSizes([150, 1000])  # 配置管理占较小空间，插件区域占更多空间
-        left_splitter.setStretchFactor(0, 1)  # 顶部可伸缩（配置管理区域）- 关键修改！
+        # 设置左侧分割器比例
+        left_splitter.setSizes([100, 1000])  # 配置管理占较小空间，插件区域占更多空间
+        left_splitter.setStretchFactor(0, 0)  # 顶部固定（配置管理区域）
         left_splitter.setStretchFactor(1, 1)  # 底部可伸缩（插件区域）
 
         layout.addWidget(left_splitter)
