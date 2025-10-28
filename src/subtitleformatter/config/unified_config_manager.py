@@ -17,6 +17,7 @@ import tomli_w  # type: ignore
 import tomllib  # type: ignore
 
 from ..utils.unified_logger import logger
+from ..utils.path_utils import normalize_path
 
 
 class UnifiedConfigManager:
@@ -43,11 +44,11 @@ class UnifiedConfigManager:
             if self.latest_config_path.exists():
                 with self.latest_config_path.open("rb") as f:
                     self._config = tomllib.load(f)
-                logger.info(f"Loaded configuration from {self.latest_config_path}")
+                logger.info(f"Loaded configuration from {normalize_path(self.latest_config_path)}")
             elif self.default_config_path.exists():
                 with self.default_config_path.open("rb") as f:
                     self._config = tomllib.load(f)
-                logger.info(f"Loaded default configuration from {self.default_config_path}")
+                logger.info(f"Loaded default configuration from {normalize_path(self.default_config_path)}")
                 # Create latest config from default
                 self.save()
             else:
@@ -68,7 +69,7 @@ class UnifiedConfigManager:
             self.configs_dir.mkdir(parents=True, exist_ok=True)
             with self.latest_config_path.open("wb") as f:
                 tomli_w.dump(self._config, f)
-            logger.info(f"Saved configuration to {self.latest_config_path}")
+            logger.info(f"Saved configuration to {normalize_path(self.latest_config_path)}")
 
         except Exception as e:
             logger.error(f"Failed to save configuration: {e}")
@@ -90,7 +91,7 @@ class UnifiedConfigManager:
             with output_path.open("wb") as f:
                 tomli_w.dump(export_config, f)
 
-            logger.info(f"Exported configuration to {output_path}")
+            logger.info(f"Exported configuration to {normalize_path(output_path)}")
 
         except Exception as e:
             logger.error(f"Failed to export configuration: {e}")
@@ -115,7 +116,7 @@ class UnifiedConfigManager:
 
             # Update current config
             self._config = imported_config
-            logger.info(f"Imported configuration from {config_path}")
+            logger.info(f"Imported configuration from {normalize_path(config_path)}")
 
             return imported_config
 

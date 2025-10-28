@@ -19,6 +19,7 @@ from PySide6.QtWidgets import (
 )
 
 from subtitleformatter.utils.unified_logger import logger
+from subtitleformatter.utils.path_utils import normalize_path
 
 
 class ConfigurationManagementPanel(QWidget):
@@ -126,7 +127,7 @@ class ConfigurationManagementPanel(QWidget):
         if file_path:
             try:
                 config = self.config_coordinator.import_unified_config(Path(file_path))
-                logger.info(f"Imported configuration from {file_path}")
+                logger.debug(f"Imported configuration from {normalize_path(file_path)}")
                 
             except Exception as e:
                 logger.error(f"Failed to import configuration: {e}")
@@ -149,7 +150,7 @@ class ConfigurationManagementPanel(QWidget):
         if file_path:
             try:
                 self.config_coordinator.export_unified_config(Path(file_path))
-                logger.info(f"Exported configuration to {file_path}")
+                logger.debug(f"Exported configuration to {normalize_path(file_path)}")
                 
             except Exception as e:
                 logger.error(f"Failed to export configuration: {e}")
