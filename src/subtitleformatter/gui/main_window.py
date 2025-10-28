@@ -95,6 +95,8 @@ class MainWindow(QMainWindow):
 
         # 设置统一日志系统的GUI回调
         logger.set_gui_callback(self.log_panel.append_log)
+        # 用户切换日志级别时更新logger与配置
+        self.log_panel.levelChanged.connect(self._on_logging_level_changed)
 
         # Wire basic page browse buttons and edits
         self.tab_basic.btn_input.clicked.connect(self._choose_input)
@@ -117,6 +119,17 @@ class MainWindow(QMainWindow):
         self._config_manager = ConfigManager(self.project_root)
         self._config = self._load_user_config()
         self._apply_cfg_to_ui(self._config)
+        # 初始化日志级别（UI 和 logger）
+        try:
+            log_level = (
+                self._config.get("logging", {}).get("level", "INFO")
+                if isinstance(self._config, dict)
+                else "INFO"
+            )
+            self.log_panel.set_logging_level(log_level)
+            logger.set_log_level(log_level)
+        except Exception:
+            pass
 
     def apply_modern_styling(self) -> None:
         app = QApplication.instance()
@@ -566,6 +579,26 @@ class MainWindow(QMainWindow):
             add_timestamp,
             debug_enabled,
         )
+        # 同步日志级别到 UI（不触发保存）
+        try:
+            log_level = cfg.get("logging", {}).get("level", "INFO")
+            self.log_panel.set_logging_level(log_level)
+        except Exception:
+            pass
+
+    def _on_logging_level_changed(self, level: str) -> None:
+        try:
+            # 更新运行时
+            logger.set_log_level(level)
+            # 更新内存配置
+            self._config.setdefault("logging", {})
+            self._config["logging"]["level"] = (level or "INFO").upper()
+            # 立即持久化
+            self._save_user_config(self._config)
+            if hasattr(self, "log_panel"):
+                self.log_panel.append_log(f"Logging level set to {self._config['logging']['level']}")
+        except Exception:
+            pass
 
     def _on_restore_last_config(self) -> None:
         try:

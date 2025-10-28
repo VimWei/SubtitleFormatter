@@ -287,6 +287,10 @@ class MainWindowV2(QMainWindow):
         else:
             logger.warning("Plugin config panel does not have configChanged signal")
 
+        # 日志级别选择变化
+        if hasattr(self.log_panel, "levelChanged"):
+            self.log_panel.levelChanged.connect(self.on_logging_level_changed)
+
     def on_plugin_selected(self, plugin_name: str):
         """处理插件选择事件"""
         try:
@@ -416,6 +420,11 @@ class MainWindowV2(QMainWindow):
             # 设置日志级别
             log_level = config.get("unified", {}).get("logging", {}).get("level", "INFO")
             logger.set_log_level(log_level)
+            # 同步到日志面板下拉框
+            try:
+                self.log_panel.set_logging_level(log_level)
+            except Exception:
+                pass
             
             # 更新文件处理配置
             file_config = config.get("unified", {}).get("file_processing", {})
@@ -449,6 +458,29 @@ class MainWindowV2(QMainWindow):
             
         except Exception as e:
             logger.error(f"Failed to load configuration: {e}")
+
+    def on_logging_level_changed(self, level: str):
+        """当用户在日志面板中切换日志级别时触发"""
+        try:
+            # 更新运行时日志级别
+            logger.set_log_level(level)
+
+            # 更新并持久化统一配置
+            unified_cfg = self.config_coordinator.unified_manager.get_config()
+            if "logging" not in unified_cfg:
+                unified_cfg["logging"] = {}
+            unified_cfg["logging"]["level"] = (level or "INFO").upper()
+            self.config_coordinator.unified_manager.set_config(unified_cfg)
+            self.config_coordinator.save_all_config()
+
+            # 反馈到日志
+            self.log_panel.append_log(f"Logging level set to {unified_cfg['logging']['level']}")
+        except Exception as e:
+            # 不打断用户操作，仅记录错误
+            try:
+                logger.error(f"Failed to update logging level: {e}")
+            except Exception:
+                pass
 
     def save_configuration(self):
         """保存配置"""
