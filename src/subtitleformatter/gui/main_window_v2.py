@@ -454,18 +454,11 @@ class MainWindowV2(QMainWindow):
             file_config = self.file_processing.get_processing_config()
             self.config_coordinator.set_file_processing_config(file_config)
             
-            # 保存插件链配置到 latest 文件
-            chain_config = self.plugin_management.get_plugin_chain_config()
-            if chain_config.get("plugins", {}).get("order"):
-                plugin_configs = self.config_coordinator.get_all_plugin_configs(
-                    chain_config["plugins"]["order"]
-                )
-                # 保存到 chain_latest.toml，不生成新文件
-                self.config_coordinator.save_plugin_chain(
-                    chain_config["plugins"]["order"],
-                    plugin_configs,
-                    "chain_latest.toml"
-                )
+            # 持久化当前工作插件链配置到当前链文件（避免用独立插件配置重建并覆盖）
+            try:
+                self.config_coordinator.save_working_chain_config()
+            except Exception as e:
+                logger.error(f"Failed to persist working chain configuration: {e}")
             
             # 保存所有配置
             self.config_coordinator.save_all_config()

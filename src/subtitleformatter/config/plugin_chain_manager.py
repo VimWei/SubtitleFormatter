@@ -17,6 +17,7 @@ from typing import Any, Dict, List, Optional
 import tomli_w  # type: ignore
 import tomllib  # type: ignore
 
+from ..utils import normalize_path
 from ..utils.unified_logger import logger
 from .config_state import ConfigState
 
@@ -238,7 +239,20 @@ class PluginChainManager:
             with output_path.open("wb") as f:
                 tomli_w.dump(config, f)
 
-            logger.info(f"Exported plugin chain to {output_path}")
+            logger.info(f"Exported plugin chain to {normalize_path(output_path)}")
+            logger.debug(f"[TRACE] export_chain: Set current_chain_file to {output_path}")
+
+            # Set exported file as current chain file and update state
+            self.current_chain_file = output_path
+            self.current_chain_config = config
+            try:
+                if output_path.is_relative_to(self.plugin_chains_dir):
+                    chain_path_str = str(output_path.relative_to(self.plugin_chains_dir))
+                else:
+                    chain_path_str = str(output_path.relative_to(self.configs_dir))
+            except Exception:
+                chain_path_str = str(output_path)
+            self.config_state.load_from_saved(config, chain_path_str)
 
         except Exception as e:
             logger.error(f"Failed to export chain to {output_path}: {e}")
@@ -249,7 +263,24 @@ class PluginChainManager:
         if not chain_file.exists():
             raise FileNotFoundError(f"Chain file not found: {chain_file}")
 
-        return self._load_chain_from_file(chain_file)
+        # Set as current chain file
+        self.current_chain_file = chain_file
+        logger.debug(f"[TRACE] import_chain: Set current_chain_file to {chain_file}")
+
+        # Load configuration
+        config = self._load_chain_from_file(chain_file)
+
+        # Update configuration state as saved baseline
+        try:
+            if chain_file.is_relative_to(self.plugin_chains_dir):
+                chain_path_str = str(chain_file.relative_to(self.plugin_chains_dir))
+            else:
+                chain_path_str = str(chain_file.relative_to(self.configs_dir))
+        except Exception:
+            chain_path_str = str(chain_file)
+        self.config_state.load_from_saved(config, chain_path_str)
+
+        return config
 
     def get_chain_path(self) -> Optional[str]:
         """Get current chain file path relative to plugin_chains_dir."""
@@ -305,11 +336,14 @@ class PluginChainManager:
             # Save to current file
             if self.current_chain_file:
                 chain_file = self.current_chain_file
+                logger.debug(f"[TRACE] save_working_config: Will write to current_chain_file {chain_file}")
             else:
                 # Save to latest chain file
                 chain_file = self.plugin_chains_dir / "chain_latest.toml"
+                logger.debug(f"[TRACE] save_working_config: current_chain_file is None, fallback to {chain_file}")
         else:
             chain_file = self.plugin_chains_dir / save_to
+            logger.debug(f"[TRACE] save_working_config: Save to explicit file {chain_file}")
         
         try:
             chain_file.parent.mkdir(parents=True, exist_ok=True)
@@ -322,6 +356,7 @@ class PluginChainManager:
             
             self.current_chain_file = chain_file
             self.current_chain_config = working_config
+            logger.debug(f"[TRACE] save_working_config: Updated current_chain_file to {chain_file}")
             
             logger.info(f"Saved working configuration to {chain_file}")
             return chain_file

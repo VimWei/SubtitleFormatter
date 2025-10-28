@@ -131,10 +131,21 @@ class ConfigCoordinator:
     def export_plugin_chain(self, order: List[str], plugin_configs: Dict[str, Dict[str, Any]], output_path: Path):
         """Export plugin chain to file."""
         self.chain_manager.export_chain(output_path, order, plugin_configs)
+        # Update unified config reference to the new current chain file
+        chain_ref = self.chain_manager.get_chain_path()
+        if chain_ref:
+            self.unified_manager.set_plugin_chain_reference(chain_ref)
+            self.unified_manager.save()
 
     def import_plugin_chain(self, chain_file: Path) -> Dict[str, Any]:
         """Import plugin chain from file."""
-        return self.chain_manager.import_chain(chain_file)
+        config = self.chain_manager.import_chain(chain_file)
+        # Update unified config reference to the imported chain file
+        chain_ref = self.chain_manager.get_chain_path()
+        if chain_ref:
+            self.unified_manager.set_plugin_chain_reference(chain_ref)
+            self.unified_manager.save()
+        return config
 
     def load_plugin_config(self, plugin_name: str) -> Dict[str, Any]:
         """Load configuration for a specific plugin."""
@@ -147,6 +158,7 @@ class ConfigCoordinator:
     def save_plugin_config_to_chain(self, plugin_name: str, config: Dict[str, Any]):
         """
         Save plugin configuration to plugin chain working configuration.
+        Also persist immediately to the current chain file.
         
         Args:
             plugin_name: Name of the plugin
@@ -154,7 +166,13 @@ class ConfigCoordinator:
         """
         self.chain_manager.update_plugin_config_in_working(plugin_name, config)
         logger.debug(f"Updated plugin {plugin_name} config in chain working configuration")
-    
+        # Immediate persistence to chain file
+        try:
+            self.chain_manager.save_working_config()
+            logger.debug("Persisted working chain configuration to file after plugin change")
+        except Exception as e:
+            logger.error(f"Failed to persist chain configuration after plugin change: {e}")
+        
     def save_working_chain_config(self, save_to: Optional[str] = None) -> Path:
         """
         Save working plugin chain configuration.
@@ -167,9 +185,9 @@ class ConfigCoordinator:
         """
         chain_file = self.chain_manager.save_working_config(save_to)
         
-        # Update unified config with new chain reference if saving to new file
-        if save_to:
-            chain_ref = str(chain_file.relative_to(self.chain_manager.plugin_chains_dir))
+        # Update unified config to point at the active chain file
+        chain_ref = self.chain_manager.get_chain_path()
+        if chain_ref:
             self.unified_manager.set_plugin_chain_reference(chain_ref)
             self.unified_manager.save()
         
@@ -182,7 +200,14 @@ class ConfigCoordinator:
     
     def restore_chain_from_snapshot(self) -> Dict[str, Any]:
         """Restore plugin chain configuration from snapshot."""
-        return self.chain_manager.restore_from_snapshot()
+        restored = self.chain_manager.restore_from_snapshot()
+        # Persist restored snapshot to current chain file
+        try:
+            self.chain_manager.save_working_config()
+            logger.info("Persisted chain configuration to file after restoring from snapshot")
+        except Exception as e:
+            logger.error(f"Failed to persist chain configuration after snapshot restore: {e}")
+        return restored
     
     def has_unsaved_chain_changes(self) -> bool:
         """Check if there are unsaved changes in plugin chain configuration."""
@@ -201,6 +226,14 @@ class ConfigCoordinator:
         self.unified_manager.set_file_processing_config(config)
 
     def get_plugin_chain_config(self) -> Dict[str, Any]:
-        """Get current plugin chain configuration."""
+        """Get current plugin chain configuration without reloading from disk if possible."""
+        # Prefer in-memory working configuration tied to current_chain_file
+        try:
+            if self.chain_manager.current_chain_file is not None:
+                return self.chain_manager.get_working_config()
+        except Exception:
+            pass
+
+        # Fallback to unified reference if no current chain file is set
         chain_ref = self.unified_manager.get_plugin_chain_reference()
         return self.chain_manager.load_chain(chain_ref)

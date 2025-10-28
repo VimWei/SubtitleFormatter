@@ -11,7 +11,7 @@
 ### 问题1：Plugin Chain 中的插件配置修改应该保存到哪里？
 
 - **错误做法**：保存到插件自定义配置文件
-- **正确做法**：保存到插件链配置文件
+- **正确做法**：保存到插件链配置文件（即时写盘）
 
 ### 问题2：如果直接修改插件链配置文件，会破坏 "Restore Last" 功能
 
@@ -23,7 +23,7 @@
 
 - **工作配置**：当前正在编辑的配置（内存中）
 - **保存配置**：持久化的配置（文件中）
-- **快照配置**：用于 Restore Last 功能的备份
+- **快照配置**：用于 Restore Last 功能的备份（仅存在于内存中，不单独落盘）
 
 ### 配置状态管理
 
@@ -41,7 +41,7 @@ class ConfigState:
 ### 根据插件选择来源决定保存位置
 
 - **点击 Available Plugins 中的插件** → 保存到插件自定义配置文件
-- **点击 Plugin Chain 中的插件** → 保存到插件链工作配置
+- **点击 Plugin Chain 中的插件** → 保存到插件链工作配置，并立即写回当前插件链配置文件
 
 ### 配置优先级逻辑
 
@@ -55,27 +55,26 @@ class ConfigState:
 ### 快照管理
 
 - **启动时创建快照**：加载配置后立即创建快照
-- **快照恢复机制**：Restore Last 时从快照恢复，不影响当前工作
+- **快照恢复机制**：Restore Last 时先从快照恢复到工作配置，然后将该状态写回当前插件链配置文件
 - **自动重新快照**：恢复后重新创建快照
 
 ### 实现流程
 
 ```
-启动 → 加载配置 → 创建快照 → 用户编辑 → 工作配置更新
+启动 → 加载配置 → 创建快照 → 用户编辑 → 工作配置更新并写回链文件
   ↓
-Restore Last → 从快照恢复 → 重新创建快照 → 继续编辑
+Restore Last → 从快照恢复到工作配置 → 写回链文件 → 重新创建快照 → 继续编辑
 ```
-
 ## 自动保存机制
 
 ### 实时保存
 
 - 参数修改时立即保存到正确位置
-- 根据 `is_from_chain` 参数决定保存目标
+- 根据 `is_from_chain` 参数决定保存目标（来自插件链则写回当前链文件）
 
 ### 退出时保存
 
-- 程序退出时自动保存未保存的工作配置
+- 程序退出时保存 latest 类文件（如 `config_latest.toml`、`chain_latest.toml`）
 - 状态跟踪：`has_unsaved_changes()` 检查未保存变更
 
 ## 技术实现要点
@@ -84,8 +83,8 @@ Restore Last → 从快照恢复 → 重新创建快照 → 继续编辑
 
 - `update_plugin_config_in_working()` - 更新插件链工作配置
 - `get_plugin_config_from_working()` - 获取插件链工作配置
-- `save_working_chain_config()` - 保存工作配置
-- `create_snapshot()` / `restore_from_snapshot()` - 快照管理
+- `save_working_chain_config()` - 保存工作配置到当前插件链配置文件
+- `create_snapshot()` / `restore_from_snapshot()` - 快照管理（恢复后写回链文件）
 
 ### 信号分离
 
@@ -94,9 +93,9 @@ Restore Last → 从快照恢复 → 重新创建快照 → 继续编辑
 
 ### 配置协调器增强
 
-- `save_plugin_config_to_chain()` - 保存到插件链工作配置
+- `save_plugin_config_to_chain()` - 保存到插件链工作配置并写回链文件
 - `has_unsaved_chain_changes()` - 检查未保存变更
-- `create_chain_snapshot()` / `restore_chain_from_snapshot()` - 快照管理
+- `create_chain_snapshot()` / `restore_chain_from_snapshot()` - 快照管理（恢复后写回链文件）
 
 ## 解决的问题
 

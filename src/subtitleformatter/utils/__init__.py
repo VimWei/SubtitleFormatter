@@ -4,9 +4,11 @@ Utility modules.
 This package contains utility functionality:
 - DebugOutput: Debug output and logging utilities
 - UnifiedLogger: Unified logging system for terminal and GUI
+- Path utilities: Path normalization functions
 """
 
 from .debug_output import DebugOutput
+from .path_utils import normalize_path
 from .unified_logger import (
     UnifiedLogger,
     log_debug,
@@ -34,4 +36,5 @@ __all__ = [
     "log_progress",
     "log_debug_info",
     "log_debug_step",
+    "normalize_path",
 ]

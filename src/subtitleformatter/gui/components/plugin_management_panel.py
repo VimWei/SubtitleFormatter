@@ -22,6 +22,7 @@ from PySide6.QtWidgets import (
 )
 
 from subtitleformatter.plugins import PluginRegistry
+from subtitleformatter.utils import normalize_path
 from subtitleformatter.utils.unified_logger import logger
 
 
@@ -198,6 +199,22 @@ class PluginManagementPanel(QWidget):
                     # 发送信号
                     self.pluginSelected.emit(plugin_name)
 
+    def _persist_chain_order_immediately(self):
+        """将当前链顺序写入工作配置并立即保存到当前链文件。"""
+        if not hasattr(self, "config_coordinator") or not self.config_coordinator:
+            return
+        try:
+            working_config = self.config_coordinator.chain_manager.get_working_config()
+            if "plugins" not in working_config:
+                working_config["plugins"] = {}
+            working_config["plugins"]["order"] = self.plugin_chain.copy()
+            # 更新工作配置并保存到当前链文件
+            self.config_coordinator.chain_manager.config_state.update_working_config(working_config)
+            self.config_coordinator.chain_manager.save_working_config()
+            logger.debug("Persisted plugin chain order to current chain file")
+        except Exception as e:
+            logger.error(f"Failed to persist plugin chain order: {e}")
+
     def add_plugin_to_chain(self):
         """添加插件到链中"""
         current_item = self.available_list.currentItem()
@@ -209,6 +226,20 @@ class PluginManagementPanel(QWidget):
         self.plugin_chain.append(plugin_name)
         self.update_chain_display()
         self.pluginChainChanged.emit(self.plugin_chain)
+        # 即时保存链顺序
+        self._persist_chain_order_immediately()
+
+        # 同步：为新增插件写入插件链的工作配置中的 plugin_configs
+        try:
+            if hasattr(self, "config_coordinator") and self.config_coordinator:
+                # 读取基础配置（若无则回退到启用标志）
+                base_cfgs = self.config_coordinator.get_all_plugin_configs([plugin_name])
+                base_cfg = base_cfgs.get(plugin_name, {}) or {"enabled": True}
+
+                # 写入工作配置并立刻保存到当前链文件
+                self.config_coordinator.save_plugin_config_to_chain(plugin_name, base_cfg)
+        except Exception as e:
+            logger.error(f"Failed to sync added plugin config to chain: {e}")
 
         logger.info(f"Added plugin '{plugin_name}' to chain")
 
@@ -224,6 +255,22 @@ class PluginManagementPanel(QWidget):
             removed_plugin = self.plugin_chain.pop(current_row)
             self.update_chain_display()
             self.pluginChainChanged.emit(self.plugin_chain)
+            # 即时保存链顺序
+            self._persist_chain_order_immediately()
+
+            # 同步：从工作配置的 plugin_configs 中移除对应条目，并保存
+            try:
+                if hasattr(self, "config_coordinator") and self.config_coordinator:
+                    working_cfg = self.config_coordinator.chain_manager.get_working_config()
+                    plugin_cfgs = working_cfg.get("plugin_configs", {}) if isinstance(working_cfg, dict) else {}
+                    if removed_plugin in plugin_cfgs:
+                        del plugin_cfgs[removed_plugin]
+                        if isinstance(working_cfg, dict):
+                            working_cfg["plugin_configs"] = plugin_cfgs
+                            self.config_coordinator.chain_manager.config_state.update_working_config(working_cfg)
+                            self.config_coordinator.chain_manager.save_working_config()
+            except Exception as e:
+                logger.error(f"Failed to sync removed plugin config from chain: {e}")
 
             # 更新按钮状态
             self.remove_plugin_btn.setEnabled(False)
@@ -269,6 +316,8 @@ class PluginManagementPanel(QWidget):
 
         self.pluginChainChanged.emit(self.plugin_chain)
         logger.info("Plugin chain reordered")
+        # 即时保存链顺序
+        self._persist_chain_order_immediately()
 
     def move_plugin_up(self):
         """向上移动插件"""
@@ -304,6 +353,19 @@ class PluginManagementPanel(QWidget):
         self.update_chain_display()
         self.update_available_plugins(self.available_plugins)
         self.pluginChainChanged.emit(self.plugin_chain)
+        # 即时保存链顺序
+        self._persist_chain_order_immediately()
+
+        # 同步：清空工作配置中的 plugin_configs，并保存
+        try:
+            if hasattr(self, "config_coordinator") and self.config_coordinator:
+                working_cfg = self.config_coordinator.chain_manager.get_working_config()
+                if isinstance(working_cfg, dict):
+                    working_cfg["plugin_configs"] = {}
+                    self.config_coordinator.chain_manager.config_state.update_working_config(working_cfg)
+                    self.config_coordinator.chain_manager.save_working_config()
+        except Exception as e:
+            logger.error(f"Failed to clear plugin configs when clearing chain: {e}")
 
         # 禁用所有链操作按钮
         self.move_up_btn.setEnabled(False)
@@ -366,7 +428,7 @@ class PluginManagementPanel(QWidget):
                     self.update_chain_display()
                     self.update_available_plugins(self.available_plugins)
                     self.pluginChainChanged.emit(self.plugin_chain)
-                    logger.info(f"Imported plugin chain from {file_path}")
+                    logger.info(f"Imported plugin chain from {normalize_path(file_path)}")
                 else:
                     logger.error("Invalid plugin chain file format")
                     
@@ -395,11 +457,27 @@ class PluginManagementPanel(QWidget):
             try:
                 from pathlib import Path
                 
-                # 获取当前插件链中所有插件的配置
-                plugin_configs = self.config_coordinator.get_all_plugin_configs(self.plugin_chain)
-                
+                # 获取基础配置（插件自定义配置）
+                base_configs = self.config_coordinator.get_all_plugin_configs(self.plugin_chain)
+
+                # 叠加工作配置（来自插件链的实时工作配置），确保导出反映当前编辑
+                working_config = self.config_coordinator.chain_manager.get_working_config()
+                working_plugin_configs = working_config.get("plugin_configs", {}) if isinstance(working_config, dict) else {}
+
+                merged_configs = {}
+                for plugin_name in self.plugin_chain:
+                    base_cfg = base_configs.get(plugin_name, {})
+                    working_cfg = working_plugin_configs.get(plugin_name, {})
+                    # 工作配置覆盖基础配置
+                    if base_cfg and working_cfg:
+                        merged_configs[plugin_name] = {**base_cfg, **working_cfg}
+                    elif working_cfg:
+                        merged_configs[plugin_name] = working_cfg
+                    else:
+                        merged_configs[plugin_name] = base_cfg
+
                 self.config_coordinator.export_plugin_chain(
-                    self.plugin_chain, plugin_configs, Path(file_path)
+                    self.plugin_chain, merged_configs, Path(file_path)
                 )
                 
             except Exception as e:
