@@ -18,6 +18,7 @@ class ConfigState:
         self.snapshot_config: Dict[str, Any] = {} # Snapshot for restore functionality
         self.is_dirty: bool = False               # Whether there are unsaved changes
         self.last_saved_path: Optional[str] = None # Path to last saved configuration
+        self.snapshot_path: Optional[str] = None   # Path captured when snapshot was created
     
     def load_from_saved(self, config: Dict[str, Any], config_path: Optional[str] = None):
         """Load configuration from saved state."""
@@ -44,10 +45,15 @@ class ConfigState:
         self.working_config = self.snapshot_config.copy()
         self.saved_config = self.snapshot_config.copy()
         self.is_dirty = False
+        # Also restore the last_saved_path to snapshot_path if available
+        if self.snapshot_path is not None:
+            self.last_saved_path = self.snapshot_path
     
     def create_snapshot(self):
         """Create a snapshot of current saved configuration."""
         self.snapshot_config = self.saved_config.copy()
+        # Capture the path of the saved configuration at snapshot time
+        self.snapshot_path = self.last_saved_path
     
     def get_working_config(self) -> Dict[str, Any]:
         """Get current working configuration."""
@@ -72,3 +78,4 @@ class ConfigState:
         self.snapshot_config.clear()
         self.is_dirty = False
         self.last_saved_path = None
+        self.snapshot_path = None

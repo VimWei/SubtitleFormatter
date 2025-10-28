@@ -377,6 +377,20 @@ class PluginChainManager:
         # Update current chain config
         self.current_chain_config = self.config_state.get_saved_config()
         
+        # If snapshot captured a path, switch current_chain_file to it
+        snapshot_path = getattr(self.config_state, "snapshot_path", None)
+        if snapshot_path:
+            # Determine absolute path for snapshot path
+            candidate = self.plugin_chains_dir / snapshot_path
+            try:
+                # If snapshot_path was absolute or relative to configs_dir, normalize
+                if not candidate.exists():
+                    candidate = (self.configs_dir / snapshot_path) if not Path(snapshot_path).is_absolute() else Path(snapshot_path)
+            except Exception:
+                candidate = Path(snapshot_path)
+            self.current_chain_file = candidate
+            logger.debug(f"[TRACE] restore_from_snapshot: Switched current_chain_file to {self.current_chain_file}")
+        
         logger.info("Restored configuration from snapshot")
         return self.current_chain_config
     
