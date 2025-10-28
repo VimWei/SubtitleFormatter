@@ -229,74 +229,22 @@ class TextProcessor:
 
 ## ⚙️ 配置系统
 
-### 1. 配置文件结构
-```toml
-# 插件化配置结构 - 使用完整的命名空间引用
-[plugins]
-# 插件执行顺序
-order = [
-    "builtin/text_cleaning",
-    "builtin/punctuation_adder", 
-    "builtin/text_to_sentences",
-    "builtin/sentence_splitter"
-]
+SubtitleFormatter 采用三层配置架构：统一配置（全局设置和插件链引用）、插件链配置（插件顺序和链特定参数）、插件配置（单个插件参数）。配置使用 TOML 格式存储，支持导入导出、恢复和分享。
 
-# 文本清理插件
-[plugins."builtin/text_cleaning"]
-enabled = true
-# 保留现有配置
+**核心特性**：
+- **配置层次化**: 清晰的配置层次结构（统一配置 → 插件链配置 → 插件配置）
+- **配置状态管理**: 工作配置、保存配置、快照配置三层分离
+- **智能保存策略**: 根据插件选择来源自动决定保存位置
+- **配置优先级**: 插件链工作配置 > 插件链保存配置 > 插件自定义配置 > 插件默认配置
+- **快照保护机制**: 确保 Restore Last 功能不受配置修改影响
 
-# 标点恢复插件
-[plugins."builtin/punctuation_adder"]
-enabled = true
-model_name = "oliverguhr/fullstop-punctuation-multilang-large"
-local_models_dir = "models/"
+**配置格式**：
+- 统一配置文件：存储全局设置和插件链引用
+- 插件链配置文件：存储插件顺序和完整插件配置
+- 插件配置文件：独立存储每个插件的参数配置
+- 使用 TOML 格式，支持完整的命名空间引用（如 `builtin/punctuation_adder`）
 
-# 句子分割插件
-[plugins."builtin/text_to_sentences"]
-enabled = true
-# 无额外配置
-
-# 句子拆分插件
-[plugins."builtin/sentence_splitter"]
-enabled = true
-min_recursive_length = 70
-max_depth = 8
-
-# 未来可扩展的插件示例
-[plugins."community/future_plugin"]
-enabled = false
-# 新功能配置
-```
-
-### 2. 配置验证
-```python
-class ConfigValidator:
-    """配置验证器"""
-    
-    @staticmethod
-    def validate_plugin_config(config: Dict[str, Any]) -> bool:
-        """验证插件配置"""
-        required_keys = ["plugins"]
-        for key in required_keys:
-            if key not in config:
-                raise ValueError(f"Missing required config key: {key}")
-        
-        plugins_config = config["plugins"]
-        if "order" not in plugins_config:
-            raise ValueError("Missing plugin order configuration")
-        
-        return True
-```
-
-### 3. 统一插件默认值管理
-插件化架构采用统一的默认值管理机制：
-
-- **单一数据源**: 所有默认配置来自 `plugin.json` 文件
-- **自动加载**: 基类自动处理配置的加载、合并和验证
-- **优先级管理**: 用户配置 > plugin.json 默认值 > 代码后备默认值
-
-**详细插件默认值管理说明**: 请参考 [插件开发指南](plugin_development_guide.md#插件默认值管理) 中的插件默认值管理章节。
+详细配置管理设计请参阅：[配置管理设计方案](configuration_management_design.md)
 
 ## 🔧 架构使用说明
 

@@ -125,43 +125,98 @@ CLI 名称自动映射到文件路径：
 ### plugin.json 格式
 ```json
 {
-    "name": "text_cleaning",
-    "namespace": "builtin",
+    "name": "builtin/text_cleaning",
     "version": "1.0.0",
-    "description": "文本清理插件 - 统一空白字符、换行符、标点符号",
+    "description": "基础文本清理插件，用于统一空白字符、换行符、标点符号并清理多余空行",
     "author": "SubtitleFormatter Team",
-    "input_type": "str",
-    "output_type": "str",
-    "enabled": true,
+    "class_name": "TextCleaningPlugin",
+    "category": "text_processing",
+    "tags": ["cleaning", "normalization", "whitespace", "punctuation"],
     "dependencies": [],
-    "source": "builtin",
-    "git_url": "https://github.com/subtitleformatter/text-cleaning.git"
+    "config_schema": {
+        "type": "object",
+        "properties": {
+            "enabled": {
+                "type": "boolean",
+                "default": true,
+                "description": "是否启用文本清理功能"
+            },
+            "normalize_punctuation": {
+                "type": "boolean",
+                "default": true,
+                "description": "是否规范化标点符号（全角转半角）"
+            },
+            "normalize_numbers": {
+                "type": "boolean",
+                "default": true,
+                "description": "是否规范化数字（全角转半角）"
+            }
+        },
+        "additionalProperties": false
+    },
+    "input_types": ["string", "list"],
+    "output_types": ["string", "list"],
+    "examples": [
+        {
+            "input": "Hello　world，this　is　a　test。",
+            "output": "Hello world, this is a test.",
+            "description": "规范化全角标点和空格"
+        }
+    ]
 }
 ```
 
 ### 配置字段说明
-- **name**: 插件名称，使用下划线命名 (如 `text_cleaning`)
-- **namespace**: 插件命名空间，可以是任意合法的目录名称 (如 `builtin`, `username`, `experimental`)
+
+#### 必需字段
+- **name**: 插件完整名称，使用格式 `namespace/plugin_name` (如 `builtin/text_cleaning`)
 - **version**: 插件版本号
 - **description**: 插件功能描述
 - **author**: 插件作者
-- **input_type**: 输入数据类型 (str, list, dict)
-- **output_type**: 输出数据类型 (str, list, dict)
-- **enabled**: 是否默认启用
-- **dependencies**: 依赖的其他插件 (使用完整名称如 `builtin/text_cleaning`)
-- **source**: 插件来源 (builtin, github, local)
-- **git_url**: Git仓库地址（可选）
+- **class_name**: 插件类名（Python 类名）
+- **config_schema**: 插件配置的模式定义（JSON Schema 格式）
+  - **type**: 必须是 `"object"`
+  - **properties**: 定义配置属性，每个属性包含 `type`, `default`, `description`
+    - **type**: 数据类型（boolean, string, number, integer 等）
+    - **default**: 默认值（这是插件默认配置的来源）
+    - **description**: 配置项描述（用于 GUI 显示）
+  - **additionalProperties**: 是否允许额外属性（通常设为 `false`）
+- **input_types**: 支持的输入数据类型数组 (如 `["string", "list"]`)
+- **output_types**: 支持的输出数据类型数组 (如 `["string", "list"]`)
+
+#### 可选字段
+- **category**: 插件分类 (如 `text_processing`, `audio_processing`)
+- **tags**: 插件标签数组，用于搜索和分类
+- **dependencies**: 依赖的 Python 包列表（用于安装依赖）
+- **examples**: 使用示例数组，每个示例包含 input, output, description
+
+### 配置优先级说明
+
+根据 [配置管理设计方案](configuration_management_design.md)，插件配置的优先级为：
+1. **插件链工作配置** (最高优先级)
+2. **插件链保存配置**
+3. **插件自定义配置** (存储在 `data/configs/plugins/`)
+4. **plugin.json 中的默认配置** (config_schema.properties.default)
+
+**重要**: 插件的默认配置来自 `plugin.json` 的 `config_schema.properties` 中定义的 `default` 值，而不是代码中的硬编码值。这确保了 GUI 的 "Reset to Defaults" 功能能够正常工作。
 
 ## 💻 插件实现
 
 ### 基础插件模板
 ```python
 # plugin.py
-from typing import Any
+from typing import Any, Dict
 from ...plugins.base.plugin_base import TextProcessorPlugin
 
 class TextCleaning(TextProcessorPlugin):
     """文本清理插件"""
+    
+    def __init__(self, config: Dict[str, Any] = None):
+        """初始化插件，基类自动加载默认配置"""
+        super().__init__(config)  # 基类自动处理默认配置
+        
+        # 正确：直接使用配置，基类已处理默认值
+        self.enabled = self.config["enabled"]
     
     def get_input_type(self) -> type:
         """返回期望的输入数据类型"""
@@ -173,6 +228,9 @@ class TextCleaning(TextProcessorPlugin):
     
     def process(self, input_data: str) -> str:
         """处理文本数据"""
+        if not self.enabled:
+            return input_data
+        
         # 在这里实现你的处理逻辑
         # 移除多余空格
         cleaned = ' '.join(input_data.split())
@@ -198,9 +256,27 @@ class TextCleaning(TextProcessorPlugin):
 #### 3. 类型安全
 确保输入输出类型与声明一致，系统会自动进行类型检查
 
+#### 4. 日志输出
+在插件中使用统一日志系统进行日志输出，确保日志能够同时显示在终端和GUI中。
+
+```python
+from subtitleformatter.utils.unified_logger import logger
+
+class MyPlugin(TextProcessorPlugin):
+    def process(self, input_data: str) -> str:
+        logger.info("开始处理文本")
+        # 处理逻辑
+        result = input_data.upper()
+        logger.step("处理完成", f"处理了 {len(input_data)} 个字符")
+        return result
+```
+
 ## 🔧 插件默认值管理
 
+本节说明如何在插件代码中正确使用配置系统。关于配置系统的架构设计和优先级规则，请参考 [配置管理设计方案](configuration_management_design.md#44-插件默认值管理)。
+
 ### 正确的配置使用方式
+
 插件子类应该直接使用 `self.config`，基类已经自动处理了默认配置的加载：
 
 ```python
@@ -218,32 +294,82 @@ def __init__(self, config: Dict[str, Any] = None):
     # self.enabled = self.config.get("enabled", default_config.get("enabled", True))
 ```
 
-### 基类职责
-- 自动从 plugin.json 加载默认配置
-- 将默认配置合并到 `self.config` 中
-- 确保配置的完整性和一致性
+### 关键要点
 
-### 插件子类职责
-- 直接使用 `self.config["key"]`
-- 信任基类已经处理了默认配置
-- 专注于业务逻辑实现
+**推荐做法**：
+- ✅ 直接使用 `self.config["key"]` 访问配置
+- ✅ 信任基类已经处理了默认配置
+- ✅ 专注于业务逻辑实现
+- ✅ 在 `plugin.json` 的 `config_schema.properties` 中定义所有默认值
 
-### 配置优先级
-1. **用户配置** (最高优先级)
-2. **plugin.json 默认值** (中等优先级) 
-3. **代码中的硬编码默认值** (最低优先级，仅作后备)
-
-### 最佳实践
-- **推荐**: 直接使用 `self.config["key"]`
-- **避免**: 在 `__init__` 中再设置默认值
-- **确保**: plugin.json 中的默认值与代码中的后备默认值一致
+**避免做法**：
+- ❌ 在 `__init__` 中再设置默认值（如 `self.enabled = True`）
+- ❌ 使用 `self.config.get("key", default_value)` 的方式
+- ❌ 在代码中硬编码默认值
 
 ### 常见问题
-**Q: 为什么不能直接在代码中硬编码默认值？**
-A: 硬编码默认值会导致 GUI 的 "Reset to Defaults" 功能失效，因为 GUI 从 plugin.json 读取默认值，而插件使用硬编码值，造成不一致。
 
-**Q: 如何确保配置的一致性？**
-A: 使用基类的 `get_default_config_from_plugin_json()` 方法，确保所有默认值都来自 plugin.json 文件。
+**Q: 为什么不能直接在代码中硬编码默认值？**  
+A: 硬编码默认值会导致 GUI 的 "Reset to Defaults" 功能失效，因为 GUI 从 `plugin.json` 读取默认值，而插件使用硬编码值，造成不一致。
+
+**Q: 如何确保配置的一致性？**  
+A: 所有默认值应该在 `plugin.json` 的 `config_schema.properties` 中定义，确保 GUI、插件和配置文件使用相同的默认值。
+
+**Q: 如果访问不存在的配置键会怎样？**  
+A: 应该确保在 `plugin.json` 的 `config_schema` 中定义了所有配置项。如果配置键不存在，访问时会抛出 `KeyError`。
+
+## 📝 日志系统使用
+
+### 在插件中使用日志
+
+插件应该使用统一日志系统输出日志，确保日志能够同时显示在终端和GUI界面中。
+
+#### 基本用法
+
+```python
+from subtitleformatter.utils.unified_logger import logger
+
+class MyPlugin(TextProcessorPlugin):
+    def process(self, input_data: str) -> str:
+        # 信息日志
+        logger.info("开始处理文本")
+        
+        # 处理逻辑
+        result = input_data.upper()
+        
+        # 步骤日志
+        logger.step("处理完成", f"处理了 {len(input_data)} 个字符")
+        
+        # 调试日志（仅在调试模式下显示）
+        logger.debug(f"详细处理信息: {result[:100]}")
+        
+        return result
+```
+
+#### 日志方法
+
+- **`logger.info(message)`**: 输出信息日志
+- **`logger.warning(message)`**: 输出警告日志
+- **`logger.error(message)`**: 输出错误日志
+- **`logger.debug(message)`**: 输出调试日志（仅在DEBUG级别下显示）
+- **`logger.step(step_name, message="")`**: 输出步骤日志
+
+#### 日志级别
+
+系统支持以下日志级别（从低到高）：
+- `DEBUG`: 调试信息，仅在调试模式下显示
+- `INFO`: 普通信息（默认）
+- `WARNING`: 警告信息
+- `ERROR`: 错误信息
+
+日志级别可以通过配置文件 `data/configs/config_latest.toml` 设置：
+
+```toml
+[logging]
+level = "INFO"  # DEBUG, INFO, WARNING, ERROR
+```
+
+**详细文档**: 请参考 [统一日志系统使用指南](../unified_logging_guide.md)
 
 ## 🔧 插件开发示例
 
@@ -506,16 +632,18 @@ print(f"Result: {result}")
 ## 📚 相关文档
 
 ### 架构设计
-详细的插件架构设计请参考：
-**[插件架构设计文档](plugin_architecture_design.md)**
+- **[插件架构设计文档](plugin_architecture_design.md)** - 核心架构设计和接口定义
+- **[配置管理设计方案](configuration_management_design.md)** - 配置系统的设计和使用
+
+
+### 开发指导
+- **[统一日志系统使用指南](../unified_logging_guide.md)** - 如何在插件中使用日志系统
 
 ### GUI设计
-插件管理界面设计请参考：
-**[插件GUI设计文档](plugin_gui_design.md)**
+- **[插件GUI设计文档](plugin_gui_design.md)** - 插件管理界面设计
 
-### 主重构计划
-整体重构计划请参考：
-**[主重构计划文档](src_refactor_plan.md)**
+### 实施计划
+- **[主重构计划文档](src_refactor_plan.md)** - 整体重构计划
 
 ## 🎯 总结
 
