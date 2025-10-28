@@ -8,7 +8,7 @@ SubtitleFormatter 插件化架构主窗口 - 完全重构版本
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from PySide6.QtCore import Qt, QThread, Signal
 from PySide6.QtGui import QIcon

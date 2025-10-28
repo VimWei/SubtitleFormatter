@@ -11,8 +11,7 @@ q = chr(34)
 
 ' Use uv run to automatically manage environment
 cdCmd = "cd /D " & q & appDir & q
-' uvCmd = "uv run subtitleformatter"
-uvCmd = "uv run python test_gui_v2.py"
+uvCmd = "uv run subtitleformatter"
 
 ' Command using uv run
 fullCommand = cdCmd & " & " & uvCmd
