@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
+from pathlib import Path
 
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
@@ -89,9 +90,9 @@ class PluginManagementPanel(QWidget):
         chain_layout.setContentsMargins(4, 4, 4, 4)
 
         # 添加标题到框内
-        chain_title = QLabel("Plugin Chain")
-        chain_title.setStyleSheet("font-weight: bold; font-size: 16px; color: #2196F3;")
-        chain_layout.addWidget(chain_title)
+        self.chain_title = QLabel("Plugin Chain")
+        self.chain_title.setStyleSheet("font-weight: bold; font-size: 16px; color: #2196F3;")
+        chain_layout.addWidget(self.chain_title)
 
         self.chain_list = QListWidget()
         self.chain_list.setStyleSheet("QListWidget { padding: 5px; } QListWidget::item { padding: 3px; }")
@@ -159,6 +160,25 @@ class PluginManagementPanel(QWidget):
         # 设置布局
         self.setLayout(layout)
 
+    def _refresh_chain_title(self):
+        """根据当前插件链名称更新标题文本。"""
+        base_title = "Plugin Chain"
+        chain_name: Optional[str] = None
+
+        try:
+            if hasattr(self, "config_coordinator") and self.config_coordinator:
+                chain_ref = self.config_coordinator.chain_manager.get_chain_path()
+                if chain_ref:
+                    # 使用无扩展名的友好名称
+                    chain_name = Path(chain_ref).stem
+        except Exception:
+            chain_name = None
+
+        if chain_name:
+            self.chain_title.setText(f"{base_title} - {chain_name}")
+        else:
+            self.chain_title.setText(base_title)
+
     def update_available_plugins(self, plugins: Dict[str, Dict]):
         """更新可用插件列表"""
         print(f"PluginManagementPanel: Updating with {len(plugins)} plugins")
@@ -212,6 +232,8 @@ class PluginManagementPanel(QWidget):
             self.config_coordinator.chain_manager.config_state.update_working_config(working_config)
             self.config_coordinator.chain_manager.save_working_config()
             logger.debug("Persisted plugin chain order to current chain file")
+            # 标题可能包含最新链文件名，刷新显示
+            self._refresh_chain_title()
         except Exception as e:
             logger.error(f"Failed to persist plugin chain order: {e}")
 
@@ -361,10 +383,14 @@ class PluginManagementPanel(QWidget):
             self.update_chain_display()
             # 不需要重新更新可用插件，因为available_plugins已经设置过了
             self.pluginChainChanged.emit(self.plugin_chain)
+            # 刷新标题显示当前链名
+            self._refresh_chain_title()
 
     def set_config_coordinator(self, coordinator):
         """设置配置协调器"""
         self.config_coordinator = coordinator
+        # 初次设置时刷新标题
+        self._refresh_chain_title()
 
     def import_plugin_chain(self):
         """导入插件链配置"""
@@ -392,6 +418,8 @@ class PluginManagementPanel(QWidget):
                     self.update_available_plugins(self.available_plugins)
                     self.pluginChainChanged.emit(self.plugin_chain)
                     logger.info(f"Imported plugin chain from {normalize_path(file_path)}")
+                    # 导入后刷新标题
+                    self._refresh_chain_title()
                 else:
                     logger.error("Invalid plugin chain file format")
                     
@@ -442,6 +470,8 @@ class PluginManagementPanel(QWidget):
                 self.config_coordinator.export_plugin_chain(
                     self.plugin_chain, merged_configs, Path(file_path)
                 )
+                # 导出会更新当前链引用，刷新标题
+                self._refresh_chain_title()
                 
             except Exception as e:
                 logger.error(f"Failed to export plugin chain: {e}")
