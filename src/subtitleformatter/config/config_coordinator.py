@@ -170,9 +170,10 @@ class ConfigCoordinator:
         try:
             self.chain_manager.save_working_config()
             logger.debug("Persisted working chain configuration to file after plugin change")
-            # Keep unified reference in sync (covers fallback to chain_latest.toml when no current file)
+            # Keep unified reference in sync ONLY if it changed
             chain_ref = self.chain_manager.get_chain_path()
-            if chain_ref:
+            current_ref = self.unified_manager.get_plugin_chain_reference()
+            if chain_ref and chain_ref != current_ref:
                 self.unified_manager.set_plugin_chain_reference(chain_ref)
                 self.unified_manager.save()
         except Exception as e:
@@ -192,7 +193,8 @@ class ConfigCoordinator:
         
         # Update unified config to point at the active chain file
         chain_ref = self.chain_manager.get_chain_path()
-        if chain_ref:
+        current_ref = self.unified_manager.get_plugin_chain_reference()
+        if chain_ref and chain_ref != current_ref:
             self.unified_manager.set_plugin_chain_reference(chain_ref)
             self.unified_manager.save()
         
@@ -212,7 +214,8 @@ class ConfigCoordinator:
             logger.info("Persisted chain configuration to file after restoring from snapshot")
             # Keep unified reference in sync
             chain_ref = self.chain_manager.get_chain_path()
-            if chain_ref:
+            current_ref = self.unified_manager.get_plugin_chain_reference()
+            if chain_ref and chain_ref != current_ref:
                 self.unified_manager.set_plugin_chain_reference(chain_ref)
                 self.unified_manager.save()
         except Exception as e:
