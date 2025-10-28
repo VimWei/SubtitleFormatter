@@ -44,14 +44,12 @@ class PunctuationAdderPlugin(TextProcessorPlugin):
         "required": [],
         "optional": {
             "enabled": bool,
-            "model_name": str,
             "replace_dashes": bool,
             "split_sentences": bool,
             "capitalize_sentences": bool,
         },
         "field_types": {
             "enabled": bool,
-            "model_name": str,
             "replace_dashes": bool,
             "split_sentences": bool,
             "capitalize_sentences": bool,
@@ -71,7 +69,6 @@ class PunctuationAdderPlugin(TextProcessorPlugin):
 
         # 应用配置（基类已经自动从 plugin.json 加载了默认值）
         self.enabled = self.config["enabled"]
-        self.model_name = self.config["model_name"]
         self.capitalize_sentences = self.config["capitalize_sentences"]
         self.split_sentences = self.config["split_sentences"]
         self.replace_dashes = self.config["replace_dashes"]
@@ -86,7 +83,7 @@ class PunctuationAdderPlugin(TextProcessorPlugin):
             return
 
         try:
-            logger.info(f"Loading punctuation model: {self.model_name}")
+            logger.info("Loading punctuation model")
             # TODO: 使用ModelManager统一管理模型
             # 当前暂时使用直接加载，后续通过ModelManager迁移
             self._model = PunctuationModel()
@@ -256,7 +253,7 @@ class PunctuationAdderPlugin(TextProcessorPlugin):
         if not self._model_loaded:
             return {"status": "not_loaded"}
 
-        return {"status": "loaded", "model_name": self.model_name}
+        return {"status": "loaded"}
 
     def cleanup(self):
         """清理资源"""

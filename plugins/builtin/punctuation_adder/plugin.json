@@ -15,11 +15,6 @@
                 "default": true,
                 "description": "是否启用标点恢复功能"
             },
-            "model_name": {
-                "type": "string",
-                "default": "oliverguhr/fullstop-punctuation-multilang-large",
-                "description": "使用的标点恢复模型名称"
-            },
             "replace_dashes": {
                 "type": "boolean",
                 "default": true,
