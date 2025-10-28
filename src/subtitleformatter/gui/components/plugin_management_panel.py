@@ -229,18 +229,6 @@ class PluginManagementPanel(QWidget):
         # 即时保存链顺序
         self._persist_chain_order_immediately()
 
-        # 同步：为新增插件写入插件链的工作配置中的 plugin_configs
-        try:
-            if hasattr(self, "config_coordinator") and self.config_coordinator:
-                # 读取基础配置（若无则回退到启用标志）
-                base_cfgs = self.config_coordinator.get_all_plugin_configs([plugin_name])
-                base_cfg = base_cfgs.get(plugin_name, {}) or {"enabled": True}
-
-                # 写入工作配置并立刻保存到当前链文件
-                self.config_coordinator.save_plugin_config_to_chain(plugin_name, base_cfg)
-        except Exception as e:
-            logger.error(f"Failed to sync added plugin config to chain: {e}")
-
         logger.info(f"Added plugin '{plugin_name}' to chain")
 
     def remove_plugin_from_chain(self):
@@ -257,20 +245,6 @@ class PluginManagementPanel(QWidget):
             self.pluginChainChanged.emit(self.plugin_chain)
             # 即时保存链顺序
             self._persist_chain_order_immediately()
-
-            # 同步：从工作配置的 plugin_configs 中移除对应条目，并保存
-            try:
-                if hasattr(self, "config_coordinator") and self.config_coordinator:
-                    working_cfg = self.config_coordinator.chain_manager.get_working_config()
-                    plugin_cfgs = working_cfg.get("plugin_configs", {}) if isinstance(working_cfg, dict) else {}
-                    if removed_plugin in plugin_cfgs:
-                        del plugin_cfgs[removed_plugin]
-                        if isinstance(working_cfg, dict):
-                            working_cfg["plugin_configs"] = plugin_cfgs
-                            self.config_coordinator.chain_manager.config_state.update_working_config(working_cfg)
-                            self.config_coordinator.chain_manager.save_working_config()
-            except Exception as e:
-                logger.error(f"Failed to sync removed plugin config from chain: {e}")
 
             # 更新按钮状态
             self.remove_plugin_btn.setEnabled(False)
@@ -355,17 +329,6 @@ class PluginManagementPanel(QWidget):
         self.pluginChainChanged.emit(self.plugin_chain)
         # 即时保存链顺序
         self._persist_chain_order_immediately()
-
-        # 同步：清空工作配置中的 plugin_configs，并保存
-        try:
-            if hasattr(self, "config_coordinator") and self.config_coordinator:
-                working_cfg = self.config_coordinator.chain_manager.get_working_config()
-                if isinstance(working_cfg, dict):
-                    working_cfg["plugin_configs"] = {}
-                    self.config_coordinator.chain_manager.config_state.update_working_config(working_cfg)
-                    self.config_coordinator.chain_manager.save_working_config()
-        except Exception as e:
-            logger.error(f"Failed to clear plugin configs when clearing chain: {e}")
 
         # 禁用所有链操作按钮
         self.move_up_btn.setEnabled(False)
