@@ -78,6 +78,9 @@ class MainWindowV2(QMainWindow):
         # 创建主界面
         self.setup_ui()
 
+        # 在初始化和加载配置之前就绑定GUI日志回调，确保启动日志显示到Log panel
+        logger.set_gui_callback(self.log_panel.append_log)
+
         # 应用主题样式
         self.apply_modern_styling()
 
@@ -97,7 +100,7 @@ class MainWindowV2(QMainWindow):
         self.plugin_config.set_config_coordinator(self.config_coordinator)
 
         # 设置统一日志系统的GUI回调
-        logger.set_gui_callback(self.log_panel.append_log)
+        # 已提前绑定，无需再次设置
 
     def setup_ui(self):
         """设置主界面布局"""
@@ -218,9 +221,10 @@ class MainWindowV2(QMainWindow):
             logger.info("Scanning plugins...")
             self.plugin_registry.scan_plugins()
 
-            # 检查扫描结果
+            # 插件统计（精简输出）
             plugin_names = self.plugin_registry.list_plugins()
-            logger.info(f"After scanning, found {len(plugin_names)} plugins: {plugin_names}")
+            logger.info(f"Found {len(plugin_names)} plugins")
+            logger.debug(f"Plugin names: {plugin_names}")
 
             # 创建生命周期管理器
             self.plugin_lifecycle = PluginLifecycleManager(self.plugin_registry)
@@ -230,7 +234,6 @@ class MainWindowV2(QMainWindow):
 
             # 更新插件管理界面
             self.update_plugin_management_ui()
-
             logger.info("Plugin system initialized successfully")
 
         except Exception as e:
@@ -244,7 +247,7 @@ class MainWindowV2(QMainWindow):
 
         # 获取可用插件
         plugin_names = self.plugin_registry.list_plugins()
-        logger.info(f"Found {len(plugin_names)} plugins: {plugin_names}")
+        logger.debug(f"Preparing plugin management UI with {len(plugin_names)} plugins")
 
         available_plugins = {}
         for name in plugin_names:
@@ -253,7 +256,7 @@ class MainWindowV2(QMainWindow):
             except Exception as e:
                 logger.warning(f"Failed to get metadata for plugin {name}: {e}")
 
-        logger.info(f"Updating plugin management UI with {len(available_plugins)} plugins")
+        logger.info(f"Plugin management UI updated ({len(available_plugins)} plugins)")
 
         # 更新插件管理面板
         self.plugin_management.update_available_plugins(available_plugins)

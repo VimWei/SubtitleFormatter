@@ -43,8 +43,7 @@ class PluginChainManager:
         self.plugin_chains_dir.mkdir(parents=True, exist_ok=True)
         self.plugins_dir.mkdir(parents=True, exist_ok=True)
 
-        # Initialize default chain file if needed
-        self._ensure_default_chain_exists()
+        # 不再在启动时复制默认链到用户目录；仅在引用缺失时按需复制到目标路径
 
         self.current_chain_file: Optional[Path] = None
         self.current_chain_config: Dict[str, Any] = {}
@@ -87,7 +86,7 @@ class PluginChainManager:
             if self._copy_default_chain_to_user_dir(chain_path):
                 chain_file = self.plugin_chains_dir / chain_path
                 if chain_file.exists():
-                    logger.info(f"Successfully copied and found default chain at {chain_file}")
+                    logger.debug(f"Successfully copied and found default chain at {chain_file}")
                 else:
                     logger.warning(f"Failed to create chain file, falling back to default")
                     return self._load_default_chain()
@@ -174,7 +173,7 @@ class PluginChainManager:
                 
                 # Verify copy succeeded
                 if target_file.exists():
-                    logger.info(f"Successfully copied default chain to {target_file}")
+                    logger.debug(f"Successfully copied default chain to {target_file}")
                     return True
                 else:
                     logger.error(f"Copy appeared to succeed but file not found: {target_file}")
