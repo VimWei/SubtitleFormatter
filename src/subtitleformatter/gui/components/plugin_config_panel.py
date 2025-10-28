@@ -32,6 +32,7 @@ from PySide6.QtWidgets import (
 
 from subtitleformatter.plugins import PluginRegistry
 from subtitleformatter.utils.unified_logger import logger
+from subtitleformatter.utils.plugin_config_utils import get_plugin_default_config_from_json
 
 
 class PluginConfigPanel(QWidget):
@@ -161,7 +162,7 @@ class PluginConfigPanel(QWidget):
         # 禁用按钮
         self.reset_btn.setEnabled(False)
 
-    def generate_config_ui(self, config_schema: Dict[str, Any], metadata: Dict[str, Any]):
+    def generate_config_ui(self, config_schema: Dict[str, Any], metadata: Dict[str, Any], force_config: Dict[str, Any] = None):
         """生成配置界面"""
         properties = config_schema.get("properties", {})
 
@@ -173,7 +174,12 @@ class PluginConfigPanel(QWidget):
         self.add_plugin_info(metadata)
 
         # 获取正确的插件配置
-        plugin_config = self._get_plugin_config_with_priority(self.current_plugin)
+        if force_config is not None:
+            # 强制使用指定的配置（用于 reset to defaults）
+            plugin_config = force_config
+        else:
+            # 正常情况：根据优先级获取配置
+            plugin_config = self._get_plugin_config_with_priority(self.current_plugin)
 
         # 为每个属性创建配置控件
         for prop_name, prop_config in properties.items():
@@ -242,7 +248,14 @@ class PluginConfigPanel(QWidget):
             return self._get_default_config_from_schema(plugin_name)
     
     def _get_default_config_from_schema(self, plugin_name: str) -> Dict[str, Any]:
-        """从插件元数据获取默认配置"""
+        """
+        从插件元数据获取默认配置
+        
+        这个方法与基类的 get_default_config_from_plugin_json() 做同样的事情，
+        但是适用于 GUI 组件（没有插件实例的情况）。
+        
+        未来可以考虑将这两个方法统一为一个工具函数。
+        """
         if not self.plugin_registry:
             return {}
         
@@ -464,8 +477,43 @@ class PluginConfigPanel(QWidget):
             return
 
         try:
-            # 重新加载插件配置
-            self.load_plugin_config(self.current_plugin)
+            # 强制使用默认配置，而不是重新加载当前配置
+            self.clear_config_ui()
+            
+            # 获取插件元数据
+            metadata = self.plugin_registry.get_plugin_metadata(self.current_plugin)
+            if not metadata:
+                logger.error(f"Plugin metadata not found for {self.current_plugin}")
+                return
+
+            # 获取配置模式
+            config_schema = metadata.get("config_schema")
+            if not config_schema:
+                logger.error(f"Config schema not found for {self.current_plugin}")
+                return
+
+            # 强制使用默认配置（使用统一的工具函数）
+            default_config = get_plugin_default_config_from_json(self.current_plugin, self.plugin_registry)
+            
+            # 生成配置界面，使用默认配置
+            self.generate_config_ui(config_schema, metadata, default_config)
+            
+            # 保存默认配置
+            if self.config_coordinator:
+                if self.is_from_chain:
+                    # 来自插件链选择，保存到插件链工作配置
+                    self.config_coordinator.save_plugin_config_to_chain(self.current_plugin, default_config)
+                    logger.debug(f"Saved reset config for plugin {self.current_plugin} to chain working configuration")
+                else:
+                    # 来自可用插件列表，保存到插件自定义配置
+                    self.config_coordinator.save_plugin_config(self.current_plugin, default_config)
+                    logger.debug(f"Saved reset config for plugin {self.current_plugin} to custom configuration")
+                
+                # 发出配置变化信号
+                self.configChanged.emit(self.current_plugin, default_config)
+            else:
+                logger.warning("Config coordinator not available for saving reset config")
+            
             logger.info(f"Reset configuration for plugin '{self.current_plugin}' to defaults")
         except Exception as e:
             logger.error(f"Failed to reset configuration: {e}")

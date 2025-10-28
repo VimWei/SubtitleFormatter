@@ -11,7 +11,9 @@ PunctuationAdderPlugin - 自动标点恢复插件
 支持本地模型存储和离线使用。详见 model_manager_migration.md 计划。
 """
 
+import json
 import re
+from pathlib import Path
 from typing import Any, Dict, List, Union
 
 from subtitleformatter.plugins.base import TextProcessorPlugin
@@ -67,14 +69,12 @@ class PunctuationAdderPlugin(TextProcessorPlugin):
                 "Please install it with: uv sync --group punctuation-adder"
             )
 
-        # 应用默认配置
-        self.enabled = self.config.get("enabled", True)
-        self.model_name = self.config.get(
-            "model_name", "oliverguhr/fullstop-punctuation-multilang-large"
-        )
-        self.capitalize_sentences = self.config.get("capitalize_sentences", True)
-        self.split_sentences = self.config.get("split_sentences", True)
-        self.replace_dashes = self.config.get("replace_dashes", True)
+        # 应用配置（基类已经自动从 plugin.json 加载了默认值）
+        self.enabled = self.config["enabled"]
+        self.model_name = self.config["model_name"]
+        self.capitalize_sentences = self.config["capitalize_sentences"]
+        self.split_sentences = self.config["split_sentences"]
+        self.replace_dashes = self.config["replace_dashes"]
 
         # 模型实例（延迟加载）
         self._model = None

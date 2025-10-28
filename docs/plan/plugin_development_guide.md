@@ -198,6 +198,53 @@ class TextCleaning(TextProcessorPlugin):
 #### 3. 类型安全
 确保输入输出类型与声明一致，系统会自动进行类型检查
 
+## 🔧 插件默认值管理
+
+### 正确的配置使用方式
+插件子类应该直接使用 `self.config`，基类已经自动处理了默认配置的加载：
+
+```python
+def __init__(self, config: Dict[str, Any] = None):
+    super().__init__(config)  # 基类自动加载默认配置
+    
+    # 正确：直接使用配置，基类已处理默认值
+    self.enabled = self.config["enabled"]
+    self.model_name = self.config["model_name"]
+    self.capitalize_sentences = self.config["capitalize_sentences"]
+    self.split_sentences = self.config["split_sentences"]
+    self.replace_dashes = self.config["replace_dashes"]
+    
+    # 错误：不要再设置默认值
+    # self.enabled = self.config.get("enabled", default_config.get("enabled", True))
+```
+
+### 基类职责
+- 自动从 plugin.json 加载默认配置
+- 将默认配置合并到 `self.config` 中
+- 确保配置的完整性和一致性
+
+### 插件子类职责
+- 直接使用 `self.config["key"]`
+- 信任基类已经处理了默认配置
+- 专注于业务逻辑实现
+
+### 配置优先级
+1. **用户配置** (最高优先级)
+2. **plugin.json 默认值** (中等优先级) 
+3. **代码中的硬编码默认值** (最低优先级，仅作后备)
+
+### 最佳实践
+- **推荐**: 直接使用 `self.config["key"]`
+- **避免**: 在 `__init__` 中再设置默认值
+- **确保**: plugin.json 中的默认值与代码中的后备默认值一致
+
+### 常见问题
+**Q: 为什么不能直接在代码中硬编码默认值？**
+A: 硬编码默认值会导致 GUI 的 "Reset to Defaults" 功能失效，因为 GUI 从 plugin.json 读取默认值，而插件使用硬编码值，造成不一致。
+
+**Q: 如何确保配置的一致性？**
+A: 使用基类的 `get_default_config_from_plugin_json()` 方法，确保所有默认值都来自 plugin.json 文件。
+
 ## 🔧 插件开发示例
 
 ### 示例1: 文本清理插件
@@ -205,10 +252,24 @@ class TextCleaning(TextProcessorPlugin):
 class TextCleaner(TextProcessorPlugin):
     """文本清理插件"""
     
+    def __init__(self, config: Dict[str, Any] = None):
+        super().__init__(config)  # 基类自动加载默认配置
+        
+        # 直接使用配置，基类已处理默认值
+        self.enabled = self.config["enabled"]
+        self.normalize_punctuation = self.config["normalize_punctuation"]
+        self.normalize_numbers = self.config["normalize_numbers"]
+        self.normalize_whitespace = self.config["normalize_whitespace"]
+        self.clean_empty_lines = self.config["clean_empty_lines"]
+        self.add_spaces_around_punctuation = self.config["add_spaces_around_punctuation"]
+        self.remove_bom = self.config["remove_bom"]
+    
     def get_input_type(self) -> type:
+        """返回期望的输入数据类型"""
         return str
     
     def get_output_type(self) -> type:
+        """返回输出的数据类型"""
         return str
     
     def process(self, input_data: str) -> str:
@@ -227,10 +288,18 @@ class TextCleaner(TextProcessorPlugin):
 class TextToSentences(TextProcessorPlugin):
     """句子分割插件"""
     
+    def __init__(self, config: Dict[str, Any] = None):
+        super().__init__(config)  # 基类自动加载默认配置
+        
+        # 直接使用配置，基类已处理默认值
+        self.enabled = self.config["enabled"]
+    
     def get_input_type(self) -> type:
+        """返回期望的输入数据类型"""
         return str
     
     def get_output_type(self) -> type:
+        """返回输出的数据类型"""
         return list
     
     def process(self, input_data: str) -> list:
@@ -251,15 +320,20 @@ class TextToSentences(TextProcessorPlugin):
 class ConfigurablePlugin(TextProcessorPlugin):
     """可配置的插件示例"""
     
-    def __init__(self, config: dict):
-        super().__init__(config)
-        self.max_length = config.get("max_length", 100)
-        self.prefix = config.get("prefix", "")
+    def __init__(self, config: Dict[str, Any] = None):
+        super().__init__(config)  # 基类自动加载默认配置
+        
+        # 直接使用配置，基类已处理默认值
+        self.enabled = self.config["enabled"]
+        self.max_length = self.config["max_length"]
+        self.prefix = self.config["prefix"]
     
     def get_input_type(self) -> type:
+        """返回期望的输入数据类型"""
         return str
     
     def get_output_type(self) -> type:
+        """返回输出的数据类型"""
         return str
     
     def process(self, input_data: str) -> str:

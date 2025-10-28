@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
 from ...utils.unified_logger import logger
+from ...utils.plugin_config_utils import get_plugin_default_config_from_json
 
 
 class TextProcessorPlugin(ABC):
@@ -206,15 +207,39 @@ class TextProcessorPlugin(ABC):
         """
         return name in self._dependencies
 
+    def get_default_config_from_plugin_json(self) -> Dict[str, Any]:
+        """
+        从插件的 plugin.json 文件读取默认配置
+        
+        这是一个通用的 API 方法，所有插件都可以使用它来从 plugin.json 中
+        读取默认配置值，确保配置的一致性。
+        
+        现在使用统一的工具函数来实现。
+        
+        Returns:
+            包含默认配置的字典
+        """
+        return get_plugin_default_config_from_json(self.name)
+
     def _apply_default_values(self) -> None:
         """Apply default values from schema."""
         if not self.config_schema:
             return
 
-        default_values = self.config_schema.get("default_values", {})
-        for field, default_value in default_values.items():
-            if field not in self.config:
-                self.config[field] = default_value
+        # 优先从 plugin.json 获取默认值
+        default_config = self.get_default_config_from_plugin_json()
+        
+        # 如果 plugin.json 中有默认值，使用它们
+        if default_config:
+            for field, default_value in default_config.items():
+                if field not in self.config:
+                    self.config[field] = default_value
+        else:
+            # 回退到旧的 default_values 方式（向后兼容）
+            default_values = self.config_schema.get("default_values", {})
+            for field, default_value in default_values.items():
+                if field not in self.config:
+                    self.config[field] = default_value
 
     def _validate_config(self) -> None:
         """
