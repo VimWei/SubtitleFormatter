@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.4.0] - 2025-10-30
+
+- refactor(sentence_splitter): ensure consistency by trimming trailing whitespace from split sentences
+- fix(punctuation_adder): enhance dash replacement logic for numeric values
+- refactor(punctuation_adder): enhance punctuation processing and sentence capitalization
+- refactor(config): enhance runtime configuration materialization for plugin management
+- refactor(gui): delegate plugin system initialization and configuration assembly to runtime layer
+- refactor(gui): enhance MainWindowV2 with plugin system integration and processing improvements
+- refactor(gui): streamline MainWindowV2 layout and enhance configuration handling
+- fix(punctuation_adder): suppress deprecation warnings for grouped_entities in transformers
+
 ## [1.3.12] - 2025-10-30
 
 - feat(tests): add comprehensive tests for plugin management and configuration handling
