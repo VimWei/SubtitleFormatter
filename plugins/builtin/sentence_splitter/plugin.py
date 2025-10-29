@@ -926,7 +926,8 @@ class SentenceSplitterPlugin(TextProcessorPlugin):
         for sentence in sentences:
             if sentence.strip():
                 split_sentences = self.split_sentence(sentence.strip())
-                result.extend(split_sentences)
+                # 清理每行行尾空格，保持与脚本版本一致
+                result.extend([s.rstrip() for s in split_sentences])
         return result
 
     def get_split_stats(self, sentences: List[str]) -> Dict[str, Any]:
@@ -955,7 +956,8 @@ class SentenceSplitterPlugin(TextProcessorPlugin):
         兼容性方法：将单个句子拆分为句子列表
         这是测试期望的方法名
         """
-        return self.split_sentence(sentence)
+        # 与脚本版本保持一致，移除每行行尾空格
+        return [s.rstrip() for s in self.split_sentence(sentence)]
 
     def split_at_position(self, sentence: str, position: int) -> Tuple[str, str]:
         """
