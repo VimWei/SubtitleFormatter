@@ -84,6 +84,16 @@ class PunctuationAdderPlugin(TextProcessorPlugin):
 
         try:
             logger.info("Loading punctuation model")
+            # 抑制 transformers 关于 grouped_entities 的弃用告警
+            try:
+                import warnings
+                warnings.filterwarnings(
+                    "ignore",
+                    message=r"`grouped_entities` is deprecated",
+                    category=UserWarning,
+                )
+            except Exception:
+                pass
             # TODO: 使用ModelManager统一管理模型
             # 当前暂时使用直接加载，后续通过ModelManager迁移
             self._model = PunctuationModel()
