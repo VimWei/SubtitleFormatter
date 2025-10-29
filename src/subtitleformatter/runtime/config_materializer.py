@@ -51,10 +51,10 @@ def materialize_runtime_config(
             plugins_section[plugin_name] = plugin_conf or {}
     except Exception:
         # Fallback to panel (older panel only returns order)
-        if plugin_management_panel is not None and hasattr(plugin_management_panel, "get_plugin_chain_config"):
+        if plugin_management_panel is not None and hasattr(
+            plugin_management_panel, "get_plugin_chain_config"
+        ):
             panel_cfg = plugin_management_panel.get_plugin_chain_config() or {}
             plugins_section["order"] = panel_cfg.get("plugins", {}).get("order", [])
 
     return {**base, "plugins": plugins_section}
-
-

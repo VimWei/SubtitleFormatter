@@ -20,9 +20,11 @@ class ProcessingThread(QThread):
 
     def run(self):
         try:
-            run_processing(self.config, emit_log=self.log.emit, emit_progress=lambda p, m="": self.progress.emit(p, m))
+            run_processing(
+                self.config,
+                emit_log=self.log.emit,
+                emit_progress=lambda p, m="": self.progress.emit(p, m),
+            )
             self.finished.emit(True, "Processing completed successfully")
         except Exception as e:
             self.finished.emit(False, str(e))
-
-

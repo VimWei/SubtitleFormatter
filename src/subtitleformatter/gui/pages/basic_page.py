@@ -69,27 +69,25 @@ class BasicPage(QWidget):
         """Load configuration from ConfigCoordinator and update UI."""
         if not self.config_coordinator:
             return
-        
+
         file_config = self.config_coordinator.get_file_processing_config()
         input_file = file_config.get("input_file", "")
         output_file = file_config.get("output_file", "")
         add_timestamp = file_config.get("add_timestamp", True)
         debug_enabled = file_config.get("debug", {}).get("enabled", False)
-        
+
         self.set_config(input_file, output_file, add_timestamp, debug_enabled)
 
     def save_config_to_coordinator(self):
         """Save current UI state to ConfigCoordinator."""
         if not self.config_coordinator:
             return
-        
+
         file_config = {
             "input_file": self.edit_input.text().strip(),
             "output_file": self.edit_output.text().strip(),
             "add_timestamp": self.check_timestamp.isChecked(),
-            "debug": {
-                "enabled": self.check_debug.isChecked()
-            }
+            "debug": {"enabled": self.check_debug.isChecked()},
         }
-        
+
         self.config_coordinator.set_file_processing_config(file_config)

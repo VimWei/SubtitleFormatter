@@ -37,10 +37,10 @@ def initialize_plugin_system(
         except Exception as e:
             logger.warning(f"Failed to get metadata for plugin {name}: {e}")
 
-    if plugin_management_panel is not None and hasattr(plugin_management_panel, "update_available_plugins"):
+    if plugin_management_panel is not None and hasattr(
+        plugin_management_panel, "update_available_plugins"
+    ):
         plugin_management_panel.update_available_plugins(available)
 
     logger.info("Plugin system initialized successfully")
     return lifecycle
-
-

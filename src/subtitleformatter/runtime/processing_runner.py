@@ -44,5 +44,3 @@ def run_processing(
         if getattr(unified_logger, "log_level", "INFO") == "DEBUG":
             raise RuntimeError(f"Processing failed: {e}\n{traceback.format_exc()}")
         raise RuntimeError(f"Processing failed: {e}")
-
-

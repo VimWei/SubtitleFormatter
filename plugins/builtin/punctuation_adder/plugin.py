@@ -87,6 +87,7 @@ class PunctuationAdderPlugin(TextProcessorPlugin):
             # 抑制 transformers 关于 grouped_entities 的弃用告警
             try:
                 import warnings
+
                 warnings.filterwarnings(
                     "ignore",
                     message=r"`grouped_entities` is deprecated",
@@ -172,7 +173,6 @@ class PunctuationAdderPlugin(TextProcessorPlugin):
         """
         sentences = re.split(r"(?<=[.?!])\s+", text.strip())
         return "\n".join(s.strip() for s in sentences if s.strip())
-
 
     def _capitalize_sentences(self, text: str) -> str:
         """
@@ -280,7 +280,7 @@ class PunctuationAdderPlugin(TextProcessorPlugin):
         # 2. 双破折号 (hello -- world)
         # 3. 行末破折号 (hello -)
 
-        return text  
+        return text
 
     def get_model_info(self) -> Dict[str, Any]:
         """

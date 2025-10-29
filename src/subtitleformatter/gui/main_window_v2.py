@@ -19,33 +19,35 @@ from PySide6.QtWidgets import (
     QLabel,
     QMainWindow,
     QMessageBox,
-    QTabWidget,
     QPushButton,
     QScrollArea,
     QSizePolicy,
     QSplitter,
+    QTabWidget,
     QVBoxLayout,
     QWidget,
 )
 
 from subtitleformatter.config import ConfigCoordinator
 from subtitleformatter.plugins import PluginLifecycleManager, PluginRegistry
-from subtitleformatter.runtime.plugin_runtime import initialize_plugin_system as runtime_init_plugins
 from subtitleformatter.runtime.config_materializer import materialize_runtime_config
-from .threads.processing_thread import ProcessingThread
+from subtitleformatter.runtime.plugin_runtime import (
+    initialize_plugin_system as runtime_init_plugins,
+)
 from subtitleformatter.utils.unified_logger import logger
 from subtitleformatter.version import get_app_title
 
-from .components.configuration_management_panel import ConfigurationManagementPanel
 from .components.command_panel import CommandPanel
+from .components.configuration_management_panel import ConfigurationManagementPanel
 from .components.log_panel import LogPanel
 from .components.plugin_chain_visualizer import PluginChainVisualizer
 from .components.plugin_config_panel import PluginConfigPanel
 from .components.plugin_management_panel import PluginManagementPanel
-from .styles.theme_loader import ThemeLoader
-from .pages.basic_page import BasicPage
-from .pages.advanced_page import AdvancedPage
 from .pages.about_page import AboutPage
+from .pages.advanced_page import AdvancedPage
+from .pages.basic_page import BasicPage
+from .styles.theme_loader import ThemeLoader
+from .threads.processing_thread import ProcessingThread
 
 
 class MainWindowV2(QMainWindow):
@@ -364,7 +366,9 @@ class MainWindowV2(QMainWindow):
     def on_format_requested(self):
         """处理格式化请求（委托 runtime 组装 full_config）"""
         try:
-            from subtitleformatter.runtime.config_materializer import materialize_runtime_config
+            from subtitleformatter.runtime.config_materializer import (
+                materialize_runtime_config,
+            )
 
             full_config = materialize_runtime_config(
                 self.project_root, self.config_coordinator, self.plugin_management
@@ -384,8 +388,10 @@ class MainWindowV2(QMainWindow):
         except Exception as e:
             try:
                 from subtitleformatter.utils.unified_logger import logger as _ul
+
                 if getattr(_ul, "log_level", "INFO") == "DEBUG":
                     import traceback
+
                     logger.error(f"Failed to start processing: {e}\n{traceback.format_exc()}")
                 else:
                     logger.error(f"Failed to start processing: {e}")
@@ -417,11 +423,13 @@ class MainWindowV2(QMainWindow):
                 raise RuntimeError("log_panel not initialized")
             if self.plugin_lifecycle is None:
                 raise RuntimeError("plugin_lifecycle not initialized")
-            
+
             self.processing_thread = ProcessingThread(config)
 
             # 连接信号
-            self.processing_thread.progress.connect(lambda v, _m: self.command_panel.set_progress(v))
+            self.processing_thread.progress.connect(
+                lambda v, _m: self.command_panel.set_progress(v)
+            )
             self.processing_thread.log.connect(self.log_panel.append_log)
             self.processing_thread.finished.connect(self.on_processing_finished)
 
@@ -434,19 +442,25 @@ class MainWindowV2(QMainWindow):
 
             # 启动线程（这是异步操作，不会阻塞UI）
             self.processing_thread.start()
-            
+
         except Exception as e:
             # 仅在 DEBUG 日志级别下附带 traceback
             try:
                 from subtitleformatter.utils.unified_logger import logger as _ul
+
                 if getattr(_ul, "log_level", "INFO") == "DEBUG":
                     import traceback
-                    logger.error(f"Failed to start processing thread: {e}\n{traceback.format_exc()}")
+
+                    logger.error(
+                        f"Failed to start processing thread: {e}\n{traceback.format_exc()}"
+                    )
                 else:
                     logger.error(f"Failed to start processing thread: {e}")
             except Exception:
                 logger.error(f"Failed to start processing thread: {e}")
-            QMessageBox.critical(self, "Processing Error", f"Failed to start processing thread:\n{e}")
+            QMessageBox.critical(
+                self, "Processing Error", f"Failed to start processing thread:\n{e}"
+            )
 
     def on_processing_finished(self, success: bool, message: str):
         """处理完成回调"""
@@ -528,6 +542,7 @@ class MainWindowV2(QMainWindow):
         """Normalize path for display."""
         try:
             import os
+
             if not path_text:
                 return ""
             return os.path.normpath(path_text)
@@ -538,6 +553,7 @@ class MainWindowV2(QMainWindow):
         """Convert path to relative path from project root."""
         try:
             import os
+
             abs_path = Path(p).resolve()
             root = self.project_root.resolve()
             rel = abs_path.relative_to(root)
@@ -557,15 +573,15 @@ class MainWindowV2(QMainWindow):
         )
         if not file:
             return
-        
+
         # Display relative for portability
         self.tab_basic.edit_input.setText(self._normalize_path_for_display(self._to_relative(file)))
-        
+
         # Save to ConfigCoordinator
         file_config = self.config_coordinator.get_file_processing_config()
         file_config["input_file"] = file
         self.config_coordinator.set_file_processing_config(file_config)
-        
+
         # Auto-suggest output file if empty
         if not self.tab_basic.edit_output.text().strip():
             in_path = Path(file)
@@ -573,7 +589,9 @@ class MainWindowV2(QMainWindow):
             out_dir = (self.project_root / "data" / "output").resolve()
             out_dir.mkdir(parents=True, exist_ok=True)
             new_out = str(out_dir / f"{base}.txt")
-            self.tab_basic.edit_output.setText(self._normalize_path_for_display(self._to_relative(new_out)))
+            self.tab_basic.edit_output.setText(
+                self._normalize_path_for_display(self._to_relative(new_out))
+            )
             file_config["output_file"] = new_out
             self.config_coordinator.set_file_processing_config(file_config)
 
@@ -581,7 +599,7 @@ class MainWindowV2(QMainWindow):
         """Choose output file and update configuration."""
         out_dir = (self.project_root / "data" / "output").resolve()
         out_dir.mkdir(parents=True, exist_ok=True)
-        
+
         # Suggest a name based on input if present
         suggested = ""
         in_text = self.tab_basic.edit_input.text().strip()
@@ -591,7 +609,7 @@ class MainWindowV2(QMainWindow):
                 suggested = str(out_dir / f"{in_base}.txt")
             except Exception:
                 pass
-        
+
         file, _ = QFileDialog.getSaveFileName(
             self,
             "Select output file",
@@ -600,10 +618,12 @@ class MainWindowV2(QMainWindow):
         )
         if not file:
             return
-        
+
         # Display relative for portability
-        self.tab_basic.edit_output.setText(self._normalize_path_for_display(self._to_relative(file)))
-        
+        self.tab_basic.edit_output.setText(
+            self._normalize_path_for_display(self._to_relative(file))
+        )
+
         # Save to ConfigCoordinator
         file_config = self.config_coordinator.get_file_processing_config()
         file_config["output_file"] = file
@@ -613,6 +633,7 @@ class MainWindowV2(QMainWindow):
         """Open user data directory."""
         try:
             import os
+
             path = (self.project_root / "data").resolve()
             path.mkdir(parents=True, exist_ok=True)
             os.startfile(str(path))
