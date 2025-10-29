@@ -142,6 +142,16 @@ class TestPunctuationAdderPlugin:
         result = plugin.process(text)
         assert result == "hello world.\nhow are you?"  # 插件会添加换行符
 
+    def test_capitalize_without_splitting(self):
+        """仅启用句首大写，不进行句子拆分时，应保留原有结构并就地大写。"""
+        plugin = PunctuationAdderPlugin({"split_sentences": False, "capitalize_sentences": True})
+        plugin._model = self.mock_model
+        plugin._model_loaded = True
+        # 模拟模型输出
+        self.mock_model.restore_punctuation.return_value = "hello. world! how are you?"
+        result = plugin.process("hello world")
+        assert result == "Hello. World! How are you?"
+
     def test_split_sentences_enabled(self):
         """测试启用句子分割"""
         plugin = PunctuationAdderPlugin({"split_sentences": True, "capitalize_sentences": True})
@@ -317,6 +327,7 @@ class TestPunctuationAdderPlugin:
             ("hello -- world", "hello -- world"),  # 双破折号不应该被替换
             ("hello -", "hello -"),  # 行末破折号不应该被替换
             ("- hello", "- hello"),  # 行首破折号不应该被替换
+            ("  - hello", "  - hello"),  # 缩进行首列表项不应被替换
             ("hello- world", "hello, world"),  # 破折号前无空格，后有空格应该被替换
         ]
 

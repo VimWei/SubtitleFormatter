@@ -145,24 +145,17 @@ class PunctuationAdderPlugin(TextProcessorPlugin):
         try:
             # 步骤1: 使用模型恢复标点符号
             punctuated_text = self._model.restore_punctuation(text)
+            result = punctuated_text.strip()
 
-            # 步骤2: 分割文本为句子（如果需要）
+            # 后处理任务 1：句子拆分（可选）
             if self.split_sentences:
-                sentences = self._split_into_sentences(punctuated_text)
-            else:
-                sentences = [punctuated_text.strip()]
+                result = self._split_sentences(punctuated_text)
 
-            # 步骤3: 处理每个句子
-            processed_lines = []
-            for sentence in sentences:
-                processed_sentence = self._process_sentence(sentence)
-                if processed_sentence:
-                    processed_lines.append(processed_sentence)
+            # 后处理任务 2：句首大写（可选）
+            if self.capitalize_sentences:
+                result = self._capitalize_sentences(result)
 
-            # 步骤4: 合并结果
-            result = "\n".join(processed_lines)
-
-            # 步骤5: 应用后处理规则
+            # 后处理任务 3：破折号替换（可选）
             if self.replace_dashes:
                 result = self._replace_dashes(result)
 
@@ -173,56 +166,91 @@ class PunctuationAdderPlugin(TextProcessorPlugin):
             # 返回原始文本作为降级处理
             return text
 
-    def _split_into_sentences(self, text: str) -> List[str]:
+    def _split_sentences(self, text: str) -> str:
         """
-        将文本分割为句子
-
-        Args:
-            text: 输入文本
-
-        Returns:
-            句子列表
+        后处理任务 1：将文本按句子拆分，并用换行拼接。
         """
-        # 在句号、问号或感叹号后分割文本
         sentences = re.split(r"(?<=[.?!])\s+", text.strip())
-        return [s.strip() for s in sentences if s.strip()]
+        return "\n".join(s.strip() for s in sentences if s.strip())
 
-    def _process_sentence(self, sentence: str) -> str:
+
+    def _capitalize_sentences(self, text: str) -> str:
         """
-        处理单个句子
+        后处理任务 2：句首大写。
 
-        Args:
-            sentence: 输入句子
-
-        Returns:
-            处理后的句子
+        - 若已经进行了句子拆分（self.split_sentences=True），按行逐句大写；
+        - 否则在不改变文本结构的前提下，对各句首字母进行就地大写。
         """
-        if not sentence.strip():
-            return ""
+        if self.split_sentences:
+            return self._capitalize_lines_first_letter(text)
+        else:
+            return self._capitalize_sentences_in_text(text)
 
-        # 首字母大写（如果需要）
-        if self.capitalize_sentences:
-            sentence = self._capitalize_first_letter(sentence)
-
-        return sentence.strip()
-
-    def _capitalize_first_letter(self, text: str) -> str:
+    def _capitalize_lines_first_letter(self, text: str) -> str:
         """
-        将文本首字母大写
+        将文本或多行文本中每行的首个字母字符大写
 
         Args:
             text: 输入文本
 
         Returns:
-            首字母大写的文本
+            首字母大写的文本（逐行处理）
         """
-        # 找到第一个字母并大写，保留其余字母的大小写
-        for i, char in enumerate(text):
-            if char.isalpha():
-                return text[:i] + char.upper() + text[i + 1 :]
+        lines = text.splitlines()
+        processed_lines: List[str] = []
+        for line in lines:
+            if not line.strip():
+                processed_lines.append("")
+                continue
+            # 找到第一个字母并大写，保留其余字母的大小写
+            capitalized = line
+            for i, char in enumerate(line):
+                if char.isalpha():
+                    capitalized = line[:i] + char.upper() + line[i + 1 :]
+                    break
+            processed_lines.append(capitalized)
+        return "\n".join(processed_lines)
 
-        # 如果没找到字母则直接返回
-        return text
+    def _capitalize_sentences_in_text(self, text: str) -> str:
+        """
+        在不改变文本结构的前提下，将每个句子的首个字母大写。
+
+        规则：
+        - 文本开头的首个字母需要大写
+        - 在 ., ?, ! 之后的连续空白后遇到的首个字母需要大写
+        - 不插入/删除换行与空格，保持原有排版
+        """
+        if not text:
+            return text
+
+        result_chars = []
+        capitalize_next_letter = True  # 文本开头需要大写
+
+        i = 0
+        length = len(text)
+        while i < length:
+            ch = text[i]
+            if capitalize_next_letter and ch.isalpha():
+                result_chars.append(ch.upper())
+                capitalize_next_letter = False
+            else:
+                result_chars.append(ch)
+
+            # 若当前字符是句末标点，则在其后的空白后设置大写标志
+            if ch in ".?!":
+                j = i + 1
+                # 跳过紧随其后的引号/括号等常见包裹符号之前的空白处理交给下次循环
+                # 这里先设置为 True，直到遇到下一个字母才会应用
+                capitalize_next_letter = True
+                # 但如果后面紧跟的是引号或右括号等，再次遇到字母时才真正触发大写
+            elif ch.strip():
+                # 任何非空白字符会关闭大写开关，除非已经由句末标点打开
+                # 注意：这里不覆盖句末标点设置的 True，仅当它本来就是 False 时才维持 False
+                pass
+
+            i += 1
+
+        return "".join(result_chars)
 
     def _replace_dashes(self, text: str) -> str:
         """
@@ -240,8 +268,9 @@ class PunctuationAdderPlugin(TextProcessorPlugin):
         # 使用正则表达式进行精确替换
         import re
 
-        # 替换 " - " 为 ", " (空格-空格 模式)
-        text = re.sub(r"\s-\s", ", ", text)
+        # 替换 " - " 为 ", " (空格-空格 模式)，但避免列表项 (如开头的 "- item" 或缩进 "  - item")
+        # 仅当破折号前存在非空白字符时才替换
+        text = re.sub(r"(?<=\S)\s-\s", ", ", text)
 
         # 替换 "word- word" 为 "word, word" (破折号前无空格，后有空格)
         text = re.sub(r"([a-zA-Z])-\s", r"\1, ", text)
@@ -251,7 +280,7 @@ class PunctuationAdderPlugin(TextProcessorPlugin):
         # 2. 双破折号 (hello -- world)
         # 3. 行末破折号 (hello -)
 
-        return text
+        return text  
 
     def get_model_info(self) -> Dict[str, Any]:
         """
