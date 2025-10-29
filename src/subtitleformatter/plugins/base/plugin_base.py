@@ -12,8 +12,8 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
-from ...utils.unified_logger import logger
 from ...utils.plugin_config_utils import get_plugin_default_config_from_json
+from ...utils.unified_logger import logger
 
 
 class TextProcessorPlugin(ABC):
@@ -210,12 +210,12 @@ class TextProcessorPlugin(ABC):
     def get_default_config_from_plugin_json(self) -> Dict[str, Any]:
         """
         从插件的 plugin.json 文件读取默认配置
-        
+
         这是一个通用的 API 方法，所有插件都可以使用它来从 plugin.json 中
         读取默认配置值，确保配置的一致性。
-        
+
         现在使用统一的工具函数来实现。
-        
+
         Returns:
             包含默认配置的字典
         """
@@ -228,7 +228,7 @@ class TextProcessorPlugin(ABC):
 
         # 优先从 plugin.json 获取默认值
         default_config = self.get_default_config_from_plugin_json()
-        
+
         # 如果 plugin.json 中有默认值，使用它们
         if default_config:
             for field, default_value in default_config.items():

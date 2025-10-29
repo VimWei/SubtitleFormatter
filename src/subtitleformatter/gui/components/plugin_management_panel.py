@@ -6,8 +6,8 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
 from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
@@ -68,7 +68,9 @@ class PluginManagementPanel(QWidget):
         available_layout.addWidget(available_title)
 
         self.available_list = QListWidget()
-        self.available_list.setStyleSheet("QListWidget { padding: 5px; } QListWidget::item { padding: 3px; }")
+        self.available_list.setStyleSheet(
+            "QListWidget { padding: 5px; } QListWidget::item { padding: 3px; }"
+        )
         self.available_list.itemClicked.connect(self.on_plugin_selected)
         self.available_list.currentRowChanged.connect(self.on_available_current_changed)
         available_layout.addWidget(self.available_list)
@@ -95,7 +97,9 @@ class PluginManagementPanel(QWidget):
         chain_layout.addWidget(self.chain_title)
 
         self.chain_list = QListWidget()
-        self.chain_list.setStyleSheet("QListWidget { padding: 5px; } QListWidget::item { padding: 3px; }")
+        self.chain_list.setStyleSheet(
+            "QListWidget { padding: 5px; } QListWidget::item { padding: 3px; }"
+        )
         self.chain_list.itemClicked.connect(self.on_chain_item_selected)
         self.chain_list.currentRowChanged.connect(self.on_chain_current_changed)
         self.chain_list.setDragDropMode(QListWidget.InternalMove)
@@ -136,14 +140,14 @@ class PluginManagementPanel(QWidget):
         chain_config_buttons = QHBoxLayout()
         self.import_chain_btn = QPushButton("Import Chain")
         self.import_chain_btn.clicked.connect(self.import_plugin_chain)
-        
+
         self.export_chain_btn = QPushButton("Export Chain")
         self.export_chain_btn.clicked.connect(self.export_plugin_chain)
-        
+
         # 设置配置按钮的左右 padding
         self.import_chain_btn.setStyleSheet(chain_button_style)
         self.export_chain_btn.setStyleSheet(chain_button_style)
-        
+
         chain_config_buttons.addWidget(self.import_chain_btn)
         chain_config_buttons.addWidget(self.export_chain_btn)
         chain_layout.addLayout(chain_config_buttons)
@@ -215,7 +219,7 @@ class PluginManagementPanel(QWidget):
                 if plugin_name in self.available_plugins:
                     # 更新按钮状态 - 总是启用添加按钮
                     self.add_plugin_btn.setEnabled(True)
-                    
+
                     # 发送信号
                     self.pluginSelected.emit(plugin_name)
 
@@ -292,12 +296,12 @@ class PluginManagementPanel(QWidget):
             item = self.chain_list.item(current_row)
             if item:
                 plugin_name = item.data(Qt.UserRole)
-                
+
                 # 更新按钮状态
                 self.move_up_btn.setEnabled(current_row > 0)
                 self.move_down_btn.setEnabled(current_row < len(self.plugin_chain) - 1)
                 self.remove_plugin_btn.setEnabled(True)
-                
+
                 # 发送插件链选择信号
                 self.pluginChainSelected.emit(plugin_name)
 
@@ -394,23 +398,25 @@ class PluginManagementPanel(QWidget):
 
     def import_plugin_chain(self):
         """导入插件链配置"""
-        from PySide6.QtWidgets import QFileDialog
         from pathlib import Path
-        
+
+        from PySide6.QtWidgets import QFileDialog
+
         # 设置默认目录为 data/configs/plugin_chains
         default_dir = Path("data/configs/plugin_chains")
         if not default_dir.exists():
             default_dir.mkdir(parents=True, exist_ok=True)
-        
+
         file_path, _ = QFileDialog.getOpenFileName(
             self, "Import Plugin Chain", str(default_dir), "TOML Files (*.toml);;All Files (*)"
         )
-        
+
         if file_path:
             try:
                 from pathlib import Path
+
                 chain_config = self.config_coordinator.import_plugin_chain(Path(file_path))
-                
+
                 # 更新插件链
                 if "plugins" in chain_config and "order" in chain_config["plugins"]:
                     self.plugin_chain = chain_config["plugins"]["order"].copy()
@@ -422,38 +428,43 @@ class PluginManagementPanel(QWidget):
                     self._refresh_chain_title()
                 else:
                     logger.error("Invalid plugin chain file format")
-                    
+
             except Exception as e:
                 logger.error(f"Failed to import plugin chain: {e}")
 
     def export_plugin_chain(self):
         """导出插件链配置"""
-        from PySide6.QtWidgets import QFileDialog
         from pathlib import Path
-        
+
+        from PySide6.QtWidgets import QFileDialog
+
         if not self.plugin_chain:
             logger.warning("Plugin chain is empty")
             return
-        
+
         # 设置默认目录为 data/configs/plugin_chains
         default_dir = Path("data/configs/plugin_chains")
         if not default_dir.exists():
             default_dir.mkdir(parents=True, exist_ok=True)
-            
+
         file_path, _ = QFileDialog.getSaveFileName(
             self, "Export Plugin Chain", str(default_dir), "TOML Files (*.toml);;All Files (*)"
         )
-        
+
         if file_path:
             try:
                 from pathlib import Path
-                
+
                 # 获取基础配置（插件自定义配置）
                 base_configs = self.config_coordinator.get_all_plugin_configs(self.plugin_chain)
 
                 # 叠加工作配置（来自插件链的实时工作配置），确保导出反映当前编辑
                 working_config = self.config_coordinator.chain_manager.get_working_config()
-                working_plugin_configs = working_config.get("plugin_configs", {}) if isinstance(working_config, dict) else {}
+                working_plugin_configs = (
+                    working_config.get("plugin_configs", {})
+                    if isinstance(working_config, dict)
+                    else {}
+                )
 
                 merged_configs = {}
                 for plugin_name in self.plugin_chain:
@@ -472,6 +483,6 @@ class PluginManagementPanel(QWidget):
                 )
                 # 导出会更新当前链引用，刷新标题
                 self._refresh_chain_title()
-                
+
             except Exception as e:
                 logger.error(f"Failed to export plugin chain: {e}")

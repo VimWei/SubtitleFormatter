@@ -90,7 +90,7 @@ def run_cli(config_path: str = None):
 def run_gui(use_legacy: bool = False):
     """
     Run SubtitleFormatter in GUI mode.
-    
+
     Args:
         use_legacy: If True, launch legacy V1 GUI. If False, launch V2 GUI (default).
     """

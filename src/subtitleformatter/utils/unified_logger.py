@@ -55,7 +55,7 @@ class UnifiedLogger:
     def set_log_level(self, level: str = "INFO") -> None:
         """
         设置日志级别
-        
+
         Args:
             level: 日志级别 (DEBUG, INFO, WARNING, ERROR)
         """
@@ -67,10 +67,10 @@ class UnifiedLogger:
     def should_log(self, level: str) -> bool:
         """
         判断指定级别的日志是否应该输出
-        
+
         Args:
             level: 日志级别
-            
+
         Returns:
             是否应该输出
         """

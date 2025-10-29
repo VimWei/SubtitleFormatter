@@ -13,7 +13,6 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from ..utils.unified_logger import logger
-
 from .plugin_chain_manager import PluginChainManager
 from .plugin_config_manager import PluginConfigManager
 from .unified_config_manager import UnifiedConfigManager
@@ -58,10 +57,7 @@ class ConfigCoordinator:
             chain_config = self.chain_manager._create_default_chain()
 
         # 4. Build complete configuration
-        complete_config = {
-            "unified": unified_config,
-            "plugin_chain": chain_config
-        }
+        complete_config = {"unified": unified_config, "plugin_chain": chain_config}
 
         logger.info("Loaded complete configuration")
         return complete_config
@@ -72,7 +68,7 @@ class ConfigCoordinator:
             self.unified_manager.save()
             logger.info("Saved unified configuration")
 
-            # Note: 
+            # Note:
             # - Plugin configs are saved immediately when changed
             # - Plugin chain configs are saved on exit automatically
 
@@ -106,7 +102,12 @@ class ConfigCoordinator:
         """Restore to default configuration."""
         return self.unified_manager.restore_default()
 
-    def save_plugin_chain(self, order: List[str], plugin_configs: Dict[str, Dict[str, Any]], save_to: Optional[str] = None) -> Path:
+    def save_plugin_chain(
+        self,
+        order: List[str],
+        plugin_configs: Dict[str, Dict[str, Any]],
+        save_to: Optional[str] = None,
+    ) -> Path:
         """
         Save plugin chain configuration.
 
@@ -128,7 +129,9 @@ class ConfigCoordinator:
         logger.info(f"Saved plugin chain and updated unified config")
         return chain_file
 
-    def export_plugin_chain(self, order: List[str], plugin_configs: Dict[str, Dict[str, Any]], output_path: Path):
+    def export_plugin_chain(
+        self, order: List[str], plugin_configs: Dict[str, Dict[str, Any]], output_path: Path
+    ):
         """Export plugin chain to file."""
         self.chain_manager.export_chain(output_path, order, plugin_configs)
         # Update unified config reference to the new current chain file
@@ -154,12 +157,12 @@ class ConfigCoordinator:
     def save_plugin_config(self, plugin_name: str, config: Dict[str, Any]) -> Path:
         """Save plugin configuration immediately."""
         return self.plugin_manager.save_plugin_config(plugin_name, config)
-    
+
     def save_plugin_config_to_chain(self, plugin_name: str, config: Dict[str, Any]):
         """
         Save plugin configuration to plugin chain working configuration.
         Also persist immediately to the current chain file.
-        
+
         Args:
             plugin_name: Name of the plugin
             config: Plugin configuration to save
@@ -178,33 +181,33 @@ class ConfigCoordinator:
                 self.unified_manager.save()
         except Exception as e:
             logger.error(f"Failed to persist chain configuration after plugin change: {e}")
-        
+
     def save_working_chain_config(self, save_to: Optional[str] = None) -> Path:
         """
         Save working plugin chain configuration.
-        
+
         Args:
             save_to: Optional file name to save chain (None for current file)
-        
+
         Returns:
             Path to saved chain file
         """
         chain_file = self.chain_manager.save_working_config(save_to)
-        
+
         # Update unified config to point at the active chain file
         chain_ref = self.chain_manager.get_chain_path()
         current_ref = self.unified_manager.get_plugin_chain_reference()
         if chain_ref and chain_ref != current_ref:
             self.unified_manager.set_plugin_chain_reference(chain_ref)
             self.unified_manager.save()
-        
+
         logger.info(f"Saved working plugin chain configuration")
         return chain_file
-    
+
     def create_chain_snapshot(self):
         """Create a snapshot of current plugin chain configuration for restore functionality."""
         self.chain_manager.create_snapshot()
-    
+
     def restore_chain_from_snapshot(self) -> Dict[str, Any]:
         """Restore plugin chain configuration from snapshot."""
         restored = self.chain_manager.restore_from_snapshot()
@@ -221,7 +224,7 @@ class ConfigCoordinator:
         except Exception as e:
             logger.error(f"Failed to persist chain configuration after snapshot restore: {e}")
         return restored
-    
+
     def has_unsaved_chain_changes(self) -> bool:
         """Check if there are unsaved changes in plugin chain configuration."""
         return self.chain_manager.has_unsaved_changes()

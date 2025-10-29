@@ -29,22 +29,30 @@ def temp_project(tmp_path: Path):
 
 def read_toml(path: Path):
     import tomllib
+
     with path.open("rb") as f:
         return tomllib.load(f)
 
 
 def test_add_plugin_persists_order(qapp, temp_project):
     from subtitleformatter.config.config_coordinator import ConfigCoordinator
-    from subtitleformatter.gui.components.plugin_management_panel import PluginManagementPanel
+    from subtitleformatter.gui.components.plugin_management_panel import (
+        PluginManagementPanel,
+    )
 
     coordinator = ConfigCoordinator(temp_project)
 
     panel = PluginManagementPanel()
     panel.set_config_coordinator(coordinator)
 
-    panel.update_available_plugins({
-        "builtin/text_cleaning": {"name": "builtin/text_cleaning", "description": "Text cleanup"},
-    })
+    panel.update_available_plugins(
+        {
+            "builtin/text_cleaning": {
+                "name": "builtin/text_cleaning",
+                "description": "Text cleanup",
+            },
+        }
+    )
 
     panel.available_list.setCurrentRow(0)
     panel.add_plugin_to_chain()
@@ -57,17 +65,21 @@ def test_add_plugin_persists_order(qapp, temp_project):
 
 def test_reorder_plugins_persists_order(qapp, temp_project):
     from subtitleformatter.config.config_coordinator import ConfigCoordinator
-    from subtitleformatter.gui.components.plugin_management_panel import PluginManagementPanel
+    from subtitleformatter.gui.components.plugin_management_panel import (
+        PluginManagementPanel,
+    )
 
     coordinator = ConfigCoordinator(temp_project)
 
     panel = PluginManagementPanel()
     panel.set_config_coordinator(coordinator)
 
-    panel.update_available_plugins({
-        "builtin/text_cleaning": {"name": "builtin/text_cleaning"},
-        "builtin/punctuation_adder": {"name": "builtin/punctuation_adder"},
-    })
+    panel.update_available_plugins(
+        {
+            "builtin/text_cleaning": {"name": "builtin/text_cleaning"},
+            "builtin/punctuation_adder": {"name": "builtin/punctuation_adder"},
+        }
+    )
 
     panel.available_list.setCurrentRow(0)
     panel.add_plugin_to_chain()
@@ -83,5 +95,3 @@ def test_reorder_plugins_persists_order(qapp, temp_project):
         "builtin/punctuation_adder",
         "builtin/text_cleaning",
     ]
-
-

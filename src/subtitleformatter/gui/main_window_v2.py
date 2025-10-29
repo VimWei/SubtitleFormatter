@@ -99,7 +99,6 @@ class MainWindowV2(QMainWindow):
         self.config_management.set_config_coordinator(self.config_coordinator)
         self.plugin_config.set_config_coordinator(self.config_coordinator)
 
-    
     def setup_ui(self):
         """设置主界面布局"""
         # 创建中央部件
@@ -182,13 +181,13 @@ class MainWindowV2(QMainWindow):
 
         # 文件处理面板
         self.file_processing = FileProcessingPanel(self)
-        
+
         # 创建插件链可视化组件
         self.plugin_chain_visualizer = PluginChainVisualizer(self)
-        
+
         # 将可视化组件设置到文件处理面板
         self.file_processing.set_plugin_chain_visualizer(self.plugin_chain_visualizer)
-        
+
         right_splitter.addWidget(self.file_processing)
 
         # 日志面板
@@ -307,22 +306,24 @@ class MainWindowV2(QMainWindow):
         except Exception as e:
             logger.error(f"Failed to select plugin from chain {plugin_name}: {e}")
 
-    def on_configuration_restored(self, unified_config: Dict[str, Any], chain_config: Dict[str, Any]):
+    def on_configuration_restored(
+        self, unified_config: Dict[str, Any], chain_config: Dict[str, Any]
+    ):
         """处理配置恢复事件"""
         try:
             # 更新文件处理配置
             file_config = unified_config.get("file_processing", {})
             self.file_processing.set_processing_config(file_config)
-            
+
             # 更新插件链配置
             plugin_order = chain_config.get("plugins", {}).get("order", [])
             self.plugin_management.update_plugin_chain(plugin_order)
-            
+
             # 重新创建快照
             self.config_coordinator.create_chain_snapshot()
-            
+
             logger.info("Configuration restored and UI updated")
-            
+
         except Exception as e:
             logger.error(f"Failed to update UI after configuration restore: {e}")
 
@@ -369,7 +370,7 @@ class MainWindowV2(QMainWindow):
         """处理插件配置变更事件"""
         try:
             logger.debug(f"Plugin config changed signal received: {plugin_name}")
-            
+
             # 更新插件配置
             if plugin_name in self.loaded_plugins:
                 self.loaded_plugins[plugin_name].config.update(config)
@@ -414,7 +415,7 @@ class MainWindowV2(QMainWindow):
         """加载配置"""
         try:
             config = self.config_coordinator.load_all_config()
-            
+
             # 设置日志级别
             log_level = config.get("unified", {}).get("logging", {}).get("level", "INFO")
             logger.set_log_level(log_level)
@@ -423,16 +424,19 @@ class MainWindowV2(QMainWindow):
                 self.log_panel.set_logging_level(log_level)
             except Exception:
                 pass
-            
+
             # 更新文件处理配置
             file_config = config.get("unified", {}).get("file_processing", {})
             self.file_processing.set_processing_config(file_config)
-            
+
             # 创建插件链配置快照用于 Restore Last 功能
             self.config_coordinator.create_chain_snapshot()
-            
+
             # 确保可用插件已经设置
-            if not hasattr(self.plugin_management, 'available_plugins') or not self.plugin_management.available_plugins:
+            if (
+                not hasattr(self.plugin_management, "available_plugins")
+                or not self.plugin_management.available_plugins
+            ):
                 # 重新获取可用插件
                 available_plugins = {}
                 for name in self.plugin_registry.list_plugins():
@@ -440,9 +444,9 @@ class MainWindowV2(QMainWindow):
                         available_plugins[name] = self.plugin_registry.get_plugin_metadata(name)
                     except Exception as e:
                         logger.warning(f"Failed to get metadata for plugin {name}: {e}")
-                
+
                 self.plugin_management.update_available_plugins(available_plugins)
-            
+
             # 更新插件链配置
             chain_config = config.get("plugin_chain", {})
             logger.debug(f"Chain config: {chain_config}")
@@ -451,9 +455,9 @@ class MainWindowV2(QMainWindow):
                 self.plugin_management.load_plugin_chain_config(chain_config)
             else:
                 logger.warning("No valid plugin chain configuration found")
-            
+
             logger.info("Configuration loaded successfully")
-            
+
         except Exception as e:
             logger.error(f"Failed to load configuration: {e}")
 
@@ -486,18 +490,18 @@ class MainWindowV2(QMainWindow):
             # 保存文件处理配置
             file_config = self.file_processing.get_processing_config()
             self.config_coordinator.set_file_processing_config(file_config)
-            
+
             # 持久化当前工作插件链配置到当前链文件（避免用独立插件配置重建并覆盖）
             try:
                 self.config_coordinator.save_working_chain_config()
             except Exception as e:
                 logger.error(f"Failed to persist working chain configuration: {e}")
-            
+
             # 保存所有配置
             self.config_coordinator.save_all_config()
-            
+
             logger.info("Configuration saved successfully")
-            
+
         except Exception as e:
             logger.error(f"Failed to save configuration: {e}")
 
@@ -505,19 +509,22 @@ class MainWindowV2(QMainWindow):
         """处理窗口关闭事件"""
         # 保存配置
         self.save_configuration()
-        
+
         # 如果有未保存的插件链配置变更，自动保存
-        if hasattr(self, 'config_coordinator') and self.config_coordinator.has_unsaved_chain_changes():
+        if (
+            hasattr(self, "config_coordinator")
+            and self.config_coordinator.has_unsaved_chain_changes()
+        ):
             try:
                 self.config_coordinator.save_working_chain_config()
                 logger.info("Auto-saved plugin chain configuration on exit")
             except Exception as e:
                 logger.error(f"Failed to auto-save plugin chain configuration: {e}")
-        
+
         # 停止插件生命周期
         if self.plugin_lifecycle:
             self.plugin_lifecycle.cleanup_all()
-        
+
         event.accept()
 
 

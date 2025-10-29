@@ -3,8 +3,8 @@
 Exposes `load_config` to consumers.
 """
 
-from .loader import create_config_from_args, load_config
 from .config_coordinator import ConfigCoordinator
+from .loader import create_config_from_args, load_config
 from .plugin_chain_manager import PluginChainManager
 from .plugin_config_manager import PluginConfigManager
 from .unified_config_manager import UnifiedConfigManager

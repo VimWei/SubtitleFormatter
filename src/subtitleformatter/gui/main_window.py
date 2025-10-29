@@ -596,7 +596,9 @@ class MainWindow(QMainWindow):
             # 立即持久化
             self._save_user_config(self._config)
             if hasattr(self, "log_panel"):
-                self.log_panel.append_log(f"Logging level set to {self._config['logging']['level']}")
+                self.log_panel.append_log(
+                    f"Logging level set to {self._config['logging']['level']}"
+                )
         except Exception:
             pass
 

@@ -10,14 +10,14 @@ Manages the unified configuration including:
 
 from __future__ import annotations
 
+import tomllib  # type: ignore
 from pathlib import Path
 from typing import Any, Dict, Optional
 
 import tomli_w  # type: ignore
-import tomllib  # type: ignore
 
-from ..utils.unified_logger import logger
 from ..utils.path_utils import normalize_path
+from ..utils.unified_logger import logger
 
 
 class UnifiedConfigManager:
@@ -34,7 +34,9 @@ class UnifiedConfigManager:
         self.project_root = project_root
         self.configs_dir = configs_dir
         self.latest_config_path = configs_dir / "config_latest.toml"
-        self.default_config_path = project_root / "src" / "subtitleformatter" / "config" / "default_config.toml"
+        self.default_config_path = (
+            project_root / "src" / "subtitleformatter" / "config" / "default_config.toml"
+        )
 
         self._config: Dict[str, Any] = {}
 
@@ -48,7 +50,9 @@ class UnifiedConfigManager:
             elif self.default_config_path.exists():
                 with self.default_config_path.open("rb") as f:
                     self._config = tomllib.load(f)
-                logger.info(f"Loaded default configuration from {normalize_path(self.default_config_path)}")
+                logger.info(
+                    f"Loaded default configuration from {normalize_path(self.default_config_path)}"
+                )
                 # Create latest config from default
                 self.save()
             else:
@@ -195,4 +199,3 @@ class UnifiedConfigManager:
                         pass
 
         return config
-

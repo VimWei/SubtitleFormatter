@@ -10,12 +10,12 @@ Manages plugin chain configurations including:
 from __future__ import annotations
 
 import os
+import tomllib  # type: ignore
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import tomli_w  # type: ignore
-import tomllib  # type: ignore
 
 from ..utils import normalize_path
 from ..utils.unified_logger import logger
@@ -37,7 +37,9 @@ class PluginChainManager:
         self.configs_dir = configs_dir
         self.plugin_chains_dir = configs_dir / "plugin_chains"
         self.plugins_dir = configs_dir / "plugins"
-        self.default_chain_path = project_root / "src" / "subtitleformatter" / "config" / "default_plugin_chain.toml"
+        self.default_chain_path = (
+            project_root / "src" / "subtitleformatter" / "config" / "default_plugin_chain.toml"
+        )
 
         # Ensure directories exist
         self.plugin_chains_dir.mkdir(parents=True, exist_ok=True)
@@ -47,18 +49,21 @@ class PluginChainManager:
 
         self.current_chain_file: Optional[Path] = None
         self.current_chain_config: Dict[str, Any] = {}
-        
+
         # Configuration state management
         self.config_state = ConfigState()
-    
+
     def _ensure_default_chain_exists(self):
         """Ensure default plugin chain file exists in user directory."""
         default_user_path = self.plugin_chains_dir / "default_plugin_chain.toml"
         if not default_user_path.exists() and self.default_chain_path.exists():
             try:
                 import shutil
+
                 shutil.copy2(self.default_chain_path, default_user_path)
-                logger.info(f"Initialized default plugin chain at {normalize_path(default_user_path)}")
+                logger.info(
+                    f"Initialized default plugin chain at {normalize_path(default_user_path)}"
+                )
             except Exception as e:
                 logger.error(f"Failed to initialize default chain: {e}")
 
@@ -78,10 +83,12 @@ class PluginChainManager:
 
         # Try to load from plugin_chains_dir
         chain_file = self.plugin_chains_dir / chain_path
-        
+
         # If file doesn't exist, try to copy from default
         if not chain_file.exists():
-            logger.info(f"Plugin chain file not found: {chain_file}, attempting to copy default chain")
+            logger.info(
+                f"Plugin chain file not found: {chain_file}, attempting to copy default chain"
+            )
             # Try to copy default chain
             if self._copy_default_chain_to_user_dir(chain_path):
                 chain_file = self.plugin_chains_dir / chain_path
@@ -101,11 +108,11 @@ class PluginChainManager:
 
         self.current_chain_file = chain_file
         config = self._load_chain_from_file(chain_file)
-        
+
         # Update configuration state
         chain_path_str = str(chain_file.relative_to(self.plugin_chains_dir))
         self.config_state.load_from_saved(config, chain_path_str)
-        
+
         return config
 
     def _load_default_chain(self) -> Dict[str, Any]:
@@ -119,12 +126,14 @@ class PluginChainManager:
                 return config
             except Exception as e:
                 logger.error(f"Failed to load default chain from user directory: {e}")
-        
+
         # Fallback to built-in default
         if self.default_chain_path.exists():
             try:
                 config = self._load_chain_from_file(self.default_chain_path)
-                logger.info(f"Loaded default plugin chain from built-in {normalize_path(self.default_chain_path)}")
+                logger.info(
+                    f"Loaded default plugin chain from built-in {normalize_path(self.default_chain_path)}"
+                )
                 return config
             except Exception as e:
                 logger.error(f"Failed to load built-in default chain: {e}")
@@ -155,37 +164,44 @@ class PluginChainManager:
 
     def _create_default_chain(self) -> Dict[str, Any]:
         """Create minimal default chain configuration."""
-        return {
-            "plugins": {
-                "order": []
-            },
-            "plugin_configs": {}
-        }
+        return {"plugins": {"order": []}, "plugin_configs": {}}
 
     def _copy_default_chain_to_user_dir(self, target_path: str) -> bool:
         """Copy default chain to user directory."""
         try:
             if self.default_chain_path.exists():
                 import shutil
+
                 target_file = self.plugin_chains_dir / target_path
                 target_file.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(self.default_chain_path, target_file)
-                
+
                 # Verify copy succeeded
                 if target_file.exists():
-                    logger.debug(f"Successfully copied default chain to {normalize_path(target_file)}")
+                    logger.debug(
+                        f"Successfully copied default chain to {normalize_path(target_file)}"
+                    )
                     return True
                 else:
-                    logger.error(f"Copy appeared to succeed but file not found: {normalize_path(target_file)}")
+                    logger.error(
+                        f"Copy appeared to succeed but file not found: {normalize_path(target_file)}"
+                    )
                     return False
             else:
-                logger.error(f"Default chain file not found: {normalize_path(self.default_chain_path)}")
+                logger.error(
+                    f"Default chain file not found: {normalize_path(self.default_chain_path)}"
+                )
                 return False
         except Exception as e:
             logger.error(f"Failed to copy default chain: {e}")
             return False
 
-    def save_chain(self, order: List[str], plugin_configs: Dict[str, Dict[str, Any]], chain_path: Optional[str] = None) -> Path:
+    def save_chain(
+        self,
+        order: List[str],
+        plugin_configs: Dict[str, Dict[str, Any]],
+        chain_path: Optional[str] = None,
+    ) -> Path:
         """
         Save plugin chain configuration.
 
@@ -203,12 +219,7 @@ class PluginChainManager:
 
         chain_file = self.plugin_chains_dir / chain_path
 
-        config = {
-            "plugins": {
-                "order": order
-            },
-            "plugin_configs": plugin_configs
-        }
+        config = {"plugins": {"order": order}, "plugin_configs": plugin_configs}
 
         try:
             chain_file.parent.mkdir(parents=True, exist_ok=True)
@@ -224,14 +235,11 @@ class PluginChainManager:
             logger.error(f"Failed to save chain file {normalize_path(chain_file)}: {e}")
             raise
 
-    def export_chain(self, output_path: Path, order: List[str], plugin_configs: Dict[str, Dict[str, Any]]):
+    def export_chain(
+        self, output_path: Path, order: List[str], plugin_configs: Dict[str, Dict[str, Any]]
+    ):
         """Export chain configuration to file."""
-        config = {
-            "plugins": {
-                "order": order
-            },
-            "plugin_configs": plugin_configs
-        }
+        config = {"plugins": {"order": order}, "plugin_configs": plugin_configs}
 
         try:
             output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -239,7 +247,9 @@ class PluginChainManager:
                 tomli_w.dump(config, f)
 
             logger.info(f"Exported plugin chain to {normalize_path(output_path)}")
-            logger.debug(f"[TRACE] export_chain: Set current_chain_file to {normalize_path(output_path)}")
+            logger.debug(
+                f"[TRACE] export_chain: Set current_chain_file to {normalize_path(output_path)}"
+            )
 
             # Set exported file as current chain file and update state
             self.current_chain_file = output_path
@@ -264,7 +274,9 @@ class PluginChainManager:
 
         # Set as current chain file
         self.current_chain_file = chain_file
-        logger.debug(f"[TRACE] import_chain: Set current_chain_file to {normalize_path(chain_file)}")
+        logger.debug(
+            f"[TRACE] import_chain: Set current_chain_file to {normalize_path(chain_file)}"
+        )
 
         # Load configuration
         config = self._load_chain_from_file(chain_file)
@@ -296,79 +308,89 @@ class PluginChainManager:
     def update_plugin_config_in_working(self, plugin_name: str, config: Dict[str, Any]):
         """
         Update plugin configuration in working configuration.
-        
+
         Args:
             plugin_name: Name of the plugin
             config: Plugin configuration to update
         """
         working_config = self.config_state.get_working_config()
-        
+
         # Ensure plugin_configs section exists
         if "plugin_configs" not in working_config:
             working_config["plugin_configs"] = {}
-        
+
         # Update plugin configuration
         working_config["plugin_configs"][plugin_name] = config.copy()
-        
+
         # Update working configuration
         self.config_state.update_working_config(working_config)
-        
+
         logger.debug(f"Updated plugin {plugin_name} config in working configuration")
-    
+
     def get_working_config(self) -> Dict[str, Any]:
         """Get current working configuration."""
         return self.config_state.get_working_config()
-    
+
     def save_working_config(self, save_to: Optional[str] = None) -> Path:
         """
         Save working configuration to file.
-        
+
         Args:
             save_to: Optional file name to save chain (None for current file)
-        
+
         Returns:
             Path to saved chain file
         """
         working_config = self.config_state.get_working_config()
-        
+
         if save_to is None:
             # Save to current file
             if self.current_chain_file:
                 chain_file = self.current_chain_file
-                logger.debug(f"[TRACE] save_working_config: Will write to current_chain_file {normalize_path(chain_file)}")
+                logger.debug(
+                    f"[TRACE] save_working_config: Will write to current_chain_file {normalize_path(chain_file)}"
+                )
             else:
                 # Save to latest chain file
                 chain_file = self.plugin_chains_dir / "chain_latest.toml"
-                logger.debug(f"[TRACE] save_working_config: current_chain_file is None, fallback to {normalize_path(chain_file)}")
+                logger.debug(
+                    f"[TRACE] save_working_config: current_chain_file is None, fallback to {normalize_path(chain_file)}"
+                )
         else:
             chain_file = self.plugin_chains_dir / save_to
-            logger.debug(f"[TRACE] save_working_config: Save to explicit file {normalize_path(chain_file)}")
-        
+            logger.debug(
+                f"[TRACE] save_working_config: Save to explicit file {normalize_path(chain_file)}"
+            )
+
         try:
             chain_file.parent.mkdir(parents=True, exist_ok=True)
             with chain_file.open("wb") as f:
                 tomli_w.dump(working_config, f)
-            
+
             # Update configuration state
             chain_path_str = str(chain_file.relative_to(self.plugin_chains_dir))
             self.config_state.save_working_config(chain_path_str)
-            
+
             self.current_chain_file = chain_file
             self.current_chain_config = working_config
-            logger.debug(f"[TRACE] save_working_config: Updated current_chain_file to {normalize_path(chain_file)}")
-            
+            logger.debug(
+                f"[TRACE] save_working_config: Updated current_chain_file to {normalize_path(chain_file)}"
+            )
+
             logger.info(f"Saved working configuration to {normalize_path(chain_file)}")
             return chain_file
-            
+
         except Exception as e:
-            logger.error(f"Failed to save working configuration to {normalize_path(chain_file)}: {e}")
+            logger.error(
+                f"Failed to save working configuration to {normalize_path(chain_file)}: {e}"
+            )
             raise
-    
+
     def create_snapshot(self):
         """Create a snapshot of current saved configuration for restore functionality."""
         self.config_state.create_snapshot()
         logger.debug("Created configuration snapshot")
-    
+
     def restore_from_snapshot(self) -> Dict[str, Any]:
         """Restore configuration from snapshot."""
         self.config_state.restore_from_snapshot()
@@ -385,11 +407,17 @@ class PluginChainManager:
             try:
                 # If snapshot_path was absolute or relative to configs_dir, normalize
                 if not candidate.exists():
-                    candidate = (self.configs_dir / snapshot_path) if not Path(snapshot_path).is_absolute() else Path(snapshot_path)
+                    candidate = (
+                        (self.configs_dir / snapshot_path)
+                        if not Path(snapshot_path).is_absolute()
+                        else Path(snapshot_path)
+                    )
             except Exception:
                 candidate = Path(snapshot_path)
             self.current_chain_file = candidate
-            logger.debug(f"[TRACE] restore_from_snapshot: Switched current_chain_file to {normalize_path(self.current_chain_file)}")
+            logger.debug(
+                f"[TRACE] restore_from_snapshot: Switched current_chain_file to {normalize_path(self.current_chain_file)}"
+            )
 
         # Strong consistency: write restored configuration back to the current chain file
         try:
@@ -409,22 +437,21 @@ class PluginChainManager:
             logger.error(f"Failed to persist restored configuration to chain file: {e}")
 
         return self.current_chain_config
-    
+
     def has_unsaved_changes(self) -> bool:
         """Check if there are unsaved changes."""
         return self.config_state.has_unsaved_changes()
-    
+
     def get_plugin_config_from_working(self, plugin_name: str) -> Dict[str, Any]:
         """
         Get plugin configuration from working configuration.
-        
+
         Args:
             plugin_name: Name of the plugin
-            
+
         Returns:
             Plugin configuration from working config, or empty dict if not found
         """
         working_config = self.config_state.get_working_config()
         plugin_configs = working_config.get("plugin_configs", {})
         return plugin_configs.get(plugin_name, {})
-

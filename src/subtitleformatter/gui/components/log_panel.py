@@ -1,11 +1,20 @@
 from __future__ import annotations
 
 from PySide6.QtCore import Signal
-from PySide6.QtWidgets import QHBoxLayout, QLabel, QComboBox, QPushButton, QTextEdit, QVBoxLayout, QWidget
+from PySide6.QtWidgets import (
+    QComboBox,
+    QHBoxLayout,
+    QLabel,
+    QPushButton,
+    QTextEdit,
+    QVBoxLayout,
+    QWidget,
+)
 
 
 class LogPanel(QWidget):
     levelChanged = Signal(str)
+
     def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
 

@@ -7,7 +7,9 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+
+# 避免循环导入
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
@@ -30,8 +32,6 @@ from PySide6.QtWidgets import (
 
 from subtitleformatter.utils.unified_logger import logger
 
-# 避免循环导入
-from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .plugin_chain_visualizer import PluginChainVisualizer
 
@@ -60,7 +60,7 @@ class FileProcessingPanel(QWidget):
         """设置界面"""
         # 设置大小策略，使面板紧凑显示，只占用必要的高度
         self.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Minimum)
-        
+
         layout = QVBoxLayout(self)
         layout.setContentsMargins(4, 4, 4, 4)
         layout.setSpacing(12)
@@ -106,10 +106,10 @@ class FileProcessingPanel(QWidget):
         self.flow_group = QWidget()
         flow_layout = QVBoxLayout(self.flow_group)
         flow_layout.setContentsMargins(0, 0, 0, 0)
-        
+
         # 延迟创建PluginChainVisualizer以避免循环导入
         flow_layout.addWidget(QLabel("Processing flow will be initialized..."))
-        
+
         layout.addWidget(self.flow_group)
 
         # 处理控制部分 - 直接使用垂直布局

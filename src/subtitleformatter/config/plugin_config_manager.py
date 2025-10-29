@@ -9,11 +9,11 @@ Manages individual plugin configurations including:
 
 from __future__ import annotations
 
+import tomllib  # type: ignore
 from pathlib import Path
 from typing import Any, Dict, Optional
 
 import tomli_w  # type: ignore
-import tomllib  # type: ignore
 
 from ..utils.unified_logger import logger
 
@@ -92,37 +92,39 @@ class PluginConfigManager:
             if not self.plugin_registry:
                 # Import here to avoid circular imports
                 from ..plugins.base.plugin_registry import PluginRegistry
-                
+
                 # Create and initialize plugin registry
                 self.plugin_registry = PluginRegistry()
                 self.plugin_registry.add_plugin_dir(self.project_root / "plugins")
                 self.plugin_registry.scan_plugins()
-            
+
             # Get plugin metadata
             metadata = self.plugin_registry.get_plugin_metadata(plugin_name)
             if not metadata:
-                logger.error(f"Plugin metadata not found for {plugin_name} - this should not happen!")
+                logger.error(
+                    f"Plugin metadata not found for {plugin_name} - this should not happen!"
+                )
                 raise ValueError(f"Plugin metadata not found for {plugin_name}")
-            
+
             # Extract default values from config_schema
             config_schema = metadata.get("config_schema")
             if not config_schema:
                 logger.info(f"Plugin {plugin_name} has no config_schema - no configuration needed")
                 return {}
-            
+
             properties = config_schema.get("properties", {})
             default_config = {}
-            
+
             for prop_name, prop_config in properties.items():
                 if "default" in prop_config:
                     default_config[prop_name] = prop_config["default"]
-            
+
             if not default_config:
                 logger.info(f"Plugin {plugin_name} has no default configuration parameters")
             else:
                 logger.debug(f"Extracted default config for {plugin_name}: {default_config}")
             return default_config
-            
+
         except Exception as e:
             logger.error(f"Failed to get default config for plugin {plugin_name}: {e}")
             return {}
@@ -204,4 +206,3 @@ class PluginConfigManager:
                 logger.error(f"Failed to delete config for plugin {plugin_name}: {e}")
         else:
             logger.warning(f"Config file not found for plugin {plugin_name}")
-

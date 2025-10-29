@@ -7,7 +7,7 @@ These modules are kept ONLY for backward compatibility with the old TextProcesso
 
 Migration Guide:
 - TextCleaner → Use plugins/builtin/text_cleaning
-- SentenceHandler → Use plugins/builtin/sentence_splitting  
+- SentenceHandler → Use plugins/builtin/sentence_splitting
 - FillerRemover → Use plugins/builtin/filler_removal
 - LineBreaker → Use plugins/builtin/line_breaking
 

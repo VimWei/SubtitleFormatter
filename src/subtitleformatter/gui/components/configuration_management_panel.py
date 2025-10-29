@@ -18,8 +18,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from subtitleformatter.utils.unified_logger import logger
 from subtitleformatter.utils.path_utils import normalize_path
+from subtitleformatter.utils.unified_logger import logger
 
 
 class ConfigurationManagementPanel(QWidget):
@@ -46,7 +46,8 @@ class ConfigurationManagementPanel(QWidget):
 
         # 配置管理组
         config_group = QGroupBox("Configuration Management")
-        config_group.setStyleSheet("""
+        config_group.setStyleSheet(
+            """
             QGroupBox {
                 font-weight: bold;
                 font-size: 16px;
@@ -61,46 +62,53 @@ class ConfigurationManagementPanel(QWidget):
                 left: 10px;
                 padding: 0 5px 0 5px;
             }
-        """)
+        """
+        )
         config_layout = QVBoxLayout(config_group)
-        
+
         # 添加上方弹性空间，让按钮在QGroupBox中垂直居中
         config_layout.addStretch()
 
         # 配置按钮行 - 四个按钮在一行
         config_row = QHBoxLayout()
-        
+
         # 按指定顺序添加按钮：Restore Last、Restore Default、Import Config、Export Config
         self.restore_last_btn = QPushButton("Restore Last")
         self.restore_last_btn.clicked.connect(self.restore_last_configuration)
         self.restore_last_btn.setMinimumHeight(40)
         self.restore_last_btn.setStyleSheet("font-size: 14px; font-weight: 500; padding: 8px 16px;")
-        
+
         self.restore_default_btn = QPushButton("Restore Default")
         self.restore_default_btn.clicked.connect(self.restore_default_configuration)
         self.restore_default_btn.setMinimumHeight(40)
-        self.restore_default_btn.setStyleSheet("font-size: 14px; font-weight: 500; padding: 8px 16px;")
-        
+        self.restore_default_btn.setStyleSheet(
+            "font-size: 14px; font-weight: 500; padding: 8px 16px;"
+        )
+
         self.import_config_btn = QPushButton("Import Config")
         self.import_config_btn.clicked.connect(self.import_configuration)
         self.import_config_btn.setMinimumHeight(40)
-        self.import_config_btn.setStyleSheet("font-size: 14px; font-weight: 500; padding: 8px 16px;")
-        
+        self.import_config_btn.setStyleSheet(
+            "font-size: 14px; font-weight: 500; padding: 8px 16px;"
+        )
+
         self.export_config_btn = QPushButton("Export Config")
         self.export_config_btn.clicked.connect(self.export_configuration)
         self.export_config_btn.setMinimumHeight(40)
-        self.export_config_btn.setStyleSheet("font-size: 14px; font-weight: 500; padding: 8px 16px;")
-        
+        self.export_config_btn.setStyleSheet(
+            "font-size: 14px; font-weight: 500; padding: 8px 16px;"
+        )
+
         config_row.addWidget(self.restore_last_btn)
         config_row.addWidget(self.restore_default_btn)
         config_row.addWidget(self.import_config_btn)
         config_row.addWidget(self.export_config_btn)
 
         config_layout.addLayout(config_row)
-        
+
         # 添加下方弹性空间，让按钮在QGroupBox中垂直居中
         config_layout.addStretch()
-        
+
         layout.addWidget(config_group)
 
         self.setLayout(layout)
@@ -114,21 +122,21 @@ class ConfigurationManagementPanel(QWidget):
         if not self.config_coordinator:
             logger.error("Configuration coordinator not set")
             return
-            
+
         # 设置默认目录为 data/configs
         default_dir = Path("data/configs")
         if not default_dir.exists():
             default_dir.mkdir(parents=True, exist_ok=True)
-        
+
         file_path, _ = QFileDialog.getOpenFileName(
             self, "Import Configuration", str(default_dir), "TOML Files (*.toml);;All Files (*)"
         )
-        
+
         if file_path:
             try:
                 config = self.config_coordinator.import_unified_config(Path(file_path))
                 logger.debug(f"Imported configuration from {normalize_path(file_path)}")
-                
+
             except Exception as e:
                 logger.error(f"Failed to import configuration: {e}")
 
@@ -137,21 +145,21 @@ class ConfigurationManagementPanel(QWidget):
         if not self.config_coordinator:
             logger.error("Configuration coordinator not set")
             return
-            
+
         # 设置默认目录为 data/configs
         default_dir = Path("data/configs")
         if not default_dir.exists():
             default_dir.mkdir(parents=True, exist_ok=True)
-        
+
         file_path, _ = QFileDialog.getSaveFileName(
             self, "Export Configuration", str(default_dir), "TOML Files (*.toml);;All Files (*)"
         )
-        
+
         if file_path:
             try:
                 self.config_coordinator.export_unified_config(Path(file_path))
                 logger.debug(f"Exported configuration to {normalize_path(file_path)}")
-                
+
             except Exception as e:
                 logger.error(f"Failed to export configuration: {e}")
 
@@ -160,20 +168,20 @@ class ConfigurationManagementPanel(QWidget):
         if not self.config_coordinator:
             logger.error("Configuration coordinator not set")
             return
-            
+
         try:
             # 恢复插件链配置从快照
             chain_config = self.config_coordinator.restore_chain_from_snapshot()
-            
+
             # 恢复统一配置
             unified_config = self.config_coordinator.restore_last_config()
-            
+
             logger.info("Restored configuration to last saved state")
-            
+
             # 通知主窗口更新界面
-            if hasattr(self.parent(), 'on_configuration_restored'):
+            if hasattr(self.parent(), "on_configuration_restored"):
                 self.parent().on_configuration_restored(unified_config, chain_config)
-            
+
         except Exception as e:
             logger.error(f"Failed to restore configuration: {e}")
 
@@ -182,10 +190,10 @@ class ConfigurationManagementPanel(QWidget):
         if not self.config_coordinator:
             logger.error("Configuration coordinator not set")
             return
-            
+
         try:
             config = self.config_coordinator.restore_default_config()
             logger.info("Restored configuration to default")
-            
+
         except Exception as e:
             logger.error(f"Failed to restore default configuration: {e}")

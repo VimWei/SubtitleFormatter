@@ -276,14 +276,14 @@ class PluginChainCanvas(QWidget):
                 next_row_start_idx = next_row * nodes_per_row
                 next_row_end_idx = min(next_row_start_idx + nodes_per_row, len(self.plugin_chain))
                 next_row_widths = node_widths[next_row_start_idx:next_row_end_idx]
-                
+
                 next_row_total_width = sum(next_row_widths)
                 if len(next_row_widths) > 1:
                     next_row_total_width += (len(next_row_widths) - 1) * (spacing + arrow_width)
-                
+
                 next_start_x = (self.width() - next_row_total_width) // 2
                 next_y = start_y + next_row * (node_height + spacing)
-                
+
                 # 绘制拐弯箭头
                 self.draw_bent_arrow(
                     painter,
@@ -418,7 +418,7 @@ class PluginChainCanvas(QWidget):
         end_y: int,
     ):
         """绘制拐弯箭头（从一行的最后一个节点到下一行的第一个节点）
-        
+
         箭头路径根据节点位置自适应：向下 -> 水平 -> 向上
         """
         painter.setPen(QPen(QColor("#666"), 2))
@@ -427,16 +427,16 @@ class PluginChainCanvas(QWidget):
         if end_y < start_y:
             # 目标在上方：向下 -> 水平 -> 向上
             total_height = start_y - end_y
-            
+
             # 第一段向下
             down_dist = total_height // 3
             mid_y = start_y + down_dist
-            
+
             # 绘制路径
             painter.drawLine(start_x, start_y, start_x, mid_y)  # 向下
-            painter.drawLine(start_x, mid_y, end_x, mid_y)      # 水平移动
-            painter.drawLine(end_x, mid_y, end_x, end_y)         # 向上连接到终点
-            
+            painter.drawLine(start_x, mid_y, end_x, mid_y)  # 水平移动
+            painter.drawLine(end_x, mid_y, end_x, end_y)  # 向上连接到终点
+
             # 箭头向上 - 使用线段风格，与其他箭头一致
             arrow_size = 8
             x1 = end_x - arrow_size // 2
@@ -448,16 +448,16 @@ class PluginChainCanvas(QWidget):
         elif end_y > start_y:
             # 目标在下方：继续向下 -> 水平 -> 继续向下
             total_height = end_y - start_y
-            
+
             # 第一段向下
             down_dist = total_height // 2
             mid_y = start_y + down_dist
-            
+
             # 绘制路径
             painter.drawLine(start_x, start_y, start_x, mid_y)  # 继续向下
-            painter.drawLine(start_x, mid_y, end_x, mid_y)      # 水平移动
-            painter.drawLine(end_x, mid_y, end_x, end_y)         # 继续向下连接到终点
-            
+            painter.drawLine(start_x, mid_y, end_x, mid_y)  # 水平移动
+            painter.drawLine(end_x, mid_y, end_x, end_y)  # 继续向下连接到终点
+
             # 箭头向下 - 使用线段风格，与其他箭头一致
             arrow_size = 8
             x1 = end_x - arrow_size // 2

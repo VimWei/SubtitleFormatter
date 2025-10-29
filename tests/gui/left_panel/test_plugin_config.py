@@ -29,14 +29,16 @@ def temp_project(tmp_path: Path):
 
 def read_toml(path: Path):
     import tomllib
+
     with path.open("rb") as f:
         return tomllib.load(f)
 
 
 def test_save_to_plugins_dir_when_source_is_available(qapp, temp_project):
+    from PySide6.QtWidgets import QSpinBox
+
     from subtitleformatter.config.config_coordinator import ConfigCoordinator
     from subtitleformatter.gui.components.plugin_config_panel import PluginConfigPanel
-    from PySide6.QtWidgets import QSpinBox
 
     coordinator = ConfigCoordinator(temp_project)
 
@@ -61,9 +63,10 @@ def test_save_to_plugins_dir_when_source_is_available(qapp, temp_project):
 
 
 def test_save_to_chain_when_source_is_plugin_chain(qapp, temp_project):
+    from PySide6.QtWidgets import QSpinBox
+
     from subtitleformatter.config.config_coordinator import ConfigCoordinator
     from subtitleformatter.gui.components.plugin_config_panel import PluginConfigPanel
-    from PySide6.QtWidgets import QSpinBox
 
     coordinator = ConfigCoordinator(temp_project)
 
@@ -91,7 +94,9 @@ def test_reset_defaults_sources_from_plugin_json(qapp, temp_project):
     from subtitleformatter.config.config_coordinator import ConfigCoordinator
     from subtitleformatter.gui.components.plugin_config_panel import PluginConfigPanel
     from subtitleformatter.plugins import PluginRegistry
-    from subtitleformatter.utils.plugin_config_utils import get_plugin_default_config_from_json
+    from subtitleformatter.utils.plugin_config_utils import (
+        get_plugin_default_config_from_json,
+    )
 
     coordinator = ConfigCoordinator(temp_project)
 
@@ -126,5 +131,3 @@ def test_reset_defaults_sources_from_plugin_json(qapp, temp_project):
     chain = read_toml(chain_file)
     for k, v in defaults.items():
         assert chain["plugin_configs"][plugin_name].get(k) == v
-
-

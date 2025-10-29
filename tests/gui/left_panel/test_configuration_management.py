@@ -29,12 +29,14 @@ def temp_project(tmp_path: Path):
 
 def read_toml(path: Path):
     import tomllib
+
     with path.open("rb") as f:
         return tomllib.load(f)
 
 
 def write_toml(path: Path, data: dict):
     from tomli_w import dump as toml_dump  # type: ignore
+
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("wb") as f:
         toml_dump(data, f)
@@ -64,9 +66,10 @@ def test_export_and_import_plugin_chain(qapp, temp_project):
 
 
 def test_export_and_import_unified_config(qapp, temp_project):
+    from tomli_w import dump as toml_dump  # type: ignore
+
     from subtitleformatter.config.config_coordinator import ConfigCoordinator
     from subtitleformatter.config.unified_config_manager import UnifiedConfigManager
-    from tomli_w import dump as toml_dump  # type: ignore
 
     coordinator = ConfigCoordinator(temp_project)
 
@@ -153,5 +156,3 @@ def test_restore_default_writes_back_chain(qapp, temp_project):
 
     # Assert that current chain file is the user default and content matches default
     assert read_toml(default_user_chain)["plugins"]["order"] == ["builtin/text_cleaning"]
-
-
