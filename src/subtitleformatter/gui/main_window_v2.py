@@ -10,7 +10,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from PySide6.QtCore import Qt, QThread, Signal
+from PySide6.QtCore import Qt
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (
     QApplication,
@@ -30,6 +30,7 @@ from PySide6.QtWidgets import (
 
 from subtitleformatter.config import ConfigCoordinator
 from subtitleformatter.plugins import PluginLifecycleManager, PluginRegistry
+from .threads.processing_thread import ProcessingThread
 from subtitleformatter.utils.unified_logger import logger
 from subtitleformatter.version import get_app_title
 
@@ -752,87 +753,6 @@ class MainWindowV2(QMainWindow):
             self.plugin_lifecycle.cleanup_all()
 
         event.accept()
-
-
-class ProcessingThread(QThread):
-    """处理线程"""
-
-    progress = Signal(int, str)
-    log = Signal(str)
-    finished = Signal(bool, str)
-
-    def __init__(self, config: Dict, plugin_lifecycle: PluginLifecycleManager):
-        super().__init__()
-        self.config = config
-        self.plugin_lifecycle = plugin_lifecycle
-
-    def run(self):
-        """运行处理逻辑"""
-        try:
-            import traceback
-            from subtitleformatter.utils.unified_logger import logger as _ul
-            self.log.emit("Starting text processing...")
-
-            # 验证配置
-            if not self.config:
-                self.finished.emit(False, "Processing failed: No configuration provided")
-                return
-
-            # 检查是否使用插件系统
-            if self.config.get("plugins") and self.config.get("plugins", {}).get("order"):
-                # 使用插件系统
-                try:
-                    from subtitleformatter.processors.plugin_text_processor import (
-                        PluginTextProcessor,
-                    )
-                    processor = PluginTextProcessor(self.config)
-                    self.log.emit("Using plugin-based processing system")
-                except Exception as e:
-                    if getattr(_ul, "log_level", "INFO") == "DEBUG":
-                        error_msg = f"Failed to initialize PluginTextProcessor: {e}\n{traceback.format_exc()}"
-                    else:
-                        error_msg = f"Failed to initialize PluginTextProcessor: {e}"
-                    self.log.emit(f"ERROR: {error_msg}")
-                    self.finished.emit(False, error_msg)
-                    return
-            else:
-                # 使用传统处理器
-                try:
-                    from subtitleformatter.processors.text_processor import TextProcessor
-                    processor = TextProcessor(self.config)
-                    self.log.emit("Using legacy processing system")
-                except Exception as e:
-                    if getattr(_ul, "log_level", "INFO") == "DEBUG":
-                        error_msg = f"Failed to initialize TextProcessor: {e}\n{traceback.format_exc()}"
-                    else:
-                        error_msg = f"Failed to initialize TextProcessor: {e}"
-                    self.log.emit(f"ERROR: {error_msg}")
-                    self.finished.emit(False, error_msg)
-                    return
-
-            # 执行处理
-            try:
-                processor.process()
-                self.finished.emit(True, "Processing completed successfully")
-            except Exception as e:
-                if getattr(_ul, "log_level", "INFO") == "DEBUG":
-                    error_msg = f"Processing failed: {e}\n{traceback.format_exc()}"
-                else:
-                    error_msg = f"Processing failed: {e}"
-                self.log.emit(f"ERROR: {error_msg}")
-                self.finished.emit(False, error_msg)
-
-        except Exception as e:
-            if getattr(_ul, "log_level", "INFO") == "DEBUG":
-                error_msg = f"Unexpected error in processing thread: {e}\n{traceback.format_exc()}"
-            else:
-                error_msg = f"Unexpected error in processing thread: {e}"
-            try:
-                self.log.emit(f"ERROR: {error_msg}")
-                self.finished.emit(False, error_msg)
-            except:
-                # If even emitting signals fails, we can't do much
-                pass
 
 
 def run_gui_v2() -> None:
