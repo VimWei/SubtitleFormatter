@@ -44,9 +44,9 @@ class TestPunctuationAdderPlugin:
         assert self.plugin.name == "builtin/punctuation_adder"
         assert self.plugin.version == "1.0.0"
         assert self.plugin.enabled is True
-        assert self.plugin.model_name == "oliverguhr/fullstop-punctuation-multilang-large"
-        assert self.plugin.capitalize_sentences is True
-        assert self.plugin.split_sentences is True
+        # 默认不分句、不首字母大写（遵循 plugin.json）
+        assert self.plugin.capitalize_sentences is False
+        assert self.plugin.split_sentences is False
         assert self.plugin.replace_dashes is True
 
     def test_plugin_disabled(self):
@@ -59,14 +59,12 @@ class TestPunctuationAdderPlugin:
     def test_custom_config(self):
         """测试自定义配置"""
         config = {
-            "model_name": "custom-model",
             "capitalize_sentences": False,
             "split_sentences": False,
             "replace_dashes": False,
         }
         plugin = PunctuationAdderPlugin(config)
 
-        assert plugin.model_name == "custom-model"
         assert plugin.capitalize_sentences is False
         assert plugin.split_sentences is False
         assert plugin.replace_dashes is False
@@ -111,25 +109,33 @@ class TestPunctuationAdderPlugin:
         self.mock_model.restore_punctuation.return_value = "Hello world. How are you?"
 
         text = "hello world how are you"
+        # 使用开启分句与首字母大写的配置
+        plugin = PunctuationAdderPlugin({"split_sentences": True, "capitalize_sentences": True})
+        plugin._model = self.mock_model
+        plugin._model_loaded = True
         # 模拟模型输出
         self.mock_model.restore_punctuation.return_value = "Hello world. How are you?"
-        result = self.plugin.process(text)
+        result = plugin.process(text)
 
         self.mock_model.restore_punctuation.assert_called_once_with(text)
         assert result == "Hello world.\nHow are you?"
 
     def test_capitalize_sentences_enabled(self):
         """测试启用句子首字母大写"""
+        # 使用开启分句与首字母大写的配置
+        plugin = PunctuationAdderPlugin({"split_sentences": True, "capitalize_sentences": True})
+        plugin._model = self.mock_model
+        plugin._model_loaded = True
         text = "hello world. how are you?"
         # 模拟模型输出
         self.mock_model.restore_punctuation.return_value = "hello world. how are you?"
-        result = self.plugin.process(text)
+        result = plugin.process(text)
         expected = "Hello world.\nHow are you?"
         assert result == expected
 
     def test_capitalize_sentences_disabled(self):
         """测试禁用句子首字母大写"""
-        plugin = PunctuationAdderPlugin({"capitalize_sentences": False})
+        plugin = PunctuationAdderPlugin({"capitalize_sentences": False, "split_sentences": True})
         text = "hello world. how are you?"
         # 模拟模型输出
         self.mock_model.restore_punctuation.return_value = "hello world. how are you?"
@@ -138,10 +144,13 @@ class TestPunctuationAdderPlugin:
 
     def test_split_sentences_enabled(self):
         """测试启用句子分割"""
+        plugin = PunctuationAdderPlugin({"split_sentences": True, "capitalize_sentences": True})
+        plugin._model = self.mock_model
+        plugin._model_loaded = True
         text = "Hello world. How are you? I am fine!"
         # 模拟模型输出
         self.mock_model.restore_punctuation.return_value = "Hello world. How are you? I am fine!"
-        result = self.plugin.process(text)
+        result = plugin.process(text)
         expected = "Hello world.\nHow are you?\nI am fine!"
         assert result == expected
 
@@ -170,21 +179,28 @@ class TestPunctuationAdderPlugin:
 
     def test_process_single_text(self):
         """测试处理单个文本"""
+        # 使用开启分句与首字母大写的配置
+        plugin = PunctuationAdderPlugin({"split_sentences": True, "capitalize_sentences": True})
+        plugin._model = self.mock_model
+        plugin._model_loaded = True
         # 模拟模型输出
         self.mock_model.restore_punctuation.return_value = "Hello world. How are you?"
 
         text = "hello world how are you"
-        result = self.plugin.process(text)
+        result = plugin.process(text)
         expected = "Hello world.\nHow are you?"
         assert result == expected
 
     def test_process_single_text_with_dash_replacement(self):
         """测试处理包含破折号的文本"""
         # 模拟模型输出
+        plugin = PunctuationAdderPlugin({"split_sentences": True, "capitalize_sentences": True})
+        plugin._model = self.mock_model
+        plugin._model_loaded = True
         self.mock_model.restore_punctuation.return_value = "Hello world - how are you?"
 
         text = "hello world how are you"
-        result = self.plugin.process(text)
+        result = plugin.process(text)
         expected = "Hello world, how are you?"
         assert result == expected
 
@@ -204,11 +220,14 @@ class TestPunctuationAdderPlugin:
 
     def test_process_list(self):
         """测试处理文本列表"""
+        plugin = PunctuationAdderPlugin({"split_sentences": True, "capitalize_sentences": True})
+        plugin._model = self.mock_model
+        plugin._model_loaded = True
         # 模拟模型输出
         self.mock_model.restore_punctuation.return_value = "Hello world. How are you?"
 
         text_list = ["hello world", "how are you"]
-        result = self.plugin.process(text_list)
+        result = plugin.process(text_list)
         expected = ["Hello world.\nHow are you?", "Hello world.\nHow are you?"]
         assert result == expected
 
@@ -252,13 +271,16 @@ class TestPunctuationAdderPlugin:
 
     def test_complex_text_processing(self):
         """测试复杂文本处理"""
+        plugin = PunctuationAdderPlugin({"split_sentences": True, "capitalize_sentences": True})
+        plugin._model = self.mock_model
+        plugin._model_loaded = True
         # 模拟模型输出
         self.mock_model.restore_punctuation.return_value = (
             "Hello world - how are you? I am fine - thank you!"
         )
 
         text = "hello world how are you i am fine thank you"
-        result = self.plugin.process(text)
+        result = plugin.process(text)
         expected = "Hello world, how are you?\nI am fine, thank you!"
         assert result == expected
 
@@ -276,9 +298,12 @@ class TestPunctuationAdderPlugin:
         ]
 
         for input_text, expected in test_cases:
+            plugin = PunctuationAdderPlugin({"split_sentences": True, "capitalize_sentences": True})
+            plugin._model = self.mock_model
+            plugin._model_loaded = True
             # 模拟模型输出
             self.mock_model.restore_punctuation.return_value = input_text
-            result = self.plugin.process(input_text)
+            result = plugin.process(input_text)
             assert result == expected, f"输入: {input_text}, 期望: {expected}, 实际: {result}"
 
     def test_dash_replacement_edge_cases(self):
@@ -313,24 +338,25 @@ class TestPunctuationAdderPlugin:
         ]
 
         for input_text, expected in test_cases:
+            plugin = PunctuationAdderPlugin({"split_sentences": True, "capitalize_sentences": True})
+            plugin._model = self.mock_model
+            plugin._model_loaded = True
             # 模拟模型输出
             self.mock_model.restore_punctuation.return_value = input_text
-            result = self.plugin.process(input_text)
+            result = plugin.process(input_text)
             assert result == expected, f"输入: {input_text}, 期望: {expected}, 实际: {result}"
 
     def test_config_validation(self):
         """测试配置验证"""
-        # 测试有效配置
+        # 测试有效配置（不再支持 model_name 字段）
         valid_config = {
             "enabled": True,
-            "model_name": "custom-model",
             "capitalize_sentences": False,
             "split_sentences": False,
             "replace_dashes": False,
         }
         plugin = PunctuationAdderPlugin(valid_config)
         assert plugin.enabled is True
-        assert plugin.model_name == "custom-model"
         assert plugin.capitalize_sentences is False
 
 
