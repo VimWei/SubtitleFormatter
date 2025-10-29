@@ -30,6 +30,8 @@ from PySide6.QtWidgets import (
 
 from subtitleformatter.config import ConfigCoordinator
 from subtitleformatter.plugins import PluginLifecycleManager, PluginRegistry
+from subtitleformatter.runtime.plugin_runtime import initialize_plugin_system as runtime_init_plugins
+from subtitleformatter.runtime.config_materializer import materialize_runtime_config
 from .threads.processing_thread import ProcessingThread
 from subtitleformatter.utils.unified_logger import logger
 from subtitleformatter.version import get_app_title
@@ -221,35 +223,11 @@ class MainWindowV2(QMainWindow):
         return panel
 
     def initialize_plugin_system(self):
-        """初始化插件系统"""
+        """初始化插件系统（委托 runtime 层）"""
         try:
-            logger.info(f"Initializing plugin system in {self.project_root}")
-
-            # 添加插件目录 - 自动扫描所有子目录
-            plugin_dir = self.project_root / "plugins"
-            if plugin_dir.exists():
-                self.plugin_registry.add_plugin_dir(plugin_dir)
-                logger.info(f"Added plugin directory: {plugin_dir}")
-
-            # 扫描插件
-            logger.info("Scanning plugins...")
-            self.plugin_registry.scan_plugins()
-
-            # 插件统计（精简输出）
-            plugin_names = self.plugin_registry.list_plugins()
-            logger.info(f"Found {len(plugin_names)} plugins")
-            logger.debug(f"Plugin names: {plugin_names}")
-
-            # 创建生命周期管理器
-            self.plugin_lifecycle = PluginLifecycleManager(self.plugin_registry)
-
-            # 设置插件配置面板的注册表
-            self.plugin_config.set_plugin_registry(self.plugin_registry)
-
-            # 更新插件管理界面
-            self.update_plugin_management_ui()
-            logger.info("Plugin system initialized successfully")
-
+            self.plugin_lifecycle = runtime_init_plugins(
+                self.project_root, self.plugin_registry, self.plugin_config, self.plugin_management
+            )
         except Exception as e:
             logger.error(f"Failed to initialize plugin system: {e}")
 
@@ -384,71 +362,26 @@ class MainWindowV2(QMainWindow):
             logger.error(f"Failed to update plugin chain: {e}")
 
     def on_format_requested(self):
-        """处理格式化请求"""
+        """处理格式化请求（委托 runtime 组装 full_config）"""
         try:
-            # 获取文件处理配置（从协调器）
-            unified_cfg = self.config_coordinator.unified_manager.get_config()
-            file_config = unified_cfg.get("file_processing", {})
+            from subtitleformatter.runtime.config_materializer import materialize_runtime_config
 
-            # 转换为 processor 期望的配置格式
-            # 解析路径（相对路径转为绝对路径）
-            input_file = file_config.get("input_file", "").strip()
-            output_file = file_config.get("output_file", "").strip()
-            
-            # 验证输入文件
-            if not input_file:
+            full_config = materialize_runtime_config(
+                self.project_root, self.config_coordinator, self.plugin_management
+            )
+
+            # GUI 负责最小校验与提示
+            paths = full_config.get("paths", {})
+            if not paths.get("input_file"):
                 QMessageBox.warning(self, "Processing Error", "Please select an input file first.")
                 return
-            
-            # 如果输入文件路径是相对路径，解析为绝对路径
-            try:
-                input_path = Path(input_file)
-                if not input_path.is_absolute():
-                    # 直接拼接，不进行 resolve 以避免可能的阻塞
-                    # 如果路径不存在，将在处理器中处理
-                    input_file = str(self.project_root / input_file)
-            except Exception as e:
-                QMessageBox.critical(self, "Processing Error", f"Invalid input file path: {input_file}\n{str(e)}")
-                return
-            
-            # 验证输出文件
-            if not output_file:
+            if not paths.get("output_file"):
                 QMessageBox.warning(self, "Processing Error", "Please select an output file.")
                 return
-            
-            # 如果输出文件路径是相对路径，解析为绝对路径
-            try:
-                output_path = Path(output_file)
-                if not output_path.is_absolute():
-                    # 直接拼接，不进行 resolve 以避免可能的阻塞
-                    # 输出文件可能不存在，这很正常
-                    output_file = str(self.project_root / output_file)
-            except Exception as e:
-                QMessageBox.critical(self, "Processing Error", f"Invalid output file path: {output_file}\n{str(e)}")
-                return
-            
-            config = {
-                "paths": {
-                    "input_file": input_file,
-                    "output_file": output_file,
-                },
-                "output": {
-                    "add_timestamp": file_config.get("add_timestamp", True),
-                },
-                "debug": file_config.get("debug", {"enabled": False}),
-            }
 
-            # 获取插件链配置（简单的内联操作，不应该阻塞）
-            plugin_config = self.plugin_management.get_plugin_chain_config()
-
-            # 合并配置
-            full_config = {**config, **plugin_config}
-
-            # 启动处理线程（异步操作，不会阻塞UI）
             self.start_processing_thread(full_config)
 
         except Exception as e:
-            # 仅在 DEBUG 日志级别下附带 traceback
             try:
                 from subtitleformatter.utils.unified_logger import logger as _ul
                 if getattr(_ul, "log_level", "INFO") == "DEBUG":
@@ -485,7 +418,7 @@ class MainWindowV2(QMainWindow):
             if self.plugin_lifecycle is None:
                 raise RuntimeError("plugin_lifecycle not initialized")
             
-            self.processing_thread = ProcessingThread(config, self.plugin_lifecycle)
+            self.processing_thread = ProcessingThread(config)
 
             # 连接信号
             self.processing_thread.progress.connect(lambda v, _m: self.command_panel.set_progress(v))
