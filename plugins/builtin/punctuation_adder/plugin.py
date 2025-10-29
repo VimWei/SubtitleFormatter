@@ -272,8 +272,8 @@ class PunctuationAdderPlugin(TextProcessorPlugin):
         # 仅当破折号前存在非空白字符时才替换
         text = re.sub(r"(?<=\S)\s-\s", ", ", text)
 
-        # 替换 "word- word" 为 "word, word" (破折号前无空格，后有空格)
-        text = re.sub(r"([a-zA-Z])-\s", r"\1, ", text)
+        # 替换 "word- word" 或 "number- number" 为 "word, word"/"number, number" (破折号前无空格，后有空格)
+        text = re.sub(r"([A-Za-z0-9])-\s", r"\1, ", text)
 
         # 不替换以下情况：
         # 1. 连字符 (hello-world)

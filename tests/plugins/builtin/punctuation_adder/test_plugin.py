@@ -329,6 +329,7 @@ class TestPunctuationAdderPlugin:
             ("- hello", "- hello"),  # 行首破折号不应该被替换
             ("  - hello", "  - hello"),  # 缩进行首列表项不应被替换
             ("hello- world", "hello, world"),  # 破折号前无空格，后有空格应该被替换
+            ("80- 80", "80, 80"),  # 数字也应被替换
         ]
 
         for input_text, expected in test_cases:
