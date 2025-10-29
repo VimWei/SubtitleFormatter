@@ -372,10 +372,11 @@ class PluginChainManager:
     def restore_from_snapshot(self) -> Dict[str, Any]:
         """Restore configuration from snapshot."""
         self.config_state.restore_from_snapshot()
-        
-        # Update current chain config
-        self.current_chain_config = self.config_state.get_saved_config()
-        
+
+        # Update current chain config from the snapshot baseline (authoritative)
+        restored_snapshot = self.config_state.get_snapshot_config()
+        self.current_chain_config = restored_snapshot
+
         # If snapshot captured a path, switch current_chain_file to it
         snapshot_path = getattr(self.config_state, "snapshot_path", None)
         if snapshot_path:
@@ -389,8 +390,24 @@ class PluginChainManager:
                 candidate = Path(snapshot_path)
             self.current_chain_file = candidate
             logger.debug(f"[TRACE] restore_from_snapshot: Switched current_chain_file to {normalize_path(self.current_chain_file)}")
-        
-        logger.info("Restored configuration from snapshot")
+
+        # Strong consistency: write restored configuration back to the current chain file
+        try:
+            # Persist restored snapshot directly to the snapshot path to guarantee strong consistency
+            order = self.current_chain_config.get("plugins", {}).get("order", [])
+            plugin_configs = self.current_chain_config.get("plugin_configs", {})
+            chain_path_arg: Optional[str] = None
+            if hasattr(self.config_state, "snapshot_path") and self.config_state.snapshot_path:
+                chain_path_arg = str(self.config_state.snapshot_path)
+            # save_chain will also update current_chain_file and state
+            self.save_chain(order=order, plugin_configs=plugin_configs, chain_path=chain_path_arg)
+            # Align working/saved with what we just wrote
+            self.config_state.update_working_config(self.current_chain_config)
+            self.config_state.save_working_config(chain_path_arg or self.get_chain_path())
+            logger.info("Restored configuration from snapshot and persisted to chain file")
+        except Exception as e:
+            logger.error(f"Failed to persist restored configuration to chain file: {e}")
+
         return self.current_chain_config
     
     def has_unsaved_changes(self) -> bool:
