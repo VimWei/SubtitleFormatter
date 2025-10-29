@@ -14,12 +14,12 @@ from PySide6.QtCore import Qt, QThread, Signal
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (
     QApplication,
-    QDockWidget,
     QFileDialog,
     QHBoxLayout,
     QLabel,
     QMainWindow,
     QMessageBox,
+    QTabWidget,
     QPushButton,
     QScrollArea,
     QSizePolicy,
@@ -34,12 +34,15 @@ from subtitleformatter.utils.unified_logger import logger
 from subtitleformatter.version import get_app_title
 
 from .components.configuration_management_panel import ConfigurationManagementPanel
-from .components.file_processing_panel import FileProcessingPanel
+from .components.command_panel import CommandPanel
 from .components.log_panel import LogPanel
 from .components.plugin_chain_visualizer import PluginChainVisualizer
 from .components.plugin_config_panel import PluginConfigPanel
 from .components.plugin_management_panel import PluginManagementPanel
 from .styles.theme_loader import ThemeLoader
+from .pages.basic_page import BasicPage
+from .pages.advanced_page import AdvancedPage
+from .pages.about_page import AboutPage
 
 
 class MainWindowV2(QMainWindow):
@@ -78,8 +81,12 @@ class MainWindowV2(QMainWindow):
         # 创建主界面
         self.setup_ui()
 
-        # 在初始化和加载配置之前就绑定GUI日志回调，确保启动日志显示到Log panel
-        logger.set_gui_callback(self.log_panel.append_log)
+        # 在初始化和加载配置之前绑定GUI日志回调，确保启动日志显示到Log panel
+        # 注意：后台线程运行时会改为通过线程信号转发，避免跨线程直接操作GUI
+        if hasattr(self, "log_panel"):
+            logger.set_gui_callback(self.log_panel.append_log)
+        else:
+            logger.warning("log_panel not initialized, GUI logging callback not set")
 
         # 应用主题样式
         self.apply_modern_styling()
@@ -87,17 +94,17 @@ class MainWindowV2(QMainWindow):
         # 扫描并加载插件（需要 UI/日志面板已就绪）
         self.initialize_plugin_system()
 
+        # 设置配置协调器到各个面板（必须在加载配置之前）
+        self.plugin_management.set_config_coordinator(self.config_coordinator)
+        self.config_management.set_config_coordinator(self.config_coordinator)
+        self.plugin_config.set_config_coordinator(self.config_coordinator)
+        self.tab_basic.set_config_coordinator(self.config_coordinator)
+
         # 设置信号连接（必须在配置加载之前）
         self.setup_signals()
 
         # 加载配置
         self.load_configuration()
-
-        # 设置配置协调器到各个面板
-        self.file_processing.set_config_coordinator(self.config_coordinator)
-        self.plugin_management.set_config_coordinator(self.config_coordinator)
-        self.config_management.set_config_coordinator(self.config_coordinator)
-        self.plugin_config.set_config_coordinator(self.config_coordinator)
 
     def setup_ui(self):
         """设置主界面布局"""
@@ -170,7 +177,7 @@ class MainWindowV2(QMainWindow):
         return panel
 
     def create_right_panel(self) -> QWidget:
-        """创建右侧处理面板和日志面板"""
+        """创建右侧四段布局：Tabs、Processing Flow、Command Panel、Log Panel"""
         panel = QWidget()
         layout = QVBoxLayout(panel)
         layout.setContentsMargins(4, 4, 4, 4)
@@ -179,25 +186,34 @@ class MainWindowV2(QMainWindow):
         # 创建垂直分割器
         right_splitter = QSplitter(Qt.Vertical)
 
-        # 文件处理面板
-        self.file_processing = FileProcessingPanel(self)
+        # 面板1：Tabs（Basic、Advanced、About）
+        self.tabs = QTabWidget(self)
+        self.tab_basic = BasicPage(self)
+        self.tab_advanced = AdvancedPage(self)
+        self.tab_about = AboutPage(self)
+        self.tabs.addTab(self.tab_basic, "Basic")
+        self.tabs.addTab(self.tab_advanced, "Advanced")
+        self.tabs.addTab(self.tab_about, "About")
+        right_splitter.addWidget(self.tabs)
 
-        # 创建插件链可视化组件
+        # 面板2：Processing Flow（插件链可视化）
         self.plugin_chain_visualizer = PluginChainVisualizer(self)
+        right_splitter.addWidget(self.plugin_chain_visualizer)
 
-        # 将可视化组件设置到文件处理面板
-        self.file_processing.set_plugin_chain_visualizer(self.plugin_chain_visualizer)
+        # 面板3：命令面板（仅 Format + 进度）
+        self.command_panel = CommandPanel(self)
+        right_splitter.addWidget(self.command_panel)
 
-        right_splitter.addWidget(self.file_processing)
-
-        # 日志面板
+        # 面板4：日志面板
         self.log_panel = LogPanel()
         right_splitter.addWidget(self.log_panel)
 
-        # 设置分割器比例
-        right_splitter.setSizes([400, 200])
-        right_splitter.setStretchFactor(0, 0)  # 处理面板不主动伸缩
-        right_splitter.setStretchFactor(1, 1)  # 日志面板自动伸缩填充空间
+        # 设置分割器比例（可后续微调）
+        right_splitter.setSizes([300, 200, 120, 200])
+        right_splitter.setStretchFactor(0, 0)
+        right_splitter.setStretchFactor(1, 1)
+        right_splitter.setStretchFactor(2, 0)
+        right_splitter.setStretchFactor(3, 1)
 
         layout.addWidget(right_splitter)
 
@@ -273,9 +289,9 @@ class MainWindowV2(QMainWindow):
         if hasattr(self.plugin_management, "pluginChainChanged"):
             self.plugin_management.pluginChainChanged.connect(self.on_plugin_chain_changed)
 
-        # 文件处理信号
-        if hasattr(self.file_processing, "formatRequested"):
-            self.file_processing.formatRequested.connect(self.on_format_requested)
+        # 命令面板信号
+        if hasattr(self, "command_panel") and hasattr(self.command_panel, "formatRequested"):
+            self.command_panel.formatRequested.connect(self.on_format_requested)
 
         # 插件配置信号
         if hasattr(self.plugin_config, "configChanged"):
@@ -287,6 +303,27 @@ class MainWindowV2(QMainWindow):
         # 日志级别选择变化
         if hasattr(self.log_panel, "levelChanged"):
             self.log_panel.levelChanged.connect(self.on_logging_level_changed)
+
+        # Basic 页面信号连接：保存配置变更到 ConfigCoordinator
+        if hasattr(self, "tab_basic"):
+            self.tab_basic.btn_input.clicked.connect(self._choose_input)
+            self.tab_basic.btn_output.clicked.connect(self._choose_output)
+            self.tab_basic.edit_input.editingFinished.connect(
+                lambda: self.tab_basic.save_config_to_coordinator()
+            )
+            self.tab_basic.edit_output.editingFinished.connect(
+                lambda: self.tab_basic.save_config_to_coordinator()
+            )
+            self.tab_basic.check_timestamp.stateChanged.connect(
+                lambda: self.tab_basic.save_config_to_coordinator()
+            )
+            self.tab_basic.check_debug.stateChanged.connect(
+                lambda: self.tab_basic.save_config_to_coordinator()
+            )
+
+        # Advanced 页面信号连接
+        if hasattr(self, "tab_advanced"):
+            self.tab_advanced.btn_open_user_data.clicked.connect(self._open_user_data_dir)
 
     def on_plugin_selected(self, plugin_name: str):
         """处理插件选择事件"""
@@ -311,9 +348,7 @@ class MainWindowV2(QMainWindow):
     ):
         """处理配置恢复事件"""
         try:
-            # 更新文件处理配置
-            file_config = unified_config.get("file_processing", {})
-            self.file_processing.set_processing_config(file_config)
+            # 统一配置已加载到协调器，由各面板按需读取
 
             # 更新插件链配置
             plugin_order = chain_config.get("plugins", {}).get("order", [])
@@ -350,21 +385,79 @@ class MainWindowV2(QMainWindow):
     def on_format_requested(self):
         """处理格式化请求"""
         try:
-            # 获取文件处理配置
-            config = self.file_processing.get_processing_config()
+            # 获取文件处理配置（从协调器）
+            unified_cfg = self.config_coordinator.unified_manager.get_config()
+            file_config = unified_cfg.get("file_processing", {})
 
-            # 获取插件链配置
+            # 转换为 processor 期望的配置格式
+            # 解析路径（相对路径转为绝对路径）
+            input_file = file_config.get("input_file", "").strip()
+            output_file = file_config.get("output_file", "").strip()
+            
+            # 验证输入文件
+            if not input_file:
+                QMessageBox.warning(self, "Processing Error", "Please select an input file first.")
+                return
+            
+            # 如果输入文件路径是相对路径，解析为绝对路径
+            try:
+                input_path = Path(input_file)
+                if not input_path.is_absolute():
+                    # 直接拼接，不进行 resolve 以避免可能的阻塞
+                    # 如果路径不存在，将在处理器中处理
+                    input_file = str(self.project_root / input_file)
+            except Exception as e:
+                QMessageBox.critical(self, "Processing Error", f"Invalid input file path: {input_file}\n{str(e)}")
+                return
+            
+            # 验证输出文件
+            if not output_file:
+                QMessageBox.warning(self, "Processing Error", "Please select an output file.")
+                return
+            
+            # 如果输出文件路径是相对路径，解析为绝对路径
+            try:
+                output_path = Path(output_file)
+                if not output_path.is_absolute():
+                    # 直接拼接，不进行 resolve 以避免可能的阻塞
+                    # 输出文件可能不存在，这很正常
+                    output_file = str(self.project_root / output_file)
+            except Exception as e:
+                QMessageBox.critical(self, "Processing Error", f"Invalid output file path: {output_file}\n{str(e)}")
+                return
+            
+            config = {
+                "paths": {
+                    "input_file": input_file,
+                    "output_file": output_file,
+                },
+                "output": {
+                    "add_timestamp": file_config.get("add_timestamp", True),
+                },
+                "debug": file_config.get("debug", {"enabled": False}),
+            }
+
+            # 获取插件链配置（简单的内联操作，不应该阻塞）
             plugin_config = self.plugin_management.get_plugin_chain_config()
 
             # 合并配置
             full_config = {**config, **plugin_config}
 
-            # 启动处理线程
+            # 启动处理线程（异步操作，不会阻塞UI）
             self.start_processing_thread(full_config)
 
         except Exception as e:
-            logger.error(f"Failed to start processing: {e}")
-            QMessageBox.critical(self, "Processing Error", f"Failed to start processing: {e}")
+            # 仅在 DEBUG 日志级别下附带 traceback
+            try:
+                from subtitleformatter.utils.unified_logger import logger as _ul
+                if getattr(_ul, "log_level", "INFO") == "DEBUG":
+                    import traceback
+                    logger.error(f"Failed to start processing: {e}\n{traceback.format_exc()}")
+                else:
+                    logger.error(f"Failed to start processing: {e}")
+            except Exception:
+                logger.error(f"Failed to start processing: {e}")
+            QMessageBox.critical(self, "Processing Error", f"Failed to start processing:\n{e}")
 
     def on_plugin_config_changed(self, plugin_name: str, config: Dict):
         """处理插件配置变更事件"""
@@ -382,15 +475,44 @@ class MainWindowV2(QMainWindow):
 
     def start_processing_thread(self, config: Dict):
         """启动处理线程"""
-        self.processing_thread = ProcessingThread(config, self.plugin_lifecycle)
+        try:
+            # 验证必需的组件已初始化
+            if not hasattr(self, "command_panel") or self.command_panel is None:
+                raise RuntimeError("command_panel not initialized")
+            if not hasattr(self, "log_panel") or self.log_panel is None:
+                raise RuntimeError("log_panel not initialized")
+            if self.plugin_lifecycle is None:
+                raise RuntimeError("plugin_lifecycle not initialized")
+            
+            self.processing_thread = ProcessingThread(config, self.plugin_lifecycle)
 
-        # 连接信号
-        self.processing_thread.progress.connect(self.file_processing.update_progress)
-        self.processing_thread.log.connect(self.log_panel.append_log)
-        self.processing_thread.finished.connect(self.on_processing_finished)
+            # 连接信号
+            self.processing_thread.progress.connect(lambda v, _m: self.command_panel.set_progress(v))
+            self.processing_thread.log.connect(self.log_panel.append_log)
+            self.processing_thread.finished.connect(self.on_processing_finished)
 
-        # 启动线程
-        self.processing_thread.start()
+            # 将统一日志系统的GUI回调重定向到线程信号，避免后台线程直接触碰GUI
+            try:
+                logger.set_gui_callback(lambda msg: self.processing_thread.log.emit(msg))
+                logger.enable_gui(True)
+            except Exception:
+                pass
+
+            # 启动线程（这是异步操作，不会阻塞UI）
+            self.processing_thread.start()
+            
+        except Exception as e:
+            # 仅在 DEBUG 日志级别下附带 traceback
+            try:
+                from subtitleformatter.utils.unified_logger import logger as _ul
+                if getattr(_ul, "log_level", "INFO") == "DEBUG":
+                    import traceback
+                    logger.error(f"Failed to start processing thread: {e}\n{traceback.format_exc()}")
+                else:
+                    logger.error(f"Failed to start processing thread: {e}")
+            except Exception:
+                logger.error(f"Failed to start processing thread: {e}")
+            QMessageBox.critical(self, "Processing Error", f"Failed to start processing thread:\n{e}")
 
     def on_processing_finished(self, success: bool, message: str):
         """处理完成回调"""
@@ -399,6 +521,13 @@ class MainWindowV2(QMainWindow):
         else:
             logger.error(" " + message)
             QMessageBox.critical(self, "Processing Error", message)
+
+        # 处理结束后恢复GUI日志回调到直接写入日志面板（主线程）
+        try:
+            if hasattr(self, "log_panel"):
+                logger.set_gui_callback(self.log_panel.append_log)
+        except Exception:
+            pass
 
     def apply_modern_styling(self):
         """应用现代化样式"""
@@ -425,9 +554,8 @@ class MainWindowV2(QMainWindow):
             except Exception:
                 pass
 
-            # 更新文件处理配置
-            file_config = config.get("unified", {}).get("file_processing", {})
-            self.file_processing.set_processing_config(file_config)
+            # 加载配置到 Tabs
+            self.tab_basic.load_config_from_coordinator()
 
             # 创建插件链配置快照用于 Restore Last 功能
             self.config_coordinator.create_chain_snapshot()
@@ -461,6 +589,104 @@ class MainWindowV2(QMainWindow):
         except Exception as e:
             logger.error(f"Failed to load configuration: {e}")
 
+    # ---- Path normalization helpers ----
+    def _normalize_path_for_display(self, path_text: str) -> str:
+        """Normalize path for display."""
+        try:
+            import os
+            if not path_text:
+                return ""
+            return os.path.normpath(path_text)
+        except Exception:
+            return path_text
+
+    def _to_relative(self, p: str | Path) -> str:
+        """Convert path to relative path from project root."""
+        try:
+            import os
+            abs_path = Path(p).resolve()
+            root = self.project_root.resolve()
+            rel = abs_path.relative_to(root)
+            return os.path.normpath(str(rel))
+        except Exception:
+            # If on different drive or outside root, keep absolute normalized
+            return self._normalize_path_for_display(str(p))
+
+    def _choose_input(self) -> None:
+        """Choose input file and update configuration."""
+        start_dir = str((self.project_root / "data" / "input").resolve())
+        file, _ = QFileDialog.getOpenFileName(
+            self,
+            "Select input file",
+            start_dir,
+            "Text/Markdown files (*.txt *.md);;All files (*.*)",
+        )
+        if not file:
+            return
+        
+        # Display relative for portability
+        self.tab_basic.edit_input.setText(self._normalize_path_for_display(self._to_relative(file)))
+        
+        # Save to ConfigCoordinator
+        file_config = self.config_coordinator.get_file_processing_config()
+        file_config["input_file"] = file
+        self.config_coordinator.set_file_processing_config(file_config)
+        
+        # Auto-suggest output file if empty
+        if not self.tab_basic.edit_output.text().strip():
+            in_path = Path(file)
+            base = in_path.stem
+            out_dir = (self.project_root / "data" / "output").resolve()
+            out_dir.mkdir(parents=True, exist_ok=True)
+            new_out = str(out_dir / f"{base}.txt")
+            self.tab_basic.edit_output.setText(self._normalize_path_for_display(self._to_relative(new_out)))
+            file_config["output_file"] = new_out
+            self.config_coordinator.set_file_processing_config(file_config)
+
+    def _choose_output(self) -> None:
+        """Choose output file and update configuration."""
+        out_dir = (self.project_root / "data" / "output").resolve()
+        out_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Suggest a name based on input if present
+        suggested = ""
+        in_text = self.tab_basic.edit_input.text().strip()
+        if in_text:
+            try:
+                in_base = Path(in_text).stem
+                suggested = str(out_dir / f"{in_base}.txt")
+            except Exception:
+                pass
+        
+        file, _ = QFileDialog.getSaveFileName(
+            self,
+            "Select output file",
+            suggested or str(out_dir),
+            "Text files (*.txt);;All files (*.*)",
+        )
+        if not file:
+            return
+        
+        # Display relative for portability
+        self.tab_basic.edit_output.setText(self._normalize_path_for_display(self._to_relative(file)))
+        
+        # Save to ConfigCoordinator
+        file_config = self.config_coordinator.get_file_processing_config()
+        file_config["output_file"] = file
+        self.config_coordinator.set_file_processing_config(file_config)
+
+    def _open_user_data_dir(self) -> None:
+        """Open user data directory."""
+        try:
+            import os
+            path = (self.project_root / "data").resolve()
+            path.mkdir(parents=True, exist_ok=True)
+            os.startfile(str(path))
+            # After opening, update instructional with absolute path
+            self.tab_advanced.edit_user_data.setText(str(path))
+        except Exception:
+            pass
+
     def on_logging_level_changed(self, level: str):
         """当用户在日志面板中切换日志级别时触发"""
         try:
@@ -487,9 +713,9 @@ class MainWindowV2(QMainWindow):
     def save_configuration(self):
         """保存配置"""
         try:
-            # 保存文件处理配置
-            file_config = self.file_processing.get_processing_config()
-            self.config_coordinator.set_file_processing_config(file_config)
+            # 保存 Basic 页面的配置变更
+            if hasattr(self, "tab_basic"):
+                self.tab_basic.save_config_to_coordinator()
 
             # 持久化当前工作插件链配置到当前链文件（避免用独立插件配置重建并覆盖）
             try:
@@ -543,31 +769,70 @@ class ProcessingThread(QThread):
     def run(self):
         """运行处理逻辑"""
         try:
+            import traceback
+            from subtitleformatter.utils.unified_logger import logger as _ul
             self.log.emit("Starting text processing...")
+
+            # 验证配置
+            if not self.config:
+                self.finished.emit(False, "Processing failed: No configuration provided")
+                return
 
             # 检查是否使用插件系统
             if self.config.get("plugins") and self.config.get("plugins", {}).get("order"):
                 # 使用插件系统
-                from subtitleformatter.processors.plugin_text_processor import (
-                    PluginTextProcessor,
-                )
-
-                processor = PluginTextProcessor(self.config)
-                self.log.emit("Using plugin-based processing system")
+                try:
+                    from subtitleformatter.processors.plugin_text_processor import (
+                        PluginTextProcessor,
+                    )
+                    processor = PluginTextProcessor(self.config)
+                    self.log.emit("Using plugin-based processing system")
+                except Exception as e:
+                    if getattr(_ul, "log_level", "INFO") == "DEBUG":
+                        error_msg = f"Failed to initialize PluginTextProcessor: {e}\n{traceback.format_exc()}"
+                    else:
+                        error_msg = f"Failed to initialize PluginTextProcessor: {e}"
+                    self.log.emit(f"ERROR: {error_msg}")
+                    self.finished.emit(False, error_msg)
+                    return
             else:
                 # 使用传统处理器
-                from subtitleformatter.processors.text_processor import TextProcessor
-
-                processor = TextProcessor(self.config)
-                self.log.emit("Using legacy processing system")
+                try:
+                    from subtitleformatter.processors.text_processor import TextProcessor
+                    processor = TextProcessor(self.config)
+                    self.log.emit("Using legacy processing system")
+                except Exception as e:
+                    if getattr(_ul, "log_level", "INFO") == "DEBUG":
+                        error_msg = f"Failed to initialize TextProcessor: {e}\n{traceback.format_exc()}"
+                    else:
+                        error_msg = f"Failed to initialize TextProcessor: {e}"
+                    self.log.emit(f"ERROR: {error_msg}")
+                    self.finished.emit(False, error_msg)
+                    return
 
             # 执行处理
-            processor.process()
-
-            self.finished.emit(True, "Processing completed successfully")
+            try:
+                processor.process()
+                self.finished.emit(True, "Processing completed successfully")
+            except Exception as e:
+                if getattr(_ul, "log_level", "INFO") == "DEBUG":
+                    error_msg = f"Processing failed: {e}\n{traceback.format_exc()}"
+                else:
+                    error_msg = f"Processing failed: {e}"
+                self.log.emit(f"ERROR: {error_msg}")
+                self.finished.emit(False, error_msg)
 
         except Exception as e:
-            self.finished.emit(False, f"Processing failed: {e}")
+            if getattr(_ul, "log_level", "INFO") == "DEBUG":
+                error_msg = f"Unexpected error in processing thread: {e}\n{traceback.format_exc()}"
+            else:
+                error_msg = f"Unexpected error in processing thread: {e}"
+            try:
+                self.log.emit(f"ERROR: {error_msg}")
+                self.finished.emit(False, error_msg)
+            except:
+                # If even emitting signals fails, we can't do much
+                pass
 
 
 def run_gui_v2() -> None:

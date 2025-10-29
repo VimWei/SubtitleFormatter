@@ -56,10 +56,6 @@ def _validate(cfg: Dict[str, Any]) -> None:
     if model_size not in {"sm", "md", "lg"}:
         raise ValueError("model_size must be one of: sm, md, lg")
 
-    max_width = cfg.get("max_width", 78)
-    if not isinstance(max_width, int) or max_width <= 0:
-        raise ValueError("max_width must be a positive integer")
-
     if "paths" not in cfg or not isinstance(cfg["paths"], dict):
         raise ValueError("[paths] section is required in configuration")
 

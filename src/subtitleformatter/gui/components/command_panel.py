@@ -15,9 +15,6 @@ from PySide6.QtWidgets import (
 
 
 class CommandPanel(QWidget):
-    restoreRequested = Signal()
-    importRequested = Signal()
-    exportRequested = Signal()
     formatRequested = Signal()
 
     def __init__(self, parent: QWidget | None = None):
@@ -27,16 +24,7 @@ class CommandPanel(QWidget):
         root.setContentsMargins(0, 0, 0, 0)
         root.setSpacing(8)
 
-        row1 = QHBoxLayout()
-        self.btn_restore = QPushButton("Restore last config", self)
-        self.btn_import = QPushButton("Import config", self)
-        self.btn_export = QPushButton("Export config", self)
-        # center
-        row1.addStretch(1)
-        row1.addWidget(self.btn_restore)
-        row1.addWidget(self.btn_import)
-        row1.addWidget(self.btn_export)
-        row1.addStretch(1)
+        # row for legacy config buttons removed per V2 design
 
         row2 = QHBoxLayout()
         self.btn_format = QPushButton("Format", self)
@@ -58,16 +46,13 @@ class CommandPanel(QWidget):
         row3.addWidget(self.progress)
 
         # add rows centered
-        root.addLayout(row1)
+        # legacy row1 removed
         root.addLayout(row2)
         root.addLayout(row3)
 
         # fix panel height similar to MdxScraper (approx)
         self.setFixedHeight(120)
 
-        self.btn_restore.clicked.connect(lambda: self.restoreRequested.emit())
-        self.btn_import.clicked.connect(lambda: self.importRequested.emit())
-        self.btn_export.clicked.connect(lambda: self.exportRequested.emit())
         self.btn_format.clicked.connect(lambda: self.formatRequested.emit())
 
     def set_progress(self, value: int) -> None:

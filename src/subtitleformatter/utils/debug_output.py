@@ -4,7 +4,7 @@ from datetime import datetime
 
 
 class DebugOutput:
-    def __init__(self, debug, temp_dir, max_width, add_timestamp=True):
+    def __init__(self, debug, temp_dir, add_timestamp=True):
         """初始化调试输出器 - 专注于调试文件保存功能
 
         注意：此类的终端输出功能已被移除，现在只负责：
@@ -14,7 +14,6 @@ class DebugOutput:
         """
         self.debug = debug
         self.temp_dir = temp_dir
-        self.max_width = max_width
         self.add_timestamp = add_timestamp
         self.timestamp = datetime.now().strftime("%Y%m%d%H%M%S") if add_timestamp else ""
 
@@ -98,21 +97,15 @@ class DebugOutput:
         elif step_name == "智能断行":
             if isinstance(content, str):
                 lines = content.split("\n")
-                original_count = len([s for s in content.split("\n") if len(s) <= self.max_width])
-                split_count = len(lines) - original_count
-
                 log_lines.append(f"\n智能断行统计:")
                 log_lines.append("-" * 40)
-                if split_count > 0:
-                    log_lines.append(f"处理了 {split_count} 个长句:")
-                    log_lines.append(f"  - 拆分为 {len(lines)} 行")
+                if len(lines) > 0:
+                    log_lines.append(f"  - 总行数: {len(lines)} 行")
                     log_lines.append(f"  - 最长行: {len(max(lines, key=len))} 字符")
                     log_lines.append(f"  - 最短行: {len(min(lines, key=len))} 字符")
                     log_lines.append(
                         f"  - 平均行长: {sum(len(l) for l in lines) / len(lines):.1f} 字符"
                     )
-                else:
-                    log_lines.append("没有需要断行的长句")
                 log_lines.append("-" * 40)
 
         # 收集日志内容（不输出到终端，由统一日志系统处理）

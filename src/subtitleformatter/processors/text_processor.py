@@ -46,7 +46,6 @@ class TextProcessor:
         self.config["debug_output"] = DebugOutput(
             debug=debug_enabled,
             temp_dir=debug_config.get("temp_dir", "temp"),
-            max_width=self.config["max_width"],
             add_timestamp=output_config.get("add_timestamp", True),
         )
         debug_output = self.config["debug_output"]
@@ -161,13 +160,8 @@ class TextProcessor:
         # 使用统一日志记录断行统计
         if isinstance(final_text, str):
             lines = final_text.split("\n")
-            max_width = self.config.get("max_width", 78)
-            original_count = len([s for s in final_text.split("\n") if len(s) <= max_width])
-            split_count = len(lines) - original_count
-
-            if split_count > 0:
-                log_debug_info(f"处理了 {split_count} 个长句:")
-                log_debug_info(f"  - 拆分为 {len(lines)} 行")
+            if len(lines) > 0:
+                log_debug_info(f"  - 总行数: {len(lines)} 行")
                 log_debug_info(f"  - 最长行: {len(max(lines, key=len))} 字符")
                 log_debug_info(f"  - 最短行: {len(min(lines, key=len))} 字符")
                 log_debug_info(f"  - 平均行长: {sum(len(l) for l in lines) / len(lines):.1f} 字符")

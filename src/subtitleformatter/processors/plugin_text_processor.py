@@ -51,7 +51,6 @@ class PluginTextProcessor:
         self.config["debug_output"] = DebugOutput(
             debug=debug_enabled,
             temp_dir=debug_config.get("temp_dir", "temp"),
-            max_width=self.config["max_width"],
             add_timestamp=output_config.get("add_timestamp", True),
         )
         debug_output = self.config["debug_output"]
@@ -89,6 +88,11 @@ class PluginTextProcessor:
         output_file = self.config.get("paths", {}).get("output_file")
         log_step("正在保存结果到文件", output_file)
         with open(output_file, "w", encoding="utf-8") as f:
+            # Some plugins may return a list of lines/sentences; normalize to string
+            if isinstance(processed_text, list):
+                processed_text = "\n".join(map(str, processed_text))
+            elif not isinstance(processed_text, str):
+                processed_text = str(processed_text)
             f.write(processed_text)
 
         # Save debug log

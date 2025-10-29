@@ -41,20 +41,6 @@ class AdvancedPage(QWidget):
         data_row.addWidget(self.btn_open_user_data)
         layout.addLayout(data_row)
 
-        # Config Actions row
-        cfg_row = QHBoxLayout()
-        _lbl_cfg = QLabel("Config Actions:", self)
-        _lbl_cfg.setProperty("class", "field-label")
-        _lbl_cfg.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
-        _lbl_cfg.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
-        cfg_row.addWidget(_lbl_cfg)
-        cfg_row.addSpacing(8)
-        self.btn_restore_default = QPushButton("Restore default config", self)
-        self.btn_restore_default.setFixedWidth(150)
-        cfg_row.addWidget(self.btn_restore_default)
-        cfg_row.addStretch(1)
-        layout.addLayout(cfg_row)
-
         # Top-align the whole page like MdxScraper
         layout.addStretch(1)
 
