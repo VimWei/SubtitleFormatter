@@ -36,10 +36,25 @@ def materialize_runtime_config(
         "debug": file_cfg.get("debug", {"enabled": False}),
     }
 
-    chain_cfg: Dict = {}
-    if plugin_management_panel is not None and hasattr(plugin_management_panel, "get_plugin_chain_config"):
-        chain_cfg = plugin_management_panel.get_plugin_chain_config() or {}
+    # Build plugins section from the authoritative chain configuration in coordinator
+    plugins_section: Dict = {"order": []}
 
-    return {**base, **chain_cfg}
+    try:
+        chain_cfg: Dict = config_coordinator.get_plugin_chain_config() or {}
+
+        # Extract order
+        plugins_section["order"] = chain_cfg.get("plugins", {}).get("order", [])
+
+        # Map plugin_configs (chain format) into processor-expected layout under "plugins"
+        plugin_configs: Dict = chain_cfg.get("plugin_configs", {})
+        for plugin_name, plugin_conf in plugin_configs.items():
+            plugins_section[plugin_name] = plugin_conf or {}
+    except Exception:
+        # Fallback to panel (older panel only returns order)
+        if plugin_management_panel is not None and hasattr(plugin_management_panel, "get_plugin_chain_config"):
+            panel_cfg = plugin_management_panel.get_plugin_chain_config() or {}
+            plugins_section["order"] = panel_cfg.get("plugins", {}).get("order", [])
+
+    return {**base, "plugins": plugins_section}
 
 
