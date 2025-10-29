@@ -1,5 +1,46 @@
 # Changelog
 
+## [1.3.12] - 2025-10-30
+
+- feat(tests): add comprehensive tests for plugin management and configuration handling
+- refactor(config): improve configuration handling with deepcopy for state management
+- doc(gui): implement right panel refactor with four-way vertical splitter
+- refactor(gui): update layout and comments in MainWindowV2 for clarity
+- refactor(punctuation_adder): remove model_name configuration and simplify logging
+- feat(logging): implement dynamic logging level adjustment in GUI
+- refactor(logging): normalize file paths in log messages for configuration management
+- feat(gui): add dynamic title update for plugin chain management
+- chore(gui, logging): show startup logs in Log panel and reduce verbosity
+- refactor: Improve synchronization logic for unified plugin chain reference
+- refactor: Remove redundant plugin configuration synchronization logic
+- feat: Enhance snapshot management and configuration persistence
+- feat: Enhance configuration management with immediate persistence and improved saving mechanisms
+- feat: Introduce legacy GUI support and update main entry point
+- docs: Enhance plugin development guide with DebugOutput system details
+- docs: Update design documents to resolve conflicts and improve organization
+- fix: Adopt plugin.json as single source of truth for plugin defaults
+- feat: Implement working configuration management with snapshot protection
+- fix: Correct plugin chain initialization and configuration storage
+- feat: complete plugin configurations in default chain
+- refactor: Update punctuation adder plugin configuration and logic
+- refactor: Update button styles and font sizes in ConfigurationManagementPanel
+- feat: Add keyboard navigation support for plugin selection in PluginManagementPanel
+- refactor: Simplify PluginManagementPanel layout and enhance styling
+- refactor: Adjust layout margins and button padding for improved UI consistency
+- refactor: Standardize layout margins across GUI components
+- refactor: Remove StatusBar integration from MainWindowV2
+- refactor: Remove dialog boxes and add configurable log levels
+- refactor: Removed unused `backup_current_config` method
+- refactor: Update core module documentation and deprecate old functionality
+- refactor: Simplify layout in FileProcessingPanel
+- feat: Enhance PluginChainCanvas with bent arrow drawing
+- fix: Align panels and optimize right panel layout
+- feat: Enable auto-scaling for Configuration Management panel
+- feat: Integrate Configuration Management Panel into Main Window
+- feat: Enhance GUI components and configuration management
+- feat: Enhance configuration management design document
+- feat: Implement configuration management system
+
 ## [1.3.11] - 2025-10-27
 
 - refactor: Rename button in PluginManagementPanel for clarity
