@@ -19,6 +19,7 @@ class CommandPanel(QWidget):
 
     def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
+        self.setContentsMargins(4, 4, 4, 4)
 
         root = QVBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)

@@ -48,6 +48,8 @@ from .pages.advanced_page import AdvancedPage
 from .pages.basic_page import BasicPage
 from .styles.theme_loader import ThemeLoader
 from .threads.processing_thread import ProcessingThread
+from .components.tabs_panel import TabsPanel
+from .components.processing_flow_panel import ProcessingFlowPanel
 
 
 class MainWindowV2(QMainWindow):
@@ -103,7 +105,7 @@ class MainWindowV2(QMainWindow):
         self.plugin_management.set_config_coordinator(self.config_coordinator)
         self.config_management.set_config_coordinator(self.config_coordinator)
         self.plugin_config.set_config_coordinator(self.config_coordinator)
-        self.tab_basic.set_config_coordinator(self.config_coordinator)
+        self.tabs_panel.tab_basic.set_config_coordinator(self.config_coordinator)
 
         # 设置信号连接（必须在配置加载之前）
         self.setup_signals()
@@ -191,19 +193,14 @@ class MainWindowV2(QMainWindow):
         # 创建垂直分割器
         right_splitter = QSplitter(Qt.Vertical)
 
-        # 面板1：Tabs（Basic、Advanced、About）
-        self.tabs = QTabWidget(self)
-        self.tab_basic = BasicPage(self)
-        self.tab_advanced = AdvancedPage(self)
-        self.tab_about = AboutPage(self)
-        self.tabs.addTab(self.tab_basic, "Basic")
-        self.tabs.addTab(self.tab_advanced, "Advanced")
-        self.tabs.addTab(self.tab_about, "About")
-        right_splitter.addWidget(self.tabs)
+        # 面板1：TabsPanel（含 margin, QTabWidget/Basic/Advanced/About）
+        self.tabs_panel = TabsPanel(self)
+        right_splitter.addWidget(self.tabs_panel)
 
-        # 面板2：Processing Flow（插件链可视化）
-        self.plugin_chain_visualizer = PluginChainVisualizer(self)
-        right_splitter.addWidget(self.plugin_chain_visualizer)
+        # 面板2：ProcessingFlowPanel（含 margin, PluginChainVisualizer）
+        self.processing_flow_panel = ProcessingFlowPanel(self)
+        self.plugin_chain_visualizer = self.processing_flow_panel.visualizer
+        right_splitter.addWidget(self.processing_flow_panel)
 
         # 面板3：命令面板（仅 Format + 进度）
         self.command_panel = CommandPanel(self)
@@ -213,11 +210,11 @@ class MainWindowV2(QMainWindow):
         self.log_panel = LogPanel()
         right_splitter.addWidget(self.log_panel)
 
-        # 设置分割器比例（可后续微调）
-        right_splitter.setSizes([300, 200, 120, 200])
-        right_splitter.setStretchFactor(0, 0)
+        # 设置分割器比例（调整初始高度：Tabs/Flow 各自最小高度，底部填充）
+        right_splitter.setSizes([160, 120, 160, 999])  # log panel 占据剩余空间
+        right_splitter.setStretchFactor(0, 1)
         right_splitter.setStretchFactor(1, 1)
-        right_splitter.setStretchFactor(2, 0)
+        right_splitter.setStretchFactor(2, 1)
         right_splitter.setStretchFactor(3, 1)
 
         layout.addWidget(right_splitter)
@@ -286,25 +283,25 @@ class MainWindowV2(QMainWindow):
             self.log_panel.levelChanged.connect(self.on_logging_level_changed)
 
         # Basic 页面信号连接：保存配置变更到 ConfigCoordinator
-        if hasattr(self, "tab_basic"):
-            self.tab_basic.btn_input.clicked.connect(self._choose_input)
-            self.tab_basic.btn_output.clicked.connect(self._choose_output)
-            self.tab_basic.edit_input.editingFinished.connect(
-                lambda: self.tab_basic.save_config_to_coordinator()
+        if hasattr(self, "tabs_panel"):
+            self.tabs_panel.tab_basic.btn_input.clicked.connect(self._choose_input)
+            self.tabs_panel.tab_basic.btn_output.clicked.connect(self._choose_output)
+            self.tabs_panel.tab_basic.edit_input.editingFinished.connect(
+                lambda: self.tabs_panel.tab_basic.save_config_to_coordinator()
             )
-            self.tab_basic.edit_output.editingFinished.connect(
-                lambda: self.tab_basic.save_config_to_coordinator()
+            self.tabs_panel.tab_basic.edit_output.editingFinished.connect(
+                lambda: self.tabs_panel.tab_basic.save_config_to_coordinator()
             )
-            self.tab_basic.check_timestamp.stateChanged.connect(
-                lambda: self.tab_basic.save_config_to_coordinator()
-            )
-            self.tab_basic.check_debug.stateChanged.connect(
-                lambda: self.tab_basic.save_config_to_coordinator()
+            self.tabs_panel.tab_basic.check_timestamp.stateChanged.connect(
+                lambda: self.tabs_panel.tab_basic.save_config_to_coordinator()
             )
 
         # Advanced 页面信号连接
-        if hasattr(self, "tab_advanced"):
-            self.tab_advanced.btn_open_user_data.clicked.connect(self._open_user_data_dir)
+        if hasattr(self, "tabs_panel"):
+            self.tabs_panel.tab_advanced.btn_open_user_data.clicked.connect(self._open_user_data_dir)
+            self.tabs_panel.tab_advanced.check_debug.stateChanged.connect(
+                lambda: self.tabs_panel.tab_advanced.save_config_to_coordinator()
+            )
 
     def on_plugin_selected(self, plugin_name: str):
         """处理插件选择事件"""
@@ -503,7 +500,8 @@ class MainWindowV2(QMainWindow):
                 pass
 
             # 加载配置到 Tabs
-            self.tab_basic.load_config_from_coordinator()
+            self.tabs_panel.tab_basic.load_config_from_coordinator()
+            self.tabs_panel.tab_advanced.load_config_from_coordinator()
 
             # 创建插件链配置快照用于 Restore Last 功能
             self.config_coordinator.create_chain_snapshot()
@@ -532,7 +530,7 @@ class MainWindowV2(QMainWindow):
             else:
                 logger.warning("No valid plugin chain configuration found")
 
-            logger.info("Configuration loaded successfully")
+            logger.info("Configuration successfully applied: all systems initialized with loaded settings")
 
         except Exception as e:
             logger.error(f"Failed to load configuration: {e}")
@@ -575,7 +573,7 @@ class MainWindowV2(QMainWindow):
             return
 
         # Display relative for portability
-        self.tab_basic.edit_input.setText(self._normalize_path_for_display(self._to_relative(file)))
+        self.tabs_panel.tab_basic.edit_input.setText(self._normalize_path_for_display(self._to_relative(file)))
 
         # Save to ConfigCoordinator
         file_config = self.config_coordinator.get_file_processing_config()
@@ -583,13 +581,13 @@ class MainWindowV2(QMainWindow):
         self.config_coordinator.set_file_processing_config(file_config)
 
         # Auto-suggest output file if empty
-        if not self.tab_basic.edit_output.text().strip():
+        if not self.tabs_panel.tab_basic.edit_output.text().strip():
             in_path = Path(file)
             base = in_path.stem
             out_dir = (self.project_root / "data" / "output").resolve()
             out_dir.mkdir(parents=True, exist_ok=True)
             new_out = str(out_dir / f"{base}.txt")
-            self.tab_basic.edit_output.setText(
+            self.tabs_panel.tab_basic.edit_output.setText(
                 self._normalize_path_for_display(self._to_relative(new_out))
             )
             file_config["output_file"] = new_out
@@ -602,7 +600,7 @@ class MainWindowV2(QMainWindow):
 
         # Suggest a name based on input if present
         suggested = ""
-        in_text = self.tab_basic.edit_input.text().strip()
+        in_text = self.tabs_panel.tab_basic.edit_input.text().strip()
         if in_text:
             try:
                 in_base = Path(in_text).stem
@@ -620,7 +618,7 @@ class MainWindowV2(QMainWindow):
             return
 
         # Display relative for portability
-        self.tab_basic.edit_output.setText(
+        self.tabs_panel.tab_basic.edit_output.setText(
             self._normalize_path_for_display(self._to_relative(file))
         )
 
@@ -638,7 +636,7 @@ class MainWindowV2(QMainWindow):
             path.mkdir(parents=True, exist_ok=True)
             os.startfile(str(path))
             # After opening, update instructional with absolute path
-            self.tab_advanced.edit_user_data.setText(str(path))
+            self.tabs_panel.tab_advanced.edit_user_data.setText(str(path))
         except Exception:
             pass
 
@@ -669,8 +667,8 @@ class MainWindowV2(QMainWindow):
         """保存配置"""
         try:
             # 保存 Basic 页面的配置变更
-            if hasattr(self, "tab_basic"):
-                self.tab_basic.save_config_to_coordinator()
+            if hasattr(self, "tabs_panel"):
+                self.tabs_panel.tab_basic.save_config_to_coordinator()
 
             # 持久化当前工作插件链配置到当前链文件（避免用独立插件配置重建并覆盖）
             try:

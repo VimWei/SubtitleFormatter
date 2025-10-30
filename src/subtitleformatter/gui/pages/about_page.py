@@ -20,7 +20,7 @@ class AboutPage(QWidget):
         super().__init__(parent)
 
         layout = QFormLayout(self)
-        layout.setContentsMargins(4, 4, 4, 4)
+        layout.setContentsMargins(12, 12, 12, 12)
         layout.setSpacing(8)
 
         url = "https://github.com/VimWei/SubtitleFormatter"
