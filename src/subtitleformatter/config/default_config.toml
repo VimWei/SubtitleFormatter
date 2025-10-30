@@ -1,3 +1,7 @@
+[plugins]
+# 插件链配置（引用默认插件链）
+current_plugin_chain = "default_plugin_chain.toml"
+
 [paths]
 # 输入文件路径：
 # - 留空则首次运行会提示输入
@@ -6,11 +10,15 @@ input_file = ""
 # 输出文件路径：保持为空；由 GUI 根据输入与“Add timestamp”选项生成建议
 output_file = ""
 
+[output]
+# Whether to prefix output filename with timestamp when auto-suggesting
+add_timestamp = true
+
 [debug]
 # 是否启用调试输出（生成中间结果与日志）
 enabled = false
 # 调试文件输出目录
-temp_dir = "data/debug"
+debug_dir = "data/debug"
 
 [logging]
 # 日志级别: DEBUG, INFO, WARNING, ERROR
@@ -19,13 +27,3 @@ temp_dir = "data/debug"
 # WARNING: 只显示警告和错误
 # ERROR: 只显示错误
 level = "INFO"
-
-
-[output]
-# Whether to prefix output filename with timestamp when auto-suggesting
-add_timestamp = true
-
-# 插件系统配置
-[plugins]
-# 引用默认插件链配置
-current_plugin_chain = "default_plugin_chain.toml"

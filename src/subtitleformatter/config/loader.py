@@ -71,9 +71,10 @@ def _materialize_paths(cfg: Dict[str, Any]) -> None:
 
     debug_cfg = cfg.get("debug", {})
     if debug_cfg.get("enabled", False):
-        temp_dir = debug_cfg.get("temp_dir", "data/debug")
-        if not os.path.exists(temp_dir):
-            os.makedirs(temp_dir)
+        # Use only 'debug_dir' (no legacy fallback)
+        debug_dir = debug_cfg.get("debug_dir", "data/debug")
+        if not os.path.exists(debug_dir):
+            os.makedirs(debug_dir)
 
 
 def load_config(config_path: str = None) -> Dict[str, Any]:
@@ -86,6 +87,7 @@ def load_config(config_path: str = None) -> Dict[str, Any]:
     default_cfg = _load_toml(DEFAULT_CONFIG_PATH)
 
     user_cfg: Dict[str, Any] = {}
+    user_cfg_path: Path | None = None
     if config_path:
         # Load custom config file
         custom_path = Path(config_path)
@@ -111,9 +113,11 @@ def load_config(config_path: str = None) -> Dict[str, Any]:
             raise FileNotFoundError(f"Config file not found: {config_path}")
 
         user_cfg = _load_toml(custom_path)
+        user_cfg_path = custom_path
     elif USER_CONFIG_PATH.exists():
         # Load default user config
         user_cfg = _load_toml(USER_CONFIG_PATH)
+        user_cfg_path = USER_CONFIG_PATH
     else:
         # Create user config from default for easy editing
         USER_CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -164,7 +168,7 @@ def create_config_from_args(args) -> Dict[str, Any]:
             "input_file": args.input_file,
             "output_file": args.output or f"output_{args.input_file}",
         },
-        "debug": {"enabled": args.debug, "temp_dir": "data/debug"},
+        "debug": {"enabled": args.debug, "debug_dir": "data/debug"},
     }
 
     _validate(cfg)

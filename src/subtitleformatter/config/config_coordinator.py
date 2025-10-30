@@ -234,12 +234,51 @@ class ConfigCoordinator:
         return self.plugin_manager.get_all_plugin_configs(plugin_names)
 
     def get_file_processing_config(self) -> Dict[str, Any]:
-        """Get file processing configuration."""
-        return self.unified_manager.get_config().get("file_processing", {})
+        """Get file processing configuration from unified schema.
+
+        Maps unified sections to the legacy panel structure expected by UI tabs.
+        """
+        cfg = self.unified_manager.get_config() or {}
+        paths = cfg.get("paths", {}) or {}
+        output = cfg.get("output", {}) or {}
+        debug = cfg.get("debug", {}) or {}
+
+        return {
+            "input_file": paths.get("input_file", ""),
+            "output_file": paths.get("output_file", ""),
+            "add_timestamp": bool(output.get("add_timestamp", True)),
+            "debug": {"enabled": bool(debug.get("enabled", False))},
+        }
 
     def set_file_processing_config(self, config: Dict[str, Any]):
-        """Set file processing configuration."""
-        self.unified_manager.set_file_processing_config(config)
+        """Set file processing configuration into unified schema.
+
+        Accepts the panel structure and writes back to [paths]/[output]/[debug].
+        """
+        current = self.unified_manager.get_config() or {}
+        current.setdefault("paths", {})
+        current.setdefault("output", {})
+        current.setdefault("debug", {})
+
+        if isinstance(config, dict):
+            if "input_file" in config:
+                current["paths"]["input_file"] = config.get("input_file") or ""
+            if "output_file" in config:
+                current["paths"]["output_file"] = config.get("output_file") or ""
+            if "add_timestamp" in config:
+                current["output"]["add_timestamp"] = bool(config.get("add_timestamp"))
+            # Support both flat debug_enabled and nested debug.enabled
+            if "debug_enabled" in config:
+                current["debug"]["enabled"] = bool(config.get("debug_enabled"))
+            elif isinstance(config.get("debug"), dict) and "enabled" in config.get("debug", {}):
+                current["debug"]["enabled"] = bool(config["debug"]["enabled"])
+
+        # Persist through unified manager
+        self.unified_manager.set_config(current)
+        try:
+            self.unified_manager.save()
+        except Exception:
+            pass
 
     def get_plugin_chain_config(self) -> Dict[str, Any]:
         """Get current plugin chain configuration without reloading from disk if possible."""

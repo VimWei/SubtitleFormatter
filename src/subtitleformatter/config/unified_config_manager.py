@@ -140,14 +140,14 @@ class UnifiedConfigManager:
                     self._config = tomllib.load(f)
                 logger.info("Restored default configuration")
             else:
-                self._config = {"file_processing": {}, "plugins": {}}
+                self._config = {"paths": {}, "output": {}, "debug": {}, "plugins": {}}
                 logger.warning("Default configuration not found, using empty config")
 
             return self._config.copy()
 
         except Exception as e:
             logger.error(f"Failed to restore default configuration: {e}")
-            self._config = {"file_processing": {}, "plugins": {}}
+            self._config = {"paths": {}, "output": {}, "debug": {}, "plugins": {}}
             return self._config.copy()
 
     def set_config(self, config: Dict[str, Any]):
@@ -160,10 +160,22 @@ class UnifiedConfigManager:
         return self._config.copy()
 
     def set_file_processing_config(self, config: Dict[str, Any]):
-        """Set file processing configuration."""
-        if "file_processing" not in self._config:
-            self._config["file_processing"] = {}
-        self._config["file_processing"].update(config)
+        """Set file processing configuration (mapped to unified schema)."""
+        self._config.setdefault("paths", {})
+        self._config.setdefault("output", {})
+        self._config.setdefault("debug", {})
+
+        if isinstance(config, dict):
+            if "input_file" in config:
+                self._config["paths"]["input_file"] = config.get("input_file") or ""
+            if "output_file" in config:
+                self._config["paths"]["output_file"] = config.get("output_file") or ""
+            if "add_timestamp" in config:
+                self._config["output"]["add_timestamp"] = bool(config.get("add_timestamp"))
+            if "debug_enabled" in config:
+                self._config["debug"]["enabled"] = bool(config.get("debug_enabled"))
+            elif isinstance(config.get("debug"), dict) and "enabled" in config.get("debug", {}):
+                self._config["debug"]["enabled"] = bool(config["debug"]["enabled"])
 
     def set_plugin_chain_reference(self, chain_path: Optional[str]):
         """
@@ -185,17 +197,14 @@ class UnifiedConfigManager:
         return self._config.get("plugins", {}).get("current_plugin_chain")
 
     def _relativize_paths(self, config: Dict[str, Any]) -> Dict[str, Any]:
-        """Relativize absolute paths in configuration."""
-        if "file_processing" in config:
-            file_config = config["file_processing"]
-            for key in ["input_dir", "output_dir"]:
-                if key in file_config and isinstance(file_config[key], str):
-                    try:
-                        path = Path(file_config[key])
+        """Relativize absolute paths in configuration (unified schema)."""
+        try:
+            if "paths" in config:
+                for key in ["input_file", "output_file"]:
+                    if key in config["paths"] and isinstance(config["paths"][key], str):
+                        path = Path(config["paths"][key])
                         if path.is_absolute():
-                            relative = path.relative_to(self.project_root)
-                            file_config[key] = str(relative)
-                    except Exception:
-                        pass
-
+                            config["paths"][key] = str(path.relative_to(self.project_root))
+        except Exception:
+            pass
         return config

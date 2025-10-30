@@ -45,7 +45,7 @@ class TextProcessor:
 
         self.config["debug_output"] = DebugOutput(
             debug=debug_enabled,
-            temp_dir=debug_config.get("temp_dir", "temp"),
+            debug_dir=debug_config.get("debug_dir", "data/debug"),
             add_timestamp=output_config.get("add_timestamp", True),
         )
         debug_output = self.config["debug_output"]

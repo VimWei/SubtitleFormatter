@@ -11,10 +11,13 @@ def materialize_runtime_config(
 ) -> Dict:
     """Assemble full runtime config for processing."""
     unified_cfg = config_coordinator.unified_manager.get_config()
-    file_cfg = unified_cfg.get("file_processing", {})
 
-    input_file = (file_cfg.get("input_file") or "").strip()
-    output_file = (file_cfg.get("output_file") or "").strip()
+    paths_cfg = unified_cfg.get("paths", {}) or {}
+    debug_cfg = unified_cfg.get("debug", {}) or {}
+    output_cfg = unified_cfg.get("output", {}) or {}
+
+    input_file = (paths_cfg.get("input_file") or "").strip()
+    output_file = (paths_cfg.get("output_file") or "").strip()
 
     if input_file:
         p = Path(input_file)
@@ -31,9 +34,12 @@ def materialize_runtime_config(
             "output_file": output_file,
         },
         "output": {
-            "add_timestamp": file_cfg.get("add_timestamp", True),
+            "add_timestamp": bool(output_cfg.get("add_timestamp", True)),
         },
-        "debug": file_cfg.get("debug", {"enabled": False}),
+        "debug": {
+            "enabled": bool(debug_cfg.get("enabled", False)),
+            "debug_dir": debug_cfg.get("debug_dir", "data/debug"),
+        },
     }
 
     # Build plugins section from the authoritative chain configuration in coordinator
@@ -50,11 +56,7 @@ def materialize_runtime_config(
         for plugin_name, plugin_conf in plugin_configs.items():
             plugins_section[plugin_name] = plugin_conf or {}
     except Exception:
-        # Fallback to panel (older panel only returns order)
-        if plugin_management_panel is not None and hasattr(
-            plugin_management_panel, "get_plugin_chain_config"
-        ):
-            panel_cfg = plugin_management_panel.get_plugin_chain_config() or {}
-            plugins_section["order"] = panel_cfg.get("plugins", {}).get("order", [])
+        # As a last resort, leave order empty; right panel should be authoritative
+        plugins_section["order"] = plugins_section.get("order", [])
 
     return {**base, "plugins": plugins_section}

@@ -7,6 +7,7 @@
 from typing import Any, Dict, List, Optional, Union
 
 from subtitleformatter.plugins.base import TextProcessorPlugin
+from subtitleformatter.utils.unified_logger import log_info
 
 
 class SimpleUppercasePlugin(TextProcessorPlugin):
@@ -61,7 +62,7 @@ class SimpleUppercasePlugin(TextProcessorPlugin):
             else:
                 raise ValueError(f"Unsupported text type: {type(text)}")
         except Exception as e:
-            from .plugin_base import PluginProcessingError
+            from subtitleformatter.plugins.base.plugin_base import PluginProcessingError
 
             raise PluginProcessingError(
                 f"Failed to process text: {e}",
@@ -93,9 +94,9 @@ class SimpleUppercasePlugin(TextProcessorPlugin):
     def initialize(self) -> None:
         """初始化插件"""
         super().initialize()
-        print(f"插件 {self.name} 已初始化")
+        log_info(f"插件 {self.name} 已初始化")
 
     def cleanup(self) -> None:
         """清理插件资源"""
         super().cleanup()
-        print(f"插件 {self.name} 已清理")
+        log_info(f"插件 {self.name} 已清理")

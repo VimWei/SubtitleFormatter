@@ -1,10 +1,11 @@
 import os
-from collections import Counter
+import json
+import re
 from datetime import datetime
 
 
 class DebugOutput:
-    def __init__(self, debug, temp_dir, add_timestamp=True):
+    def __init__(self, debug, debug_dir, add_timestamp=True):
         """初始化调试输出器 - 专注于调试文件保存功能
 
         注意：此类的终端输出功能已被移除，现在只负责：
@@ -13,7 +14,7 @@ class DebugOutput:
         - 终端和GUI输出由统一日志系统处理
         """
         self.debug = debug
-        self.temp_dir = temp_dir
+        self.debug_dir = debug_dir
         self.add_timestamp = add_timestamp
         self.timestamp = datetime.now().strftime("%Y%m%d%H%M%S") if add_timestamp else ""
 
@@ -24,12 +25,18 @@ class DebugOutput:
         # 用于收集日志内容
         self.log_content = []
 
-        # 确保临时目录存在
-        if debug and not os.path.exists(temp_dir):
-            os.makedirs(temp_dir)
+        # 确保调试目录存在
+        if debug and not os.path.exists(debug_dir):
+            os.makedirs(debug_dir)
 
     def show_step(self, step_name, content, stats=None):
-        """显示处理步骤的结果"""
+        """显示并保存每个步骤的中间结果（适配灵活的插件链）
+
+        约定：
+        - step_name 可为任意可读名称；若形如 "插件处理: NAME"，将自动提取 NAME 作为插件名以参与文件命名
+        - content 可为 str 或 list；其他类型将转为 str
+        - stats 若为 dict，则会被以 JSON 侧车文件保存（.stats.json）
+        """
         if not self.debug:
             return
 
@@ -38,75 +45,49 @@ class DebugOutput:
             self.step_counter += 1
             self.step_order[step_name] = self.step_counter
 
-        # 构建并记录日志内容
+        # 解析插件名（如果是 "插件处理: NAME" 形式）
+        plugin_name = None
+        m = re.match(r"^插件处理\s*:\s*(.+)$", str(step_name))
+        if m:
+            plugin_name = m.group(1).strip()
+
+        # 构建并记录日志内容（通用格式）
         log_lines = []
 
-        # 显示统计信息
+        # 日志抬头
         if step_name == "读入文件":
-            # 从 content 的 stats 中获取文件名（需要在调用时传入）
             input_file = stats.get("input_file", "") if stats else ""
             filename = os.path.basename(input_file) if input_file else ""
             log_lines.append(f"\n已读入文件 {filename}")
-            log_lines.append(f"文本长度: {len(content)} 字符")
+        else:
+            step_num = self.step_order.get(step_name, 0)
+            title = plugin_name if plugin_name else step_name
+            log_lines.append(f"\n[{step_num}] {title}")
 
-        elif step_name == "文本清理":
-            if stats:
-                log_lines.append("\n文本清理统计:")
-                log_lines.append("-" * 40)
-                if stats.get("special_chars", 0) > 0:
-                    log_lines.append(f"移除 BOM 标记: {stats['special_chars']} 处")
-                if stats.get("newlines", 0) > 0:
-                    log_lines.append(f"统一换行符: {stats['newlines']} 处")
-                if stats.get("punctuation", 0) > 0:
-                    log_lines.append(f"规范化标点: {stats['punctuation']} 处")
-                if stats.get("numbers", 0) > 0:
-                    log_lines.append(f"规范化数字: {stats['numbers']} 处")
-                if stats.get("spaces", 0) > 0:
-                    log_lines.append(f"统一空格: {stats['spaces']} 处")
-                if stats.get("empty_lines", 0) > 0:
-                    log_lines.append(f"合并空行: {stats['empty_lines']} 处")
-                log_lines.append("-" * 40)
+        # 内容摘要（通用）
+        if isinstance(content, list):
+            log_lines.append("-" * 40)
+            log_lines.append(f"类型: list  | 项数: {len(content)}")
+            if content:
+                longest = max(content, key=len)
+                shortest = min(content, key=len)
+                avg_len = sum(len(x) for x in content) / len(content)
+                log_lines.append(f"最长项: {len(longest)} 字符  最短项: {len(shortest)} 字符  平均长度: {avg_len:.1f}")
+            log_lines.append("-" * 40)
+        elif isinstance(content, str):
+            log_lines.append("-" * 40)
+            log_lines.append(f"类型: str  | 长度: {len(content)} 字符")
+            log_lines.append("-" * 40)
+        else:
+            # 其他类型统一转为字符串并记录类型
+            log_lines.append("-" * 40)
+            log_lines.append(f"类型: {type(content).__name__}")
+            log_lines.append("-" * 40)
 
-        elif step_name == "智能断句":
-            if isinstance(content, list):
-                log_lines.append(f"\n智能断句统计:")
-                log_lines.append("-" * 40)
-                log_lines.append(f"共拆分出 {len(content)} 个句子")
-                log_lines.append(f"最长句子: {len(max(content, key=len))} 字符")
-                log_lines.append(f"最短句子: {len(min(content, key=len))} 字符")
-                log_lines.append(
-                    f"平均句长: {sum(len(s) for s in content) / len(content):.1f} 字符"
-                )
-                log_lines.append("-" * 40)
-
-        elif step_name == "停顿词处理":
-            if stats:
-                log_lines.append("\n停顿词处理统计:")
-                log_lines.append("-" * 40)
-                total_count = sum(stats.values())
-                log_lines.append(f"共处理停顿词 {total_count} 处:")
-                for word_type, details in stats.items():
-                    if isinstance(details, dict):
-                        log_lines.append(f"\n{word_type}:")
-                        for word, count in details.items():
-                            log_lines.append(f"  - '{word}': {count} 处")
-                    else:
-                        log_lines.append(f"  - {word_type}: {details} 处")
-                log_lines.append("-" * 40)
-
-        elif step_name == "智能断行":
-            if isinstance(content, str):
-                lines = content.split("\n")
-                log_lines.append(f"\n智能断行统计:")
-                log_lines.append("-" * 40)
-                if len(lines) > 0:
-                    log_lines.append(f"  - 总行数: {len(lines)} 行")
-                    log_lines.append(f"  - 最长行: {len(max(lines, key=len))} 字符")
-                    log_lines.append(f"  - 最短行: {len(min(lines, key=len))} 字符")
-                    log_lines.append(
-                        f"  - 平均行长: {sum(len(l) for l in lines) / len(lines):.1f} 字符"
-                    )
-                log_lines.append("-" * 40)
+        # 若提供 stats，打印其键摘要
+        if isinstance(stats, dict) and stats:
+            keys_preview = ", ".join(list(stats.keys())[:10])
+            log_lines.append(f"统计字段: {keys_preview}")
 
         # 收集日志内容（不输出到终端，由统一日志系统处理）
         for line in log_lines:
@@ -116,17 +97,38 @@ class DebugOutput:
         if step_name != "读入文件":
             # 获取步骤序号并构建文件名
             step_num = self.step_order[step_name]
-            if self.add_timestamp:
-                filename = f"{self.timestamp}_{step_num}_{step_name.lower().replace(' ', '_')}.txt"
-            else:
-                filename = f"{step_num}_{step_name.lower().replace(' ', '_')}.txt"
-            filepath = os.path.join(self.temp_dir, filename)
+
+            def _sanitize(value: str) -> str:
+                value = value.strip().lower()
+                value = re.sub(r"[^0-9a-zA-Z\u4e00-\u9fff]+", "_", value)
+                value = re.sub(r"_+", "_", value).strip("_")
+                return value or "step"
+
+            base_name = _sanitize(plugin_name) if plugin_name else _sanitize(step_name)
+            prefix = f"{self.timestamp}_" if self.add_timestamp else ""
+            txt_filename = f"{prefix}{step_num}_{base_name}.txt"
+            filepath = os.path.join(self.debug_dir, txt_filename)
 
             with open(filepath, "w", encoding="utf-8") as f:
                 if isinstance(content, list):
                     f.write("\n".join(f"{i}. {item}" for i, item in enumerate(content, 1)))
-                else:
+                elif isinstance(content, str):
                     f.write(content)
+                else:
+                    f.write(str(content))
+
+            # 如果有统计信息，额外保存一个 JSON 侧车文件
+            if isinstance(stats, dict) and stats:
+                stats_filename = f"{prefix}{step_num}_{base_name}.stats.json"
+                stats_path = os.path.join(self.debug_dir, stats_filename)
+                try:
+                    with open(stats_path, "w", encoding="utf-8") as sf:
+                        json.dump(stats, sf, ensure_ascii=False, indent=2)
+                except Exception:
+                    # 回退到以文本形式保存
+                    with open(stats_path.replace(".json", ".txt"), "w", encoding="utf-8") as sf:
+                        for k, v in stats.items():
+                            sf.write(f"{k}: {v}\n")
 
     def save_log(self):
         """保存处理日志"""
@@ -135,7 +137,7 @@ class DebugOutput:
                 log_filename = f"{self.timestamp}_processing_log.txt"
             else:
                 log_filename = "processing_log.txt"
-            log_filepath = os.path.join(self.temp_dir, log_filename)
+            log_filepath = os.path.join(self.debug_dir, log_filename)
 
             with open(log_filepath, "w", encoding="utf-8") as f:
                 f.write("\n".join(self.log_content))
