@@ -18,7 +18,7 @@ from pathlib import Path
 from .config.loader import load_config
 from .processors.plugin_text_processor import PluginTextProcessor
 from .processors.text_processor import TextProcessor
-from .utils.unified_logger import log_info, log_error
+from .utils.unified_logger import log_error, log_info
 
 
 def main():

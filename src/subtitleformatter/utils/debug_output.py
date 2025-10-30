@@ -1,5 +1,5 @@
-import os
 import json
+import os
 import re
 from datetime import datetime
 
@@ -72,7 +72,9 @@ class DebugOutput:
                 longest = max(content, key=len)
                 shortest = min(content, key=len)
                 avg_len = sum(len(x) for x in content) / len(content)
-                log_lines.append(f"最长项: {len(longest)} 字符  最短项: {len(shortest)} 字符  平均长度: {avg_len:.1f}")
+                log_lines.append(
+                    f"最长项: {len(longest)} 字符  最短项: {len(shortest)} 字符  平均长度: {avg_len:.1f}"
+                )
             log_lines.append("-" * 40)
         elif isinstance(content, str):
             log_lines.append("-" * 40)

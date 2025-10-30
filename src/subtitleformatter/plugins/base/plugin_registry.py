@@ -13,9 +13,9 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Type
 
 from subtitleformatter.plugins.base.plugin_base import TextProcessorPlugin
+from subtitleformatter.utils.unified_logger import log_warning
 
 from .plugin_base import PluginError
-from subtitleformatter.utils.unified_logger import log_warning
 
 
 class PluginRegistry:

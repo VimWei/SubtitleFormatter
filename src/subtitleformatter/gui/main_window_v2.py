@@ -43,13 +43,13 @@ from .components.log_panel import LogPanel
 from .components.plugin_chain_visualizer import PluginChainVisualizer
 from .components.plugin_config_panel import PluginConfigPanel
 from .components.plugin_management_panel import PluginManagementPanel
+from .components.processing_flow_panel import ProcessingFlowPanel
+from .components.tabs_panel import TabsPanel
 from .pages.about_page import AboutPage
 from .pages.advanced_page import AdvancedPage
 from .pages.basic_page import BasicPage
 from .styles.theme_loader import ThemeLoader
 from .threads.processing_thread import ProcessingThread
-from .components.tabs_panel import TabsPanel
-from .components.processing_flow_panel import ProcessingFlowPanel
 
 
 class MainWindowV2(QMainWindow):
@@ -298,7 +298,9 @@ class MainWindowV2(QMainWindow):
 
         # Advanced 页面信号连接
         if hasattr(self, "tabs_panel"):
-            self.tabs_panel.tab_advanced.btn_open_user_data.clicked.connect(self._open_user_data_dir)
+            self.tabs_panel.tab_advanced.btn_open_user_data.clicked.connect(
+                self._open_user_data_dir
+            )
             self.tabs_panel.tab_advanced.check_debug.stateChanged.connect(
                 lambda: self.tabs_panel.tab_advanced.save_config_to_coordinator()
             )
@@ -530,7 +532,9 @@ class MainWindowV2(QMainWindow):
             else:
                 logger.warning("No valid plugin chain configuration found")
 
-            logger.info("Configuration successfully applied: all systems initialized with loaded settings")
+            logger.info(
+                "Configuration successfully applied: all systems initialized with loaded settings"
+            )
 
         except Exception as e:
             logger.error(f"Failed to load configuration: {e}")
@@ -573,7 +577,9 @@ class MainWindowV2(QMainWindow):
             return
 
         # Display relative for portability
-        self.tabs_panel.tab_basic.edit_input.setText(self._normalize_path_for_display(self._to_relative(file)))
+        self.tabs_panel.tab_basic.edit_input.setText(
+            self._normalize_path_for_display(self._to_relative(file))
+        )
 
         # Save to ConfigCoordinator
         file_config = self.config_coordinator.get_file_processing_config()

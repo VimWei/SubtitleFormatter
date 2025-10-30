@@ -5,6 +5,7 @@ from pathlib import Path
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QCheckBox,
+    QFileDialog,
     QHBoxLayout,
     QLabel,
     QLineEdit,
@@ -12,7 +13,6 @@ from PySide6.QtWidgets import (
     QSizePolicy,
     QVBoxLayout,
     QWidget,
-    QFileDialog,
 )
 
 
@@ -94,8 +94,8 @@ class AdvancedPage(QWidget):
         file_config = self.config_coordinator.get_file_processing_config()
         file_config["debug"] = {
             "enabled": self.check_debug.isChecked(),
-            "debug_dir": self.edit_debug_dir.text().strip() or "data/debug"
-            }
+            "debug_dir": self.edit_debug_dir.text().strip() or "data/debug",
+        }
         self.config_coordinator.set_file_processing_config(file_config)
 
     def select_debug_dir(self):

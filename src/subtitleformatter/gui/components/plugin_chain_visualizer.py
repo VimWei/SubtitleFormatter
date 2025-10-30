@@ -13,7 +13,8 @@ from PySide6.QtCore import QRect, Qt
 from PySide6.QtGui import QBrush, QColor, QFont, QFontMetrics, QPainter, QPen
 from PySide6.QtWidgets import QLabel, QScrollArea, QVBoxLayout, QWidget
 
-from subtitleformatter.utils.unified_logger import log_info, log_debug
+from subtitleformatter.utils.unified_logger import log_debug, log_info
+
 
 class PluginChainVisualizer(QWidget):
     """
@@ -58,7 +59,9 @@ class PluginChainVisualizer(QWidget):
         self, plugin_chain: List[str], plugin_metadata: Optional[Dict[str, Dict]] = None
     ):
         """更新插件链显示"""
-        log_debug(f"PluginChainVisualizer: Updating with {len(plugin_chain)} plugins: {plugin_chain}")
+        log_debug(
+            f"PluginChainVisualizer: Updating with {len(plugin_chain)} plugins: {plugin_chain}"
+        )
         self.plugin_chain = plugin_chain
         if plugin_metadata:
             self.plugin_metadata = plugin_metadata

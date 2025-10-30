@@ -18,6 +18,7 @@ from pathlib import Path
 from typing import Any, Dict
 
 import tomli_w  # type: ignore
+
 from subtitleformatter.utils.unified_logger import log_info
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]

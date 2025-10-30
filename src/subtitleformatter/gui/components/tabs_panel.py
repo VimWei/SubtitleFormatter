@@ -1,7 +1,9 @@
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QTabWidget
-from ..pages.basic_page import BasicPage
-from ..pages.advanced_page import AdvancedPage
+from PySide6.QtWidgets import QTabWidget, QVBoxLayout, QWidget
+
 from ..pages.about_page import AboutPage
+from ..pages.advanced_page import AdvancedPage
+from ..pages.basic_page import BasicPage
+
 
 class TabsPanel(QWidget):
     def __init__(self, parent=None):
@@ -22,8 +24,9 @@ class TabsPanel(QWidget):
 
         # 增加下列内容: 使 set_config_coordinator 可自适应主窗口调用
         def set_config_coordinator(self, coordinator):
-            if hasattr(self.tab_basic, 'set_config_coordinator'):
+            if hasattr(self.tab_basic, "set_config_coordinator"):
                 self.tab_basic.set_config_coordinator(coordinator)
-            if hasattr(self.tab_advanced, 'set_config_coordinator'):
+            if hasattr(self.tab_advanced, "set_config_coordinator"):
                 self.tab_advanced.set_config_coordinator(coordinator)
+
         self.set_config_coordinator = set_config_coordinator.__get__(self)

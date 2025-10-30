@@ -1,5 +1,7 @@
-from PySide6.QtWidgets import QWidget, QVBoxLayout
+from PySide6.QtWidgets import QVBoxLayout, QWidget
+
 from .plugin_chain_visualizer import PluginChainVisualizer
+
 
 class ProcessingFlowPanel(QWidget):
     def __init__(self, parent=None):
