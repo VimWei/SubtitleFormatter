@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.4.1] - 2025-10-30
+
+- refactor(gui): modularize panels and migrate debug settings to Advanced
+- refactor(logging): update configuration loading log message for clarity
+- refactor(logging): switch from info to debug logging in plugin visualizer and management panel
+- refactor(logging): replace print statements with unified logging across the codebase
+- Refactor: unify config schema, modernize DebugOutput, and remove legacy paths
+
 ## [1.4.0] - 2025-10-30
 
 - refactor(sentence_splitter): ensure consistency by trimming trailing whitespace from split sentences
