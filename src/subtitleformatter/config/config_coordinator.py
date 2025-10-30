@@ -59,7 +59,7 @@ class ConfigCoordinator:
         # 4. Build complete configuration
         complete_config = {"unified": unified_config, "plugin_chain": chain_config}
 
-        logger.info("Loaded complete configuration")
+        logger.info("Configuration files read to memory (unified + plugin chain config)")
         return complete_config
 
     def save_all_config(self):

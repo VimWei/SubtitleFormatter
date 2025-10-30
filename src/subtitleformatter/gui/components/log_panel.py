@@ -63,7 +63,11 @@ class LogPanel(QWidget):
         if level not in {"DEBUG", "INFO", "WARNING", "ERROR"}:
             level = "INFO"
         if self.combo_level.currentText() != level:
-            self.combo_level.setCurrentText(level)
+            blocked = self.combo_level.blockSignals(True)
+            try:
+                self.combo_level.setCurrentText(level)
+            finally:
+                self.combo_level.blockSignals(blocked)
 
     def get_logging_level(self) -> str:
         return self.combo_level.currentText()
