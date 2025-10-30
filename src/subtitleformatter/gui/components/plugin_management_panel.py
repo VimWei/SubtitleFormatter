@@ -185,12 +185,12 @@ class PluginManagementPanel(QWidget):
 
     def update_available_plugins(self, plugins: Dict[str, Dict]):
         """更新可用插件列表"""
-        print(f"PluginManagementPanel: Updating with {len(plugins)} plugins")
+        logger.info(f"PluginManagementPanel: Updating with {len(plugins)} plugins")
         self.available_plugins = plugins
         self.available_list.clear()
 
         for plugin_name, metadata in plugins.items():
-            print(f"PluginManagementPanel: Adding plugin {plugin_name}")
+            logger.info(f"PluginManagementPanel: Adding plugin {plugin_name}")
             item = QListWidgetItem()
             item.setText(metadata.get("name", plugin_name))
             item.setData(Qt.UserRole, plugin_name)
@@ -198,7 +198,7 @@ class PluginManagementPanel(QWidget):
 
             self.available_list.addItem(item)
 
-        print(f"PluginManagementPanel: Added {self.available_list.count()} items to list")
+        logger.info(f"PluginManagementPanel: Added {self.available_list.count()} items to list")
 
     def on_plugin_selected(self, item: QListWidgetItem):
         """处理插件选择"""

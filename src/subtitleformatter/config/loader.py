@@ -18,6 +18,7 @@ from pathlib import Path
 from typing import Any, Dict
 
 import tomli_w  # type: ignore
+from subtitleformatter.utils.unified_logger import log_info
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 # Single source of truth for user config path (use data/configs only)
@@ -83,7 +84,7 @@ def load_config(config_path: str = None) -> Dict[str, Any]:
     Args:
         config_path: Optional path to custom config file. If None, uses default config_latest.toml
     """
-    print("正在加载配置 (TOML)...")
+    log_info("正在加载配置 (TOML)...")
     default_cfg = _load_toml(DEFAULT_CONFIG_PATH)
 
     user_cfg: Dict[str, Any] = {}
@@ -134,7 +135,7 @@ def load_config(config_path: str = None) -> Dict[str, Any]:
         input_file = cfg.get("paths", {}).get("input_file", "")
         if not input_file:
             # Prompt user for input file path (relative to data/input/ by default)
-            print(
+            log_info(
                 "未检测到输入文件路径。\n"
                 "请输入输入文件名（相对于 data/input/ 目录），例如：Bee hunting.txt\n"
                 "如需自定义路径，也可输入绝对路径。"

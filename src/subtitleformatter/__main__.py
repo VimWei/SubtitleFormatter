@@ -18,6 +18,7 @@ from pathlib import Path
 from .config.loader import load_config
 from .processors.plugin_text_processor import PluginTextProcessor
 from .processors.text_processor import TextProcessor
+from .utils.unified_logger import log_info, log_error
 
 
 def main():
@@ -73,17 +74,17 @@ def run_cli(config_path: str = None):
         if config.get("plugins") and config.get("plugins", {}).get("order"):
             # Use new plugin-based processor
             processor = PluginTextProcessor(config)
-            print("🔌 Using plugin-based processing system")
+            log_info("🔌 Using plugin-based processing system")
         else:
             # Use legacy processor for backward compatibility
             processor = TextProcessor(config)
-            print("📜 Using legacy processing system")
+            log_info("📜 Using legacy processing system")
 
         processor.process()
-        print("✅ Processing completed successfully!")
+        log_info("✅ Processing completed successfully!")
 
     except Exception as e:
-        print(f"❌ Error: {e}")
+        log_error(f"❌ Error: {e}")
         sys.exit(1)
 
 
@@ -106,11 +107,11 @@ def run_gui(use_legacy: bool = False):
 
             run_gui_v2()
     except ImportError as e:
-        print(f"❌ GUI dependencies not available: {e}")
-        print("Please install GUI dependencies: pip install PySide6")
+        log_error(f"❌ GUI dependencies not available: {e}")
+        log_error("Please install GUI dependencies: pip install PySide6")
         sys.exit(1)
     except Exception as e:
-        print(f"❌ GUI error: {e}")
+        log_error(f"❌ GUI error: {e}")
         sys.exit(1)
 
 

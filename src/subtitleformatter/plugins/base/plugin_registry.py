@@ -15,6 +15,7 @@ from typing import Any, Dict, List, Optional, Type
 from subtitleformatter.plugins.base.plugin_base import TextProcessorPlugin
 
 from .plugin_base import PluginError
+from subtitleformatter.utils.unified_logger import log_warning
 
 
 class PluginRegistry:
@@ -89,7 +90,7 @@ class PluginRegistry:
                 try:
                     self._register_plugin(item)
                 except Exception as e:
-                    print(f"Warning: Failed to register plugin in {item}: {e}")
+                    log_warning(f"Failed to register plugin in {item}: {e}")
             else:
                 # If this directory doesn't contain a plugin, recursively scan its subdirectories
                 # This allows for nested plugin organization like plugins/category/subcategory/plugin
@@ -128,18 +129,18 @@ class PluginRegistry:
         try:
             plugin_class = self._load_plugin_class(plugin_path, metadata["class_name"])
         except Exception as e:
-            print(f"Warning: Failed to load plugin class for {plugin_name}: {e}")
+            log_warning(f"Failed to load plugin class for {plugin_name}: {e}")
             return
 
         # Validate plugin class
         try:
             if not issubclass(plugin_class, TextProcessorPlugin):
-                print(
-                    f"Warning: Failed to register plugin in {plugin_path}: Plugin class must inherit from TextProcessorPlugin: {plugin_name}"
+                log_warning(
+                    f"Failed to register plugin in {plugin_path}: Plugin class must inherit from TextProcessorPlugin: {plugin_name}"
                 )
                 return
         except Exception as e:
-            print(f"Warning: Failed to validate plugin class for {plugin_name}: {e}")
+            log_warning(f"Failed to validate plugin class for {plugin_name}: {e}")
             return
 
         # Register plugin with full name as key, but keep original name in metadata
