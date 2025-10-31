@@ -2,38 +2,19 @@
 
 ## 概述
 
-本文档描述了 SubtitleFormatter 的配置管理系统设计方案，包括统一配置管理、插件链配置管理、插件参数配置管理等功能。在实施过程中，我们发现并解决了一个关键的配置管理两难问题，通过引入"工作配置与保存配置分离"的设计模式，完美解决了插件链配置修改保存和 Restore Last 功能保护之间的矛盾。
+本文档描述了 SubtitleFormatter 的配置管理系统设计方案，包括统一配置管理、插件链配置管理、插件参数配置管理等功能。
 
-**核心创新**：
+## 1. 核心创新
+
 - **配置状态管理**：工作配置、保存配置、快照配置三层分离
 - **智能保存策略**：根据插件选择来源自动决定保存位置
 - **快照保护机制**：确保 Restore Last 功能不受配置修改影响
 - **自动保存机制**：插件链/插件配置即时保存；latest 类文件退出时保存
 
-## 1. 背景与问题分析
-
-### 1.1 当前配置管理现状
-
-#### 旧版GUI的优秀设计
 - **Import Config**: 从文件导入完整配置
 - **Export Config**: 导出当前配置到文件
 - **Restore Last**: 恢复到上次保存的配置
 - **Restore Default**: 恢复默认配置
-
-#### 新版GUI的配置管理问题
-1. **功能缺失**: 旧版的优秀配置管理功能在新版中消失
-2. **功能不明确**: Plugin Configuration 底部的3个按钮作用不清晰
-   - Apply Configuration: 作用不明
-   - Export Config: 只输出到日志，无文件保存
-   - Reset to Defaults: 功能正常
-3. **插件链配置缺失**: Plugin Chain 缺乏导入导出机制
-4. **配置流程不明确**: Start Processing 和程序退出时的配置处理机制未定义
-
-### 1.2 核心问题
-- 用户无法快速切换不同配置
-- 配置备份与恢复机制缺失
-- 插件链配置每次都要重新设置
-- 配置的持久化和加载策略不明确
 
 ## 2. 设计目标
 
@@ -78,24 +59,24 @@
 ```
 data/configs/
 ├── config_latest.toml              # 当前配置（程序启动时加载）
+├── *.toml                          # 用户保存的配置文件
+│   ├── basic_processing.toml
+│   ├── advanced_processing.toml
+│   └── my_custom_config.toml
 ├── plugins/                        # 插件配置目录
 │   └── builtin/                    # 命名空间目录
 │       ├── text_cleaning.toml
 │       ├── sentence_splitter.toml
 │       └── punctuation_adder.toml
-├── plugin_chains/                  # 插件链配置目录
-│   ├── default_plugin_chain.toml
-│   ├── chain_latest.toml
-│   ├── basic_chain.toml
-│   ├── advanced_chain.toml
-│   └── custom_*.toml
-└── *.toml                          # 用户保存的配置文件
-    ├── basic_processing.toml
-    ├── advanced_processing.toml
-    └── my_custom_config.toml
+└── plugin_chains/                  # 插件链配置目录
+    ├── default_plugin_chain.toml
+    ├── chain_latest.toml
+    ├── basic_chain.toml
+    ├── advanced_chain.toml
+    └── custom_*.toml
 ```
 
-**说明**: 
+**说明**:
 - 统一配置: 存储全局设置和插件链引用
 - 插件链配置: 存储插件顺序和链特定参数（包括工作配置、保存配置、快照配置）
 - 插件配置: 独立存储每个插件的参数配置
@@ -123,7 +104,7 @@ data/configs/
 
 ### 4.1 统一配置管理
 
-#### 处理面板功能
+#### 文件处理面板功能
 - **Import Config**: 导入完整配置文件
 - **Export Config**: 导出完整配置文件（包括引用的插件链和插件配置）
 - **Restore Last**: 恢复到上次保存的配置
@@ -146,7 +127,7 @@ data/configs/
 #### 配置文件内容
 ```toml
 # config_latest.toml 或任意文件名.toml
-[file_processing]
+[paths]
 input_dir = "data/input"
 output_dir = "data/output"
 add_timestamp = true
@@ -166,7 +147,7 @@ current_plugin_chain = "plugin_chains/chain_workflow.toml"
 #### 插件链配置的完整保存策略
 **关键结论**: 插件链配置采用全量保存策略 - 保存所有用到的插件的完整配置。
 
-- **全量保存优势**: 
+- **全量保存优势**:
   - 用户可以看到完整的配置，避免用户需要翻阅插件程序中的默认配置，方便手动修改
   - 程序简洁高效，无需复杂的对比和合并逻辑
 - **保存内容**: 插件链配置文件包含 `order` 和所有插件的完整配置（包括默认值）
@@ -210,7 +191,7 @@ max_depth = 8
 max_degradation_round = 5
 ```
 
-**注意**: 
+**注意**:
 - 插件链配置文件包含当前链用到的所有插件的完整配置，不包含未使用的插件配置
 - 插件名称使用命名空间格式 `namespace/plugin_name`，例如 `builtin/punctuation_adder`
 - TOML 配置节中，如果键名包含特殊字符（如 `/`），需要用引号括起来：`[plugin_configs."builtin/punctuation_adder"]`
@@ -243,7 +224,7 @@ max_depth = 8
 max_degradation_round = 5
 ```
 
-**注意**: 
+**注意**:
 - 每个插件有独立的配置文件，用户修改参数后根据选择来源智能保存
   - 选择来自可用插件列表: 立即保存到 `data/configs/plugins/` 目录
   - 选择来自插件链: 保存到插件链工作配置并即时写回链文件
@@ -339,7 +320,7 @@ max_degradation_round = 5
 
 ### 5.3 退出时配置保存
 1. **统一配置保存**: 保存到 `config_latest.toml`
-2. **插件链保存**: 
+2. **插件链保存**:
    - 链文件在编辑时已即时保存
    - 如果用户显式另存为插件链，写入 `data/configs/plugin_chains/` 目录指定文件
    - 程序退出时，保存到 `chain_latest.toml`（不生成新文件）
@@ -466,7 +447,7 @@ src/subtitleformatter/config/
 
 ### 8.1 已完成功能 ✅
 - ✅ **统一配置管理**: `UnifiedConfigManager` 实现
-- ✅ **插件链配置管理**: `PluginChainManager` 实现  
+- ✅ **插件链配置管理**: `PluginChainManager` 实现
 - ✅ **插件参数配置管理**: `PluginConfigManager` 实现
 - ✅ **配置协调器**: `ConfigCoordinator` 实现
 - ✅ **插件默认配置获取**: 从 `plugin.json` 正确提取默认配置
