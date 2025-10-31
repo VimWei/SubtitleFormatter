@@ -101,6 +101,12 @@ class MainWindowV2(QMainWindow):
         # 扫描并加载插件（需要 UI/日志面板已就绪）
         self.initialize_plugin_system()
 
+        # 初始化可用插件到插件管理面板，确保后续链渲染有元数据
+        try:
+            self.update_plugin_management_ui()
+        except Exception as e:
+            logger.warning(f"Failed to prepare plugin management UI: {e}")
+
         # 设置配置协调器到各个面板（必须在加载配置之前）
         self.plugin_management.set_config_coordinator(self.config_coordinator)
         self.config_management.set_config_coordinator(self.config_coordinator)
@@ -323,22 +329,65 @@ class MainWindowV2(QMainWindow):
         except Exception as e:
             logger.error(f"Failed to select plugin from chain {plugin_name}: {e}")
 
-    def on_configuration_restored(
-        self, unified_config: Dict[str, Any], chain_config: Dict[str, Any]
-    ):
-        """处理配置恢复事件"""
+    def on_configuration_restored(self, unified_config: Dict[str, Any], chain_config: Dict[str, Any]):
+        """配置恢复后刷新所有涉及UI"""
         try:
-            # 统一配置已加载到协调器，由各面板按需读取
+            # 确保可用插件清单已准备好（用于链展示的元数据）
+            try:
+                self.update_plugin_management_ui()
+            except Exception as e:
+                logger.warning(f"update_plugin_management_ui failed during restore: {e}")
 
-            # 更新插件链配置
+            # 1. 刷新插件链可视化、管理面板
             plugin_order = chain_config.get("plugins", {}).get("order", [])
-            self.plugin_management.update_plugin_chain(plugin_order)
+            plugin_metadata = chain_config.get("plugin_configs", {})
+            # PluginChainVisualizer
+            if hasattr(self, "plugin_chain_visualizer"):
+                try:
+                    self.plugin_chain_visualizer.update_plugin_chain(plugin_order)
+                except Exception as e:
+                    logger.error(f"UI: plugin_chain_visualizer update failed: {e}")
+            # PluginManagementPanel
+            if hasattr(self, "plugin_management"):
+                try:
+                    # 使用面板现有API载入完整链配置
+                    self.plugin_management.load_plugin_chain_config(chain_config)
+                except Exception as e:
+                    logger.error(f"UI: plugin_management load_plugin_chain_config failed: {e}")
 
-            # 重新创建快照
-            self.config_coordinator.create_chain_snapshot()
+            # 2. 插件参数配置面板（需补实现reload_all_plugin_configs）
+            if hasattr(self, "plugin_config"):
+                try:
+                    self.plugin_config.reload_all_plugin_configs(chain_config)
+                except Exception as e:
+                    logger.error(f"UI: plugin_config reload_all_plugin_configs failed: {e}")
 
-            logger.info("Configuration restored and UI updated")
+            # 3. 流程面板（需补实现update_processing_flow）
+            if hasattr(self, "processing_flow_panel"):
+                try:
+                    self.processing_flow_panel.update_processing_flow(plugin_order)
+                except Exception as e:
+                    logger.error(f"UI: processing_flow_panel update_processing_flow failed: {e}")
 
+            # 4. TabsPanel: basic/advanced
+            if hasattr(self, "tabs_panel"):
+                try:
+                    if hasattr(self.tabs_panel, "tab_basic"):
+                        self.tabs_panel.tab_basic.load_config_from_coordinator()
+                    if hasattr(self.tabs_panel, "tab_advanced"):
+                        self.tabs_panel.tab_advanced.load_config_from_coordinator()
+                except Exception as e:
+                    logger.error(f"UI: tabs_panel reload failed: {e}")
+
+            # 5. LogPanel: logging level
+            if hasattr(self, "log_panel"):
+                try:
+                    logging_level = (unified_config.get('logging') or {}).get('level', 'INFO')
+                    self.log_panel.set_logging_level(logging_level)
+                except Exception as e:
+                    logger.error(f"UI: log_panel set_logging_level failed: {e}")
+
+            logger.info("Configuration restored and FULL UI updated")
         except Exception as e:
             logger.error(f"Failed to update UI after configuration restore: {e}")
 

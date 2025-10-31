@@ -543,6 +543,20 @@ class PluginConfigPanel(QWidget):
         except Exception as e:
             logger.error(f"Failed to reset configuration: {e}")
 
+    def reload_all_plugin_configs(self, chain_config: dict):
+        """
+        批量刷新所有插件参数界面（根据链配置）
+        """
+        self.clear_config_ui()  # 清空当前内容
+        plugin_configs = (chain_config or {}).get("plugin_configs", {})
+        if not plugin_configs:
+            return
+        for plugin_name in plugin_configs:
+            try:
+                self.load_plugin_config(plugin_name, is_from_chain=True)
+            except Exception as e:
+                logger.error(f"Failed to reload plugin config for {plugin_name}: {e}")
+
     def show_no_registry_message(self):
         """显示无注册表消息"""
         label = QLabel("Plugin registry not available")

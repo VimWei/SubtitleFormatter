@@ -13,3 +13,9 @@ class ProcessingFlowPanel(QWidget):
         self.visualizer = PluginChainVisualizer(self)
         self.visualizer.setMinimumHeight(120)
         layout.addWidget(self.visualizer)
+
+    def update_processing_flow(self, plugin_order: list):
+        """根据 plugin_order 更新流程展示（占位实现）"""
+        # TODO: 实现流程面板的节点重构与流程渲染
+        from subtitleformatter.utils.unified_logger import logger
+        logger.info(f"[ProcessingFlowPanel] Updated processing flow: {plugin_order}")

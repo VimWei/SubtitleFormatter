@@ -123,7 +123,6 @@ class ConfigurationManagementPanel(QWidget):
             logger.error("Configuration coordinator not set")
             return
 
-        # 设置默认目录为 data/configs
         default_dir = Path("data/configs")
         if not default_dir.exists():
             default_dir.mkdir(parents=True, exist_ok=True)
@@ -134,8 +133,41 @@ class ConfigurationManagementPanel(QWidget):
 
         if file_path:
             try:
-                config = self.config_coordinator.import_unified_config(Path(file_path))
-                logger.debug(f"Imported configuration from {normalize_path(file_path)}")
+                unified_config = self.config_coordinator.import_unified_config(Path(file_path))
+                chain_ref = None
+                if unified_config and "plugins" in unified_config:
+                    chain_ref = unified_config["plugins"].get("current_plugin_chain")
+                chain_config = None
+                if chain_ref:
+                    ref_path = Path(chain_ref)
+                    if ref_path.is_absolute():
+                        chain_path = ref_path
+                    else:
+                        # 统一从 data/configs/plugin_chains 解析
+                        base_dir = self.config_coordinator.chain_manager.plugin_chains_dir
+                        # 若引用里自带 plugin_chains/ 前缀，也统一归一到 base_dir 下
+                        if str(ref_path).startswith("plugin_chains/"):
+                            chain_path = base_dir / str(ref_path).split("plugin_chains/", 1)[1]
+                        else:
+                            chain_path = base_dir / ref_path
+                    if chain_path.exists():
+                        chain_config = self.config_coordinator.chain_manager.load_chain(chain_path)
+                        logger.info(f"Imported plugin chain from {chain_path}")
+                    else:
+                        logger.warning(
+                            f"Plugin chain file missing: {chain_path}, fallback to default chain."
+                        )
+                if chain_config is None:
+                    # fallback: 确保用户 plugin_chains 目录有 default_plugin_chain.toml
+                    self.config_coordinator.chain_manager._ensure_default_chain_exists()
+                    user_chain = self.config_coordinator.chain_manager.plugin_chains_dir / "default_plugin_chain.toml"
+                    chain_config = self.config_coordinator.chain_manager.load_chain(user_chain)
+                    logger.info("Fell back to user default plugin chain config on import.")
+
+                main_window = self.window()
+                logger.info("Dispatching on_configuration_restored after import configuration")
+                if hasattr(main_window, "on_configuration_restored"):
+                    main_window.on_configuration_restored(unified_config, chain_config)
 
             except Exception as e:
                 logger.error(f"Failed to import configuration: {e}")
@@ -179,8 +211,10 @@ class ConfigurationManagementPanel(QWidget):
             logger.info("Restored configuration to last saved state")
 
             # 通知主窗口更新界面
-            if hasattr(self.parent(), "on_configuration_restored"):
-                self.parent().on_configuration_restored(unified_config, chain_config)
+            main_window = self.window()
+            logger.info("Dispatching on_configuration_restored after restore last")
+            if hasattr(main_window, "on_configuration_restored"):
+                main_window.on_configuration_restored(unified_config, chain_config)
 
         except Exception as e:
             logger.error(f"Failed to restore configuration: {e}")
@@ -192,8 +226,18 @@ class ConfigurationManagementPanel(QWidget):
             return
 
         try:
-            config = self.config_coordinator.restore_default_config()
-            logger.info("Restored configuration to default")
+            from subtitleformatter.config.loader import DEFAULT_CONFIG_PATH
+            unified_config = self.config_coordinator.unified_manager.import_config(DEFAULT_CONFIG_PATH)
+            # 保证用户 plugin_chains 目录下有 default_plugin_chain.toml
+            self.config_coordinator.chain_manager._ensure_default_chain_exists()
+            user_chain = self.config_coordinator.chain_manager.plugin_chains_dir / "default_plugin_chain.toml"
+            chain_config = self.config_coordinator.chain_manager.load_chain(user_chain)
+            logger.info("Restored configuration to default (user default chain in plugin_chains dir)")
+
+            main_window = self.window()
+            logger.info("Dispatching on_configuration_restored after restore default")
+            if hasattr(main_window, "on_configuration_restored"):
+                main_window.on_configuration_restored(unified_config, chain_config)
 
         except Exception as e:
             logger.error(f"Failed to restore default configuration: {e}")
