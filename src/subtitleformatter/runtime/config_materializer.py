@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 from typing import Dict
+from datetime import datetime
+import os
 
 
 def materialize_runtime_config(
@@ -28,13 +30,49 @@ def materialize_runtime_config(
         if not p.is_absolute():
             output_file = str(project_root / output_file)
 
+    # Resolve default/suggested output when not provided
+    add_timestamp = bool(output_cfg.get("add_timestamp", True))
+    if not output_file and input_file:
+        try:
+            in_base = Path(input_file).stem
+            out_dir = (project_root / "data" / "output").resolve()
+            os.makedirs(out_dir, exist_ok=True)
+            filename = f"{in_base}.txt"
+            if add_timestamp:
+                filename = f"{datetime.now().strftime('%Y%m%d%H%M%S')}-{filename}"
+            output_file = str(out_dir / filename)
+        except Exception:
+            # Fallback: leave empty if any issue arises
+            pass
+
+    # If output provided and timestamp is enabled, prefix at runtime
+    if output_file and add_timestamp:
+        try:
+            p = Path(output_file)
+            ts_prefix = datetime.now().strftime("%Y%m%d%H%M%S")
+            prefixed = p.with_name(f"{ts_prefix}-{p.name}")
+            # Avoid double-prefixing if already has the same prefix
+            if not p.name.startswith(ts_prefix + "-"):
+                output_file = str(prefixed)
+        except Exception:
+            pass
+
+    # Ensure output directory exists
+    if output_file:
+        try:
+            out_dir = os.path.dirname(output_file)
+            if out_dir and not os.path.exists(out_dir):
+                os.makedirs(out_dir, exist_ok=True)
+        except Exception:
+            pass
+
     base: Dict = {
         "paths": {
             "input_file": input_file,
             "output_file": output_file,
         },
         "output": {
-            "add_timestamp": bool(output_cfg.get("add_timestamp", True)),
+            "add_timestamp": add_timestamp,
         },
         "debug": {
             "enabled": bool(debug_cfg.get("enabled", False)),

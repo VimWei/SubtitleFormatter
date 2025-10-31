@@ -820,8 +820,13 @@ def main():
         epilog="""
 示例:
   python main.py input.txt                    # 自动保存到 data/output/
-  python main.py input.txt -o output.txt      # 自定义输出文件
-  python main.py input.txt --output output.txt # 自定义输出文件
+  python main.py input.txt -o output.txt      # 指定输出文件名（保存到 data/output/）
+  python main.py input.txt --output output.txt # 指定输出文件名（保存到 data/output/）
+
+默认路径处理:
+  - 输入文件: 优先使用传入路径；若为相对路径且未找到，则在 data/input/ 下查找
+  - 输出文件: 默认保存到 data/output/，传入 -o 仅作为文件名而非完整路径
+  - 目录不存在时自动创建
 
 功能特点:
   - 基于规则和启发式方法，无需LLM
@@ -848,8 +853,25 @@ def main():
 
     args = parser.parse_args()
 
+    def resolve_input_path(filename: str) -> Path:
+        candidate = Path(filename)
+        if candidate.exists():
+            return candidate
+        default_path = Path("data") / "input" / filename
+        if default_path.exists():
+            return default_path
+        # 确保默认输入目录存在
+        default_path.parent.mkdir(parents=True, exist_ok=True)
+        return default_path
+
+    def resolve_output_path(input_path: Path, output_filename: str | None) -> Path:
+        output_dir = Path("data") / "output"
+        if output_filename:
+            return output_dir / output_filename
+        return output_dir / f"{input_path.stem}.split.txt"
+
     # 验证输入文件
-    input_path = Path(args.input_file)
+    input_path = resolve_input_path(args.input_file)
     if not input_path.exists():
         print(f"❌ 错误：输入文件不存在: {input_path}")
         sys.exit(1)
@@ -858,11 +880,9 @@ def main():
         print(f"❌ 错误：输入路径不是文件: {input_path}")
         sys.exit(1)
 
-    # 处理输出文件路径
-    output_path = None
-    if args.output_file:
-        output_path = Path(args.output_file)
-        output_path.parent.mkdir(parents=True, exist_ok=True)
+    # 处理输出文件路径（统一到 data/output/）
+    output_path = resolve_output_path(input_path, args.output_file)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
 
     # 创建拆分器并处理文件
     splitter = SentenceSplitter(min_recursive_length=args.min_length, max_depth=args.max_depth)

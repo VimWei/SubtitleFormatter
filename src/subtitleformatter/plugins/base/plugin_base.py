@@ -50,6 +50,8 @@ class TextProcessorPlugin(ABC):
         self.config = config or {}
         self._initialized = False
         self._dependencies: Dict[str, Any] = {}
+        # Ensure a logger attribute is always available for plugins
+        self.logger = logger
 
         # Validate configuration if schema is provided
         if self.config_schema:
