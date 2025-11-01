@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.4.2] - 2025-11-01
+
+- feat(config): enhance file processing configuration to support new I/O modes
+- feat(transcript_converter): add TranscriptConverterPlugin for subtitle format conversion
+- docs: Implement GUI I/O mode redesign document
+- docs: Introduce GUI I/O mode redesign plan
+- docs: Refactor configuration management design document
+- Enhance sentence splitter and config materializer functionality
+- Add expert guide for configuration restore UI synchronization
+
 ## [1.4.1] - 2025-10-30
 
 - refactor(gui): modularize panels and migrate debug settings to Advanced
