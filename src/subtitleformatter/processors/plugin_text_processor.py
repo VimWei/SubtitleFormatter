@@ -66,39 +66,89 @@ class PluginTextProcessor:
         # Start file processing workflow
         log_step("开始处理文件")
 
-        # Read input file
+        # Get input file
         input_file = self.config.get("paths", {}).get("input_file")
-        with open(input_file, "r", encoding="utf-8") as f:
-            text = f.read()
+        output_mode = self.config.get("paths", {}).get("output_mode", "file")
 
-        # Log file information using unified logger
-        import os
+        # Detect if we have file-conversion plugins (plugins that output file paths)
+        has_file_conversion_plugins = any(
+            plugin.get_output_type() == list for plugin in self.loaded_plugins
+        )
 
-        filename = os.path.basename(input_file)
-        log_info(f"已读入文件 {filename}")
-        log_debug_info(f"文本长度: {len(text)} 字符")
+        # Handle file conversion plugins differently
+        if output_mode == "directory" and has_file_conversion_plugins:
+            # Directory output mode with file conversion plugins
+            # Inject output directory into plugin configs (timestamp handled by platform)
+            output_dir = self.config.get("paths", {}).get("output_dir", "")
+            add_timestamp = bool(self.config.get("output", {}).get("add_timestamp", True))
+            timestamp_value = self.config.get("output", {}).get("timestamp_value")
 
-        # Pass filename information to debug output
-        debug_output.show_step("读入文件", text, {"input_file": input_file})
+            # Inject into plugins that need it
+            for plugin in self.loaded_plugins:
+                if plugin.get_output_type() == list:
+                    plugin.config["_output_dir"] = output_dir
 
-        # Process text through plugin chain
-        processed_text = self._process_text_through_plugins(text, debug_output)
+            # Process with file path (not text content)
+            import os
 
-        # Save result
-        output_file = self.config.get("paths", {}).get("output_file")
-        log_step("正在保存结果到文件", output_file)
-        with open(output_file, "w", encoding="utf-8") as f:
-            # Some plugins may return a list of lines/sentences; normalize to string
-            if isinstance(processed_text, list):
-                processed_text = "\n".join(map(str, processed_text))
-            elif not isinstance(processed_text, str):
-                processed_text = str(processed_text)
-            f.write(processed_text)
+            filename = os.path.basename(input_file)
+            log_info(f"已读入文件 {filename}")
+
+            # Pass file path to plugin chain (for file conversion plugins)
+            artifacts = self._process_file_conversion_plugins(input_file, debug_output)
+
+            # Platform-level timestamp handling (consistent with file mode)
+            if add_timestamp and timestamp_value and artifacts:
+                from pathlib import Path
+                timestamped_artifacts = []
+                for artifact_path in artifacts:
+                    artifact = Path(artifact_path)
+                    # Add timestamp prefix if not already present
+                    if not artifact.name.startswith(timestamp_value + "-"):
+                        timestamped_name = f"{timestamp_value}-{artifact.name}"
+                        timestamped_path = artifact.parent / timestamped_name
+                        # Rename file
+                        artifact.rename(timestamped_path)
+                        timestamped_artifacts.append(str(timestamped_path))
+                    else:
+                        timestamped_artifacts.append(artifact_path)
+                artifacts = timestamped_artifacts
+
+            log_info(f"处理完成！生成文件: {', '.join(artifacts)}")
+        else:
+            # Traditional text processing mode
+            # Read input file
+            with open(input_file, "r", encoding="utf-8") as f:
+                text = f.read()
+
+            # Log file information using unified logger
+            import os
+
+            filename = os.path.basename(input_file)
+            log_info(f"已读入文件 {filename}")
+            log_debug_info(f"文本长度: {len(text)} 字符")
+
+            # Pass filename information to debug output
+            debug_output.show_step("读入文件", text, {"input_file": input_file})
+
+            # Process text through plugin chain
+            processed_text = self._process_text_through_plugins(text, debug_output)
+
+            # Save result
+            output_file = self.config.get("paths", {}).get("output_file")
+            log_step("正在保存结果到文件", output_file)
+            with open(output_file, "w", encoding="utf-8") as f:
+                # Some plugins may return a list of lines/sentences; normalize to string
+                if isinstance(processed_text, list):
+                    processed_text = "\n".join(map(str, processed_text))
+                elif not isinstance(processed_text, str):
+                    processed_text = str(processed_text)
+                f.write(processed_text)
+
+            log_info(f"处理完成！输出文件：{output_file}")
 
         # Save debug log
         debug_output.save_log()
-
-        log_info(f"处理完成！输出文件：{output_file}")
 
     def _initialize_plugin_system(self) -> None:
         """Initialize the plugin system components."""
@@ -195,6 +245,55 @@ class PluginTextProcessor:
                 continue
 
         return current_text
+
+    def _process_file_conversion_plugins(self, input_file: str, debug_output: DebugOutput) -> List[str]:
+        """
+        Process file through plugins that convert files (return file path lists).
+
+        Args:
+            input_file: Input file path
+            debug_output: Debug output instance
+
+        Returns:
+            List of generated file paths
+        """
+        current_input = input_file
+        all_artifacts: List[str] = []
+
+        for i, plugin in enumerate(self.loaded_plugins):
+            plugin_name = plugin.name
+            log_step(f"正在执行插件: {plugin_name}")
+
+            try:
+                # Process with current input (file path or intermediate result)
+                result = plugin.process(current_input)
+
+                # Handle result based on output type
+                if plugin.get_output_type() == list:
+                    # Plugin returns list of file paths
+                    artifacts = result
+                    all_artifacts.extend(artifacts)
+                    log_info(f"插件 {plugin_name} 生成文件: {', '.join(artifacts)}")
+
+                    # For file conversion plugins, the result is file paths
+                    # Use first artifact as input for next plugin (if any)
+                    # Or use original input if no artifacts
+                    if artifacts:
+                        current_input = artifacts[0]  # Use first artifact for next plugin
+                    # Otherwise keep current_input unchanged
+                else:
+                    # Plugin returns text (standard text processing)
+                    # This shouldn't happen in file conversion mode, but handle gracefully
+                    current_input = str(result) if result else current_input
+
+                log_info(f"插件 {plugin_name} 处理完成")
+
+            except Exception as e:
+                logger.error(f"插件 {plugin_name} 处理时出错: {e}")
+                log_info(f"插件 {plugin_name} 处理失败，跳过")
+                continue
+
+        return all_artifacts
 
     def get_plugin_status(self) -> Dict[str, Any]:
         """

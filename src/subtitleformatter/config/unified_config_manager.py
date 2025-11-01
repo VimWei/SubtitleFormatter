@@ -139,9 +139,13 @@ class UnifiedConfigManager:
                 with self.default_config_path.open("rb") as f:
                     self._config = tomllib.load(f)
                 logger.info("Restored default configuration")
+                # Save to latest config so changes persist
+                self.save()
             else:
                 self._config = {"paths": {}, "output": {}, "debug": {}, "plugins": {}}
                 logger.warning("Default configuration not found, using empty config")
+                # Still save to persist the empty config
+                self.save()
 
             return self._config.copy()
 

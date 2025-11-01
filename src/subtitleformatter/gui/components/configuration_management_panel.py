@@ -226,8 +226,8 @@ class ConfigurationManagementPanel(QWidget):
             return
 
         try:
-            from subtitleformatter.config.loader import DEFAULT_CONFIG_PATH
-            unified_config = self.config_coordinator.unified_manager.import_config(DEFAULT_CONFIG_PATH)
+            # Use restore_default which loads default_config.toml and saves to config_latest.toml
+            unified_config = self.config_coordinator.restore_default_config()
             # 保证用户 plugin_chains 目录下有 default_plugin_chain.toml
             self.config_coordinator.chain_manager._ensure_default_chain_exists()
             user_chain = self.config_coordinator.chain_manager.plugin_chains_dir / "default_plugin_chain.toml"

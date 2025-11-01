@@ -58,6 +58,31 @@ class TextProcessorPlugin(ABC):
             self._validate_config()
             self._apply_default_values()
 
+    def get_input_type(self) -> type:
+        """
+        Return the expected input data type.
+
+        Default implementation returns str for backward compatibility.
+        Plugins that accept different input types (e.g., list) should override this method.
+
+        Returns:
+            The input data type class (default: str)
+        """
+        return str
+
+    def get_output_type(self) -> type:
+        """
+        Return the output data type.
+
+        Default implementation returns str for backward compatibility.
+        Plugins that produce different output types (e.g., list for file conversion plugins)
+        should override this method.
+
+        Returns:
+            The output data type class (default: str)
+        """
+        return str
+
     @abstractmethod
     def process(self, text: Union[str, List[str]]) -> Union[str, List[str]]:
         """

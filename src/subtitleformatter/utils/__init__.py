@@ -8,7 +8,12 @@ This package contains utility functionality:
 """
 
 from .debug_output import DebugOutput
-from .path_utils import normalize_path
+from .path_utils import (
+    normalize_path,
+    normalize_relative_path,
+    to_absolute_path,
+    to_relative_path,
+)
 from .unified_logger import (
     UnifiedLogger,
     log_debug,
@@ -37,4 +42,7 @@ __all__ = [
     "log_debug_info",
     "log_debug_step",
     "normalize_path",
+    "normalize_relative_path",
+    "to_absolute_path",
+    "to_relative_path",
 ]

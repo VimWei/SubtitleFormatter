@@ -237,23 +237,43 @@ class ConfigCoordinator:
         """Get file processing configuration from unified schema.
 
         Maps unified sections to the legacy panel structure expected by UI tabs.
+        Supports both legacy fields (input_file, output_file) and new IO mode fields.
         """
+        # Ensure config is loaded if empty
+        if not self.unified_manager._config:
+            self.unified_manager.load()
+        
         cfg = self.unified_manager.get_config() or {}
         paths = cfg.get("paths", {}) or {}
         output = cfg.get("output", {}) or {}
         debug = cfg.get("debug", {}) or {}
 
-        return {
+        # Build base config with legacy fields (for backward compatibility)
+        result = {
             "input_file": paths.get("input_file", ""),
             "output_file": paths.get("output_file", ""),
             "add_timestamp": bool(output.get("add_timestamp", True)),
-            "debug": {"enabled": bool(debug.get("enabled", False))},
+            "debug": {
+                "enabled": bool(debug.get("enabled", False)),
+                "debug_dir": debug.get("debug_dir", "data/debug"),
+            },
         }
+
+        # Add new IO mode fields with defaults
+        result["input_mode"] = paths.get("input_mode", "file")
+        result["input_paths"] = paths.get("input_paths", [])
+        result["input_dir"] = paths.get("input_dir", "data/input/")
+        result["input_glob"] = paths.get("input_glob", "*.*")
+        result["output_mode"] = paths.get("output_mode", "file")
+        result["output_path"] = paths.get("output_path", "data/output/")
+
+        return result
 
     def set_file_processing_config(self, config: Dict[str, Any]):
         """Set file processing configuration into unified schema.
 
         Accepts the panel structure and writes back to [paths]/[output]/[debug].
+        Supports both legacy fields and new IO mode fields.
         """
         current = self.unified_manager.get_config() or {}
         current.setdefault("paths", {})
@@ -261,6 +281,7 @@ class ConfigCoordinator:
         current.setdefault("debug", {})
 
         if isinstance(config, dict):
+            # Legacy fields (for backward compatibility)
             if "input_file" in config:
                 current["paths"]["input_file"] = config.get("input_file") or ""
             if "output_file" in config:
@@ -270,8 +291,25 @@ class ConfigCoordinator:
             # Support both flat debug_enabled and nested debug.enabled
             if "debug_enabled" in config:
                 current["debug"]["enabled"] = bool(config.get("debug_enabled"))
-            elif isinstance(config.get("debug"), dict) and "enabled" in config.get("debug", {}):
-                current["debug"]["enabled"] = bool(config["debug"]["enabled"])
+            elif isinstance(config.get("debug"), dict):
+                if "enabled" in config["debug"]:
+                    current["debug"]["enabled"] = bool(config["debug"]["enabled"])
+                if "debug_dir" in config["debug"]:
+                    current["debug"]["debug_dir"] = config["debug"]["debug_dir"]
+
+            # New IO mode fields
+            if "input_mode" in config:
+                current["paths"]["input_mode"] = config.get("input_mode")
+            if "input_paths" in config:
+                current["paths"]["input_paths"] = config.get("input_paths", [])
+            if "input_dir" in config:
+                current["paths"]["input_dir"] = config.get("input_dir", "")
+            if "input_glob" in config:
+                current["paths"]["input_glob"] = config.get("input_glob", "")
+            if "output_mode" in config:
+                current["paths"]["output_mode"] = config.get("output_mode")
+            if "output_path" in config:
+                current["paths"]["output_path"] = config.get("output_path", "")
 
         # Persist through unified manager
         self.unified_manager.set_config(current)

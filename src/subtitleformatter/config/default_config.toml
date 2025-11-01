@@ -3,12 +3,29 @@
 current_plugin_chain = "default_plugin_chain.toml"
 
 [paths]
+# 输入相关配置
+# 输入模式：file（单文件）/ files（多文件）/ directory（目录+Glob）
+input_mode = "file"
 # 输入文件路径：
 # - 留空则首次运行会提示输入
 # - 相对路径基于 data/input/ 目录
 input_file = ""
-# 输出文件路径：保持为空；由 GUI 根据输入与“Add timestamp”选项生成建议
+# Files 模式的文件列表（多文件输入）
+input_paths = []
+# Directory 模式的目录路径（目录输入）
+# - 相对路径基于项目根目录
+input_dir = "data/input/"
+# Directory 模式的 Glob 模式（默认 *.*，匹配所有文件）
+input_glob = "*.*"
+
+# 输出相关配置
+# 输出模式：file（单文件）/ directory（目录）
+output_mode = "file"
+# 输出文件路径：保持为空；由 GUI 根据输入与"Add timestamp"选项生成建议
 output_file = ""
+# Directory 模式的输出目录路径（目录输出）
+# - 相对路径基于项目根目录
+output_path = "data/output/"
 
 [output]
 # Whether to prefix output filename with timestamp when auto-suggesting

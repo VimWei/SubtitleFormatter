@@ -19,7 +19,7 @@ class TabsPanel(QWidget):
         self.tabs.addTab(self.tab_basic, "Basic")
         self.tabs.addTab(self.tab_advanced, "Advanced")
         self.tabs.addTab(self.tab_about, "About")
-        self.tabs.setMinimumHeight(160)
+        self.tabs.setMinimumHeight(180)
         layout.addWidget(self.tabs)
 
         # 增加下列内容: 使 set_config_coordinator 可自适应主窗口调用

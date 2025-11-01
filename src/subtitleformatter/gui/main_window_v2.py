@@ -111,7 +111,8 @@ class MainWindowV2(QMainWindow):
         self.plugin_management.set_config_coordinator(self.config_coordinator)
         self.config_management.set_config_coordinator(self.config_coordinator)
         self.plugin_config.set_config_coordinator(self.config_coordinator)
-        self.tabs_panel.tab_basic.set_config_coordinator(self.config_coordinator)
+        # Set config coordinator for both tabs (via TabsPanel's method)
+        self.tabs_panel.set_config_coordinator(self.config_coordinator)
 
         # 设置信号连接（必须在配置加载之前）
         self.setup_signals()
@@ -217,7 +218,7 @@ class MainWindowV2(QMainWindow):
         right_splitter.addWidget(self.log_panel)
 
         # 设置分割器比例（调整初始高度：Tabs/Flow 各自最小高度，底部填充）
-        right_splitter.setSizes([160, 120, 160, 999])  # log panel 占据剩余空间
+        right_splitter.setSizes([220, 120, 160, 999])  # log panel 占据剩余空间
         right_splitter.setStretchFactor(0, 1)
         right_splitter.setStretchFactor(1, 1)
         right_splitter.setStretchFactor(2, 1)
@@ -289,9 +290,8 @@ class MainWindowV2(QMainWindow):
             self.log_panel.levelChanged.connect(self.on_logging_level_changed)
 
         # Basic 页面信号连接：保存配置变更到 ConfigCoordinator
+        # Note: Browse buttons are already connected in BasicPage.__init__, no need to connect again here
         if hasattr(self, "tabs_panel"):
-            self.tabs_panel.tab_basic.btn_input.clicked.connect(self._choose_input)
-            self.tabs_panel.tab_basic.btn_output.clicked.connect(self._choose_output)
             self.tabs_panel.tab_basic.edit_input.editingFinished.connect(
                 lambda: self.tabs_panel.tab_basic.save_config_to_coordinator()
             )
@@ -427,9 +427,23 @@ class MainWindowV2(QMainWindow):
             if not paths.get("input_file"):
                 QMessageBox.warning(self, "Processing Error", "Please select an input file first.")
                 return
-            if not paths.get("output_file"):
-                QMessageBox.warning(self, "Processing Error", "Please select an output file.")
-                return
+            
+            # 根据输出模式进行不同的验证
+            output_mode = paths.get("output_mode", "file")
+            if output_mode == "directory":
+                # 目录输出模式：检查 output_dir
+                if not paths.get("output_dir"):
+                    QMessageBox.warning(
+                        self, 
+                        "Processing Error", 
+                        "Please select an output directory."
+                    )
+                    return
+            else:
+                # 文件输出模式：检查 output_file
+                if not paths.get("output_file"):
+                    QMessageBox.warning(self, "Processing Error", "Please select an output file.")
+                    return
 
             self.start_processing_thread(full_config)
 
