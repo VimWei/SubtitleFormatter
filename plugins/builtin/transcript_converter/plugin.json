@@ -1,0 +1,45 @@
+{
+  "name": "builtin/transcript_converter",
+  "version": "1.0.0",
+  "description": "将 .transcript 转换为 .srt/.txt",
+  "author": "SubtitleFormatter Team",
+  "class_name": "TranscriptConverterPlugin",
+  "category": "format_conversion",
+  "tags": ["transcript", "srt", "txt"],
+  "dependencies": [],
+  "config_schema": {
+    "type": "object",
+    "properties": {
+      "enabled": {
+        "type": "boolean",
+        "default": true,
+        "description": "是否启用插件"
+      },
+      "emit_srt": {
+        "type": "boolean",
+        "default": true,
+        "description": "是否输出 SRT 文件"
+      },
+      "emit_txt": {
+        "type": "boolean",
+        "default": true,
+        "description": "是否输出 TXT 文件"
+      }
+    },
+    "additionalProperties": false
+  },
+  "input_types": ["string"],
+  "output_types": ["list"],
+  "examples": [
+    {
+      "input": "C:/data/input/sample.transcript",
+      "output": [
+        "C:/data/output/sample.srt",
+        "C:/data/output/sample.txt"
+      ],
+      "description": "将 transcript 转换为 SRT 和 TXT"
+    }
+  ]
+}
+
+
