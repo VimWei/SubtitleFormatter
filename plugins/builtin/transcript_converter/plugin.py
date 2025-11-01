@@ -106,7 +106,7 @@ class TranscriptConverterPlugin(TextProcessorPlugin):
             else:
                 # 如果开始时间也无法解析，返回0:00:03,000
                 total_seconds = 3
-        
+
         hours = total_seconds // 3600
         minutes = (total_seconds % 3600) // 60
         seconds = total_seconds % 60
@@ -231,5 +231,3 @@ class TranscriptConverterPlugin(TextProcessorPlugin):
             artifacts.append(str(txt_output))
 
         return artifacts
-
-

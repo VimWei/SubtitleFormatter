@@ -160,7 +160,10 @@ class ConfigurationManagementPanel(QWidget):
                 if chain_config is None:
                     # fallback: 确保用户 plugin_chains 目录有 default_plugin_chain.toml
                     self.config_coordinator.chain_manager._ensure_default_chain_exists()
-                    user_chain = self.config_coordinator.chain_manager.plugin_chains_dir / "default_plugin_chain.toml"
+                    user_chain = (
+                        self.config_coordinator.chain_manager.plugin_chains_dir
+                        / "default_plugin_chain.toml"
+                    )
                     chain_config = self.config_coordinator.chain_manager.load_chain(user_chain)
                     logger.info("Fell back to user default plugin chain config on import.")
 
@@ -230,9 +233,14 @@ class ConfigurationManagementPanel(QWidget):
             unified_config = self.config_coordinator.restore_default_config()
             # 保证用户 plugin_chains 目录下有 default_plugin_chain.toml
             self.config_coordinator.chain_manager._ensure_default_chain_exists()
-            user_chain = self.config_coordinator.chain_manager.plugin_chains_dir / "default_plugin_chain.toml"
+            user_chain = (
+                self.config_coordinator.chain_manager.plugin_chains_dir
+                / "default_plugin_chain.toml"
+            )
             chain_config = self.config_coordinator.chain_manager.load_chain(user_chain)
-            logger.info("Restored configuration to default (user default chain in plugin_chains dir)")
+            logger.info(
+                "Restored configuration to default (user default chain in plugin_chains dir)"
+            )
 
             main_window = self.window()
             logger.info("Dispatching on_configuration_restored after restore default")

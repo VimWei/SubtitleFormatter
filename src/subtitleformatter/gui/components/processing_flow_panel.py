@@ -18,4 +18,5 @@ class ProcessingFlowPanel(QWidget):
         """根据 plugin_order 更新流程展示（占位实现）"""
         # TODO: 实现流程面板的节点重构与流程渲染
         from subtitleformatter.utils.unified_logger import logger
+
         logger.info(f"[ProcessingFlowPanel] Updated processing flow: {plugin_order}")

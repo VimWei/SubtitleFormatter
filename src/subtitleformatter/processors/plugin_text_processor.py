@@ -100,6 +100,7 @@ class PluginTextProcessor:
             # Platform-level timestamp handling (consistent with file mode)
             if add_timestamp and timestamp_value and artifacts:
                 from pathlib import Path
+
                 timestamped_artifacts = []
                 for artifact_path in artifacts:
                     artifact = Path(artifact_path)
@@ -246,7 +247,9 @@ class PluginTextProcessor:
 
         return current_text
 
-    def _process_file_conversion_plugins(self, input_file: str, debug_output: DebugOutput) -> List[str]:
+    def _process_file_conversion_plugins(
+        self, input_file: str, debug_output: DebugOutput
+    ) -> List[str]:
         """
         Process file through plugins that convert files (return file path lists).
 

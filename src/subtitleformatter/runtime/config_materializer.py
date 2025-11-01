@@ -1,9 +1,9 @@
 from __future__ import annotations
 
+import os
+from datetime import datetime
 from pathlib import Path
 from typing import Dict
-from datetime import datetime
-import os
 
 
 def materialize_runtime_config(
@@ -12,7 +12,7 @@ def materialize_runtime_config(
     plugin_management_panel,
 ) -> Dict:
     """Assemble full runtime config for processing.
-    
+
     Supports both legacy mode (input_file/output_file) and new IO modes
     (file/files/directory input, file/directory output).
     """
@@ -46,6 +46,7 @@ def materialize_runtime_config(
             # Resolve first matching file (simplified for now)
             try:
                 from glob import glob
+
                 search_path = str(Path(input_dir) / input_glob)
                 matches = glob(search_path, recursive="**" in input_glob)
                 if matches:
@@ -113,12 +114,12 @@ def materialize_runtime_config(
                 output_dir = str(Path(input_file).parent)
             else:
                 output_dir = str((project_root / "data" / "output").resolve())
-        
+
         # Make output_dir absolute
         p = Path(output_dir)
         if not p.is_absolute():
             output_dir = str(project_root / output_dir)
-        
+
         # Ensure output directory exists
         try:
             os.makedirs(output_dir, exist_ok=True)

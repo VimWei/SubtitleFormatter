@@ -329,7 +329,9 @@ class MainWindowV2(QMainWindow):
         except Exception as e:
             logger.error(f"Failed to select plugin from chain {plugin_name}: {e}")
 
-    def on_configuration_restored(self, unified_config: Dict[str, Any], chain_config: Dict[str, Any]):
+    def on_configuration_restored(
+        self, unified_config: Dict[str, Any], chain_config: Dict[str, Any]
+    ):
         """配置恢复后刷新所有涉及UI"""
         try:
             # 确保可用插件清单已准备好（用于链展示的元数据）
@@ -382,7 +384,7 @@ class MainWindowV2(QMainWindow):
             # 5. LogPanel: logging level
             if hasattr(self, "log_panel"):
                 try:
-                    logging_level = (unified_config.get('logging') or {}).get('level', 'INFO')
+                    logging_level = (unified_config.get("logging") or {}).get("level", "INFO")
                     self.log_panel.set_logging_level(logging_level)
                 except Exception as e:
                     logger.error(f"UI: log_panel set_logging_level failed: {e}")
@@ -427,16 +429,14 @@ class MainWindowV2(QMainWindow):
             if not paths.get("input_file"):
                 QMessageBox.warning(self, "Processing Error", "Please select an input file first.")
                 return
-            
+
             # 根据输出模式进行不同的验证
             output_mode = paths.get("output_mode", "file")
             if output_mode == "directory":
                 # 目录输出模式：检查 output_dir
                 if not paths.get("output_dir"):
                     QMessageBox.warning(
-                        self, 
-                        "Processing Error", 
-                        "Please select an output directory."
+                        self, "Processing Error", "Please select an output directory."
                     )
                     return
             else:

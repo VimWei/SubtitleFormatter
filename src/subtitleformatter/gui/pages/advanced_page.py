@@ -3,11 +3,6 @@ from __future__ import annotations
 from pathlib import Path
 
 from PySide6.QtCore import Qt
-from subtitleformatter.utils import (
-    normalize_relative_path,
-    to_absolute_path,
-    to_relative_path,
-)
 from PySide6.QtWidgets import (
     QCheckBox,
     QFileDialog,
@@ -18,6 +13,12 @@ from PySide6.QtWidgets import (
     QSizePolicy,
     QVBoxLayout,
     QWidget,
+)
+
+from subtitleformatter.utils import (
+    normalize_relative_path,
+    to_absolute_path,
+    to_relative_path,
 )
 
 
@@ -87,7 +88,7 @@ class AdvancedPage(QWidget):
         debug_dir = self.edit_debug_dir.text().strip()
         if not debug_dir:
             return
-        
+
         # Convert absolute path to relative if needed (using platform-native separators)
         # Same logic as BasicPage for consistency
         if self.config_coordinator:
@@ -135,16 +136,16 @@ class AdvancedPage(QWidget):
         """Load configuration from ConfigCoordinator and update UI."""
         if not self.config_coordinator:
             return
-        
+
         # Force reload from file to ensure we get the latest config
         # This is important because _config might be stale if restore_default was called
         self.config_coordinator.unified_manager.load()
-        
+
         file_config = self.config_coordinator.get_file_processing_config()
         debug_config = file_config.get("debug", {})
         debug_enabled = debug_config.get("enabled", False)
         debug_dir = debug_config.get("debug_dir", "data/debug")
-        
+
         # Convert to relative path for display (using platform-native separators)
         # If debug_dir is already a relative path (e.g., from TOML), just normalize it
         # If it's absolute, convert it to relative
@@ -163,7 +164,7 @@ class AdvancedPage(QWidget):
                 debug_dir = normalize_relative_path(debug_dir)
         else:
             debug_dir = normalize_relative_path("data/debug")
-        
+
         # Directly set to ensure UI is updated immediately
         # Block signals to avoid triggering editingFinished
         self.edit_debug_dir.blockSignals(True)
@@ -175,11 +176,11 @@ class AdvancedPage(QWidget):
         """Save current UI state to ConfigCoordinator."""
         if not self.config_coordinator:
             return
-        
+
         # Get current UI values directly (not from file_config)
         debug_dir = self.edit_debug_dir.text().strip() or "data/debug"
         debug_enabled = self.check_debug.isChecked()
-        
+
         # Convert absolute path to relative if needed (using platform-native separators)
         if debug_dir:
             try:
@@ -188,7 +189,7 @@ class AdvancedPage(QWidget):
                 debug_dir = normalize_relative_path(debug_dir)
         else:
             debug_dir = normalize_relative_path("data/debug")
-        
+
         # Build config dict with debug settings
         file_config = {
             "debug": {
@@ -196,10 +197,10 @@ class AdvancedPage(QWidget):
                 "debug_dir": debug_dir,
             }
         }
-        
+
         # Save to coordinator
         self.config_coordinator.set_file_processing_config(file_config)
-        
+
         # Update UI to ensure display shows normalized relative path
         # Block signals to avoid triggering editingFinished recursively
         self.edit_debug_dir.blockSignals(True)
@@ -213,7 +214,9 @@ class AdvancedPage(QWidget):
         # Convert relative path to absolute for file dialog
         if self.config_coordinator:
             try:
-                default_dir_abs = to_absolute_path(default_dir, self.config_coordinator.project_root)
+                default_dir_abs = to_absolute_path(
+                    default_dir, self.config_coordinator.project_root
+                )
                 if default_dir_abs.exists() and default_dir_abs.is_dir():
                     default_dir = str(default_dir_abs)
                 elif default_dir_abs.parent.exists():
@@ -222,7 +225,7 @@ class AdvancedPage(QWidget):
                     default_dir = str(self.config_coordinator.project_root / "data" / "debug")
             except Exception:
                 default_dir = str(self.config_coordinator.project_root / "data" / "debug")
-        
+
         dir_path = QFileDialog.getExistingDirectory(self, "Select Debug Directory", default_dir)
         if dir_path:
             # Convert to relative path for display (using platform-native separators)

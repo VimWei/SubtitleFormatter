@@ -3,11 +3,6 @@ from __future__ import annotations
 from pathlib import Path
 
 from PySide6.QtCore import Qt
-from subtitleformatter.utils import (
-    normalize_relative_path,
-    to_absolute_path,
-    to_relative_path,
-)
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -15,13 +10,19 @@ from PySide6.QtWidgets import (
     QFormLayout,
     QHBoxLayout,
     QLabel,
-    QListWidget,
     QLineEdit,
+    QListWidget,
     QPushButton,
     QSizePolicy,
     QStackedWidget,
     QVBoxLayout,
     QWidget,
+)
+
+from subtitleformatter.utils import (
+    normalize_relative_path,
+    to_absolute_path,
+    to_relative_path,
 )
 
 
@@ -32,16 +33,18 @@ class BasicPage(QWidget):
 
         layout = QFormLayout(self)
         layout.setContentsMargins(8, 8, 8, 8)  # Reduced top/bottom margins for better compression
-        layout.setSpacing(4)  # Minimal spacing between rows, will be compressed first when window shrinks
+        layout.setSpacing(
+            4
+        )  # Minimal spacing between rows, will be compressed first when window shrinks
         layout.setVerticalSpacing(4)  # Specifically control vertical spacing between rows
 
         # Input: label + mode combo + input controls + buttons (all in one row)
         self.combo_input_mode = QComboBox(self)
         self.combo_input_mode.addItems(["File", "Files", "Directory"])
-        
+
         # Create stacked widget for input controls
         self.input_stack = QStackedWidget(self)
-        
+
         # Page 0: single file - [file input] + [Browse]
         self.edit_input = QLineEdit(self)
         self.btn_input = QPushButton("Browse...", self)
@@ -56,13 +59,10 @@ class BasicPage(QWidget):
         self.list_inputs = QListWidget(self)
         self.list_inputs.setMinimumHeight(40)  # Minimum height for at least 2 rows
         # Set size policy to prevent excessive compression, prefer keeping height
-        self.list_inputs.setSizePolicy(
-            QSizePolicy.Policy.Expanding, 
-            QSizePolicy.Policy.Preferred
-        )
+        self.list_inputs.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         self.btn_add_inputs = QPushButton("Add files...", self)
         self.btn_remove_inputs = QPushButton("Remove selected", self)
-        
+
         # Buttons in vertical layout
         buttons_layout = QVBoxLayout()
         buttons_layout.setContentsMargins(0, 0, 0, 0)
@@ -71,7 +71,7 @@ class BasicPage(QWidget):
         buttons_layout.addWidget(self.btn_remove_inputs)
         buttons_widget = QWidget(self)
         buttons_widget.setLayout(buttons_layout)
-        
+
         row_inputs_multi = QHBoxLayout()
         row_inputs_multi.addWidget(self.list_inputs, 1)  # Stretch factor for list
         row_inputs_multi.addWidget(buttons_widget)
@@ -99,7 +99,9 @@ class BasicPage(QWidget):
         input_label = QLabel("Input:", self)
         input_label.setMinimumWidth(60)  # Fixed width to align with Output: label
         input_label.setMaximumWidth(60)
-        input_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)  # Right-align text to align colons
+        input_label.setAlignment(
+            Qt.AlignRight | Qt.AlignVCenter
+        )  # Right-align text to align colons
         row_input_container = QHBoxLayout()
         row_input_container.setContentsMargins(0, 0, 0, 0)  # Remove default margins
         row_input_container.setSpacing(8)  # Small spacing between elements in the row
@@ -115,7 +117,7 @@ class BasicPage(QWidget):
         # Output: label + mode combo + output controls + buttons (all in one row)
         self.combo_output_mode = QComboBox(self)
         self.combo_output_mode.addItems(["File", "Directory"])
-        
+
         # Create stacked widget for output controls
         self.output_stack = QStackedWidget(self)
 
@@ -144,7 +146,9 @@ class BasicPage(QWidget):
         output_label = QLabel("Output:", self)
         output_label.setMinimumWidth(60)  # Same fixed width as Input: label for alignment
         output_label.setMaximumWidth(60)
-        output_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)  # Right-align text to align colons
+        output_label.setAlignment(
+            Qt.AlignRight | Qt.AlignVCenter
+        )  # Right-align text to align colons
         row_output_container = QHBoxLayout()
         row_output_container.setContentsMargins(0, 0, 0, 0)  # Remove default margins
         row_output_container.setSpacing(8)  # Small spacing between elements in the row
@@ -185,7 +189,7 @@ class BasicPage(QWidget):
         self.btn_input_dir.clicked.connect(self._browse_input_directory)
         self.btn_output.clicked.connect(self._browse_output_file)
         self.btn_output_dir.clicked.connect(self._browse_output_directory)
-        
+
         # Connect input file change signal to auto-update output (real-time update)
         self.edit_input.textChanged.connect(self._auto_update_output_file)
         # Connect editingFinished to save config only when user finishes editing
@@ -228,7 +232,9 @@ class BasicPage(QWidget):
             input_file_value = input_file or (file_config.get("input_paths", [""]) or [""])[0]
             # Convert to relative path for display (with forward slashes)
             if input_file_value and self.config_coordinator:
-                input_file_value = to_relative_path(input_file_value, self.config_coordinator.project_root)
+                input_file_value = to_relative_path(
+                    input_file_value, self.config_coordinator.project_root
+                )
             self.edit_input.setText(input_file_value)
         elif input_mode == "files":
             self.combo_input_mode.setCurrentIndex(1)
@@ -243,7 +249,7 @@ class BasicPage(QWidget):
                     self.list_inputs.addItem(relative_path)
         else:
             self.combo_input_mode.setCurrentIndex(2)
-        
+
         # Always set input_dir and input_glob (for directory mode) with defaults
         input_dir = file_config.get("input_dir", "").strip()
         if input_dir and self.config_coordinator:
@@ -264,7 +270,7 @@ class BasicPage(QWidget):
             self.edit_output.setText(output_file)
         else:
             self.combo_output_mode.setCurrentIndex(1)
-        
+
         # Always set output_path (for directory mode) with default
         output_path = file_config.get("output_path", "").strip()
         if output_path and self.config_coordinator:
@@ -299,7 +305,9 @@ class BasicPage(QWidget):
         elif input_mode_index == 1:
             # Files mode: save only input_paths, clear other modes
             file_config["input_mode"] = "files"
-            paths = [self.list_inputs.item(i).text().strip() for i in range(self.list_inputs.count())]
+            paths = [
+                self.list_inputs.item(i).text().strip() for i in range(self.list_inputs.count())
+            ]
             file_config["input_paths"] = [p for p in paths if p]
             # Clear other modes
             file_config["input_file"] = ""
@@ -338,27 +346,27 @@ class BasicPage(QWidget):
             return
         if self.combo_output_mode.currentIndex() != 0:  # Not "File" mode
             return
-        
+
         input_path_str = self.edit_input.text().strip()
         if not input_path_str:
             return
-        
+
         try:
             # Convert relative path to absolute for processing
             if not self.config_coordinator:
                 return
             input_path = to_absolute_path(input_path_str, self.config_coordinator.project_root)
-            
+
             # Get input stem (filename without extension)
             input_stem = input_path.stem
             input_suffix = input_path.suffix  # includes the dot, e.g., ".txt"
-            
+
             # Get project root and output directory
             if not self.config_coordinator:
                 return
             project_root = self.config_coordinator.project_root
             output_dir = (project_root / "data" / "output").resolve()
-            
+
             # Get current output file to determine suffix
             current_output = self.edit_output.text().strip()
             if current_output:
@@ -372,15 +380,17 @@ class BasicPage(QWidget):
             else:
                 # If output is empty, use input filename as-is
                 suggested_output_name = input_path.name
-            
+
             # Generate relative path for display
-            suggested_output = to_relative_path(str(output_dir / suggested_output_name), project_root)
-            
+            suggested_output = to_relative_path(
+                str(output_dir / suggested_output_name), project_root
+            )
+
             # Update output field (without triggering recursive updates)
             self.edit_output.blockSignals(True)
             self.edit_output.setText(suggested_output)
             self.edit_output.blockSignals(False)
-            
+
             # Note: Config saving is handled by editingFinished signal
             # to avoid saving on every keystroke
         except Exception:
@@ -439,7 +449,7 @@ class BasicPage(QWidget):
                     start_dir = str(last_path.parent)
                 elif last_path.is_dir():
                     start_dir = str(last_path)
-        
+
         if not start_dir:
             # Default to data/input directory
             if self.config_coordinator:
@@ -461,7 +471,9 @@ class BasicPage(QWidget):
             else:
                 relative_path = file_path
             # Avoid duplicates
-            existing_paths = [self.list_inputs.item(i).text().strip() for i in range(self.list_inputs.count())]
+            existing_paths = [
+                self.list_inputs.item(i).text().strip() for i in range(self.list_inputs.count())
+            ]
             if relative_path not in existing_paths:
                 self.list_inputs.addItem(relative_path)
         if file_paths:
@@ -488,7 +500,7 @@ class BasicPage(QWidget):
                 start_dir = str(start_path.resolve())
             except Exception:
                 pass
-        
+
         if not start_dir:
             # Default to data/input directory
             if self.config_coordinator:
@@ -519,15 +531,15 @@ class BasicPage(QWidget):
             if not self.config_coordinator:
                 start_dir = ""
             else:
-                    start_path = to_absolute_path(start_dir, self.config_coordinator.project_root)
-                    if start_path.exists():
-                        if start_path.is_file():
-                            start_dir = str(start_path.parent)
-                        elif start_path.is_dir():
-                            start_dir = str(start_path)
-                    else:
-                        # Path doesn't exist, use parent if it's a file path, or path itself
-                        start_dir = str(start_path.parent) if start_path.suffix else str(start_path)
+                start_path = to_absolute_path(start_dir, self.config_coordinator.project_root)
+                if start_path.exists():
+                    if start_path.is_file():
+                        start_dir = str(start_path.parent)
+                    elif start_path.is_dir():
+                        start_dir = str(start_path)
+                else:
+                    # Path doesn't exist, use parent if it's a file path, or path itself
+                    start_dir = str(start_path.parent) if start_path.suffix else str(start_path)
         else:
             # Default to data/output directory
             if self.config_coordinator:
@@ -563,7 +575,7 @@ class BasicPage(QWidget):
                 start_dir = str(start_path.resolve())
             except Exception:
                 pass
-        
+
         if not start_dir:
             # Default to data/output directory
             if self.config_coordinator:

@@ -63,11 +63,11 @@ def to_relative_path(path: str | Path, project_root: Path) -> str:
     """
     if not path:
         return ""
-    
+
     try:
         abs_path = Path(path).resolve()
         root = Path(project_root).resolve()
-        
+
         # Try to get relative path
         try:
             rel_path = abs_path.relative_to(root)
@@ -84,22 +84,22 @@ def to_relative_path(path: str | Path, project_root: Path) -> str:
 def normalize_relative_path(path: str) -> str:
     """
     Normalize a relative path string to use platform-native separators.
-    
+
     This is useful for normalizing relative paths that may come from
     configuration files or user input (which often use forward slashes
     for portability) to platform-native format.
-    
+
     Args:
         path: Relative path string (e.g., "data/input/" or "data/output/")
-    
+
     Returns:
         Normalized relative path using platform-native separators
-    
+
     Examples:
         >>> normalize_relative_path("data/input/")
         'data\\input\\'  # On Windows
         'data/input/'  # On Unix
-        
+
         >>> normalize_relative_path("data/output")
         'data\\output'  # On Windows
         'data/output'  # On Unix
@@ -133,10 +133,10 @@ def to_absolute_path(path: str | Path, project_root: Path) -> Path:
     """
     if not path:
         return Path()
-    
+
     path_obj = Path(path)
     if path_obj.is_absolute():
         return path_obj.resolve()
-    
+
     # Relative path - resolve relative to project root
     return (Path(project_root) / path).resolve()

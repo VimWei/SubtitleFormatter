@@ -242,7 +242,7 @@ class ConfigCoordinator:
         # Ensure config is loaded if empty
         if not self.unified_manager._config:
             self.unified_manager.load()
-        
+
         cfg = self.unified_manager.get_config() or {}
         paths = cfg.get("paths", {}) or {}
         output = cfg.get("output", {}) or {}
